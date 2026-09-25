@@ -79,7 +79,7 @@ export default function MatchEvents() {
                   {ev.event_type.replace('_', ' ')}
                 </Typography>
                 {ev.team_id && (
-                  <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: teams.find((t) => t.id === ev.team_id)?.color || 'grey' }} />
+                  <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: teams.find((t) => t.id === ev.team_id)?.primary_color || 'grey' }} />
                 )}
                 <Typography sx={{ flex: 1 }}>{ev.description}</Typography>
                 <RouterLink to={`/matches/${ev.match_id}`} style={{ fontWeight: 700, fontSize: 13, whiteSpace: 'nowrap' }}>

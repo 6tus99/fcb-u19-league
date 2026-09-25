@@ -9,7 +9,7 @@ import GlassCard from '../../components/GlassCard';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import MatchCard from '../../components/MatchCard';
 import EmptyState from '../../components/EmptyState';
-import { computeStandings } from '../../utils/standings';
+import { computeStandings, readableTextOn } from '../../utils/standings';
 import supabase from '../../lib/supabase';
 
 export default function TeamDetail() {
@@ -60,11 +60,15 @@ export default function TeamDetail() {
         }}
       >
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
-          <Box sx={{ width: 54, height: 54, borderRadius: '50%', bgcolor: team.color, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <Typography sx={{ fontWeight: 900, color: '#0a0f1c' }}>{team.short_name}</Typography>
+          <Box sx={{ width: 54, height: 54, borderRadius: '50%', bgcolor: team.primary_color, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <Typography sx={{ fontWeight: 900, color: readableTextOn(team.primary_color) }}>{team.short_name}</Typography>
           </Box>
           <Box sx={{ flexGrow: 1 }}>
             <Typography variant="h4">{team.name}</Typography>
+            <Typography color="text.secondary" variant="body2">
+              {team.city}
+              {team.stadium ? ` • ${team.stadium}` : ''}
+            </Typography>
             {row && (
               <Typography color="text.secondary">
                 {row.P} played • {row.W} wins • {row.D} draws • {row.L} losses • {row.GF}–{row.GA} goals •{' '}

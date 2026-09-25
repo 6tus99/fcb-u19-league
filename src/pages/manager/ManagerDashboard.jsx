@@ -9,7 +9,7 @@ import GlassCard from '../../components/GlassCard';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import MatchCard from '../../components/MatchCard';
 import EmptyState from '../../components/EmptyState';
-import { computeStandings } from '../../utils/standings';
+import { computeStandings, readableTextOn } from '../../utils/standings';
 import { useAuth } from '../../context/AuthContext';
 import supabase from '../../lib/supabase';
 
@@ -78,8 +78,8 @@ export default function ManagerDashboard() {
           bgcolor: 'rgba(255,255,255,0.03)',
         }}
       >
-        <Box sx={{ width: 54, height: 54, borderRadius: '50%', bgcolor: team.color, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-          <Typography sx={{ fontWeight: 900, color: '#0a0f1c' }}>{team.short_name}</Typography>
+        <Box sx={{ width: 54, height: 54, borderRadius: '50%', bgcolor: team.primary_color, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+          <Typography sx={{ fontWeight: 900, color: readableTextOn(team.primary_color) }}>{team.short_name}</Typography>
         </Box>
         <Box sx={{ flexGrow: 1 }}>
           <Typography variant="h4">{team.name}</Typography>

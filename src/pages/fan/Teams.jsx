@@ -48,10 +48,11 @@ export default function Teams() {
               }}
             >
               <CardContent>
-                <Box sx={{ height: 6, borderRadius: 3, bgcolor: t.color, mb: 2 }} />
+                <Box sx={{ height: 6, borderRadius: 3, bgcolor: t.primary_color, mb: 2 }} />
                 <Typography variant="h6">{t.name}</Typography>
                 <Typography color="text.secondary" variant="body2">
                   {t.short_name}
+                  {t.city ? ` • ${t.city}` : ''}
                 </Typography>
                 {row && (
                   <Typography variant="body2" sx={{ mt: 1.5, fontWeight: 600 }}>

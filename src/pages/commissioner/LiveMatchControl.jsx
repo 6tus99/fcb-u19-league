@@ -212,14 +212,14 @@ export default function LiveMatchControl() {
 
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
           <Box sx={{ flex: 1, textAlign: 'right' }}>
-            <Box sx={{ width: 14, height: 14, borderRadius: '50%', bgcolor: home ? home.color : 'grey', ml: 'auto', mb: 1 }} />
+            <Box sx={{ width: 14, height: 14, borderRadius: '50%', bgcolor: home ? home.primary_color : 'grey', ml: 'auto', mb: 1 }} />
             <Typography variant="h5">{home ? home.name : 'TBD'}</Typography>
           </Box>
           <Typography variant="h1" sx={{ fontWeight: 900, color: match.status === 'live' ? 'primary.main' : 'inherit' }}>
             {match.home_score} : {match.away_score}
           </Typography>
           <Box sx={{ flex: 1 }}>
-            <Box sx={{ width: 14, height: 14, borderRadius: '50%', bgcolor: away ? away.color : 'grey', mb: 1 }} />
+            <Box sx={{ width: 14, height: 14, borderRadius: '50%', bgcolor: away ? away.primary_color : 'grey', mb: 1 }} />
             <Typography variant="h5">{away ? away.name : 'TBD'}</Typography>
           </Box>
         </Box>
@@ -302,7 +302,7 @@ export default function LiveMatchControl() {
                 </Typography>
                 <Typography>{EVENT_TYPES.find((t) => t.id === ev.event_type)?.label?.slice(0, 2) || '📝'}</Typography>
                 {ev.team_id && (
-                  <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: teams.find((t) => t.id === ev.team_id)?.color || 'grey' }} />
+                  <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: teams.find((t) => t.id === ev.team_id)?.primary_color || 'grey' }} />
                 )}
                 <Typography sx={{ flex: 1 }}>{ev.description || ev.event_type.replace('_', ' ')}</Typography>
                 <Button size="small" color="error" sx={{ fontSize: 12 }} onClick={async () => await supabase.from('match_events').delete().eq('id', ev.id).then(() => loadMatch(match.id))}>

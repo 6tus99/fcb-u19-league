@@ -43,7 +43,7 @@ export default function StandingsTable({ rows }) {
                       width: 10,
                       height: 10,
                       borderRadius: '50%',
-                      backgroundColor: r.team.color,
+                      backgroundColor: r.team.primary_color,
                       display: 'inline-block',
                       flexShrink: 0,
                     }}

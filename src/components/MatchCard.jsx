@@ -36,7 +36,7 @@ export default function MatchCard({ match, teams }) {
             <Typography sx={{ fontWeight: 700, textAlign: 'right' }} noWrap>
               {home ? home.name : 'TBD'}
             </Typography>
-            <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: home ? home.color : 'grey', flexShrink: 0 }} />
+            <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: home ? home.primary_color : 'grey', flexShrink: 0 }} />
           </Box>
           <Box
             sx={{
@@ -55,7 +55,7 @@ export default function MatchCard({ match, teams }) {
             </Typography>
           </Box>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, flex: 1, minWidth: 0 }}>
-            <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: away ? away.color : 'grey', flexShrink: 0 }} />
+            <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: away ? away.primary_color : 'grey', flexShrink: 0 }} />
             <Typography sx={{ fontWeight: 700 }} noWrap>
               {away ? away.name : 'TBD'}
             </Typography>

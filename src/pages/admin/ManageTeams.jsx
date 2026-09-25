@@ -11,9 +11,10 @@ import EmptyState from '../../components/EmptyState';
 import AddRounded from '@mui/icons-material/AddRounded';
 import EditRounded from '@mui/icons-material/EditRounded';
 import DeleteRounded from '@mui/icons-material/DeleteRounded';
+import { readableTextOn } from '../../utils/standings';
 import supabase from '../../lib/supabase';
 
-const EMPTY = { name: '', short_name: '', color: '#3b82f6' };
+const EMPTY = { name: '', short_name: '', city: '', stadium: '', primary_color: '#3b82f6', secondary_color: '#ffffff' };
 
 export default function ManageTeams() {
   const [teams, setTeams] = useState([]);
@@ -56,7 +57,14 @@ export default function ManageTeams() {
 
   const startEdit = (t) => {
     setEditingId(t.id);
-    setForm({ name: t.name, short_name: t.short_name, color: t.color });
+    setForm({
+      name: t.name,
+      short_name: t.short_name,
+      city: t.city || '',
+      stadium: t.stadium || '',
+      primary_color: t.primary_color,
+      secondary_color: t.secondary_color,
+    });
   };
 
   const remove = async (t) => {
@@ -83,7 +91,7 @@ export default function ManageTeams() {
       )}
 
       <GlassCard title={editingId ? 'Edit team' : 'Add team'} sx={{ mb: 3 }}>
-        <Box component="form" onSubmit={handleSubmit} sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: '1fr', md: '2fr 1fr 1fr auto' }, alignItems: 'center' }}>
+        <Box component="form" onSubmit={handleSubmit} sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: '1fr', md: 'repeat(3, 1fr)' }, alignItems: 'center' }}>
           <TextField label="Team name" required value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
           <TextField
             label="Short code (3–4 letters)"
@@ -92,7 +100,22 @@ export default function ManageTeams() {
             onChange={(e) => setForm({ ...form, short_name: e.target.value.toUpperCase() })}
             inputProps={{ maxLength: 4 }}
           />
-          <TextField label="Colour" type="color" value={form.color} onChange={(e) => setForm({ ...form, color: e.target.value })} sx={{ '& input': { padding: 0.5 } }} />
+          <TextField label="City" value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} />
+          <TextField label="Stadium / ground" value={form.stadium} onChange={(e) => setForm({ ...form, stadium: e.target.value })} />
+          <TextField
+            label="Primary colour"
+            type="color"
+            value={form.primary_color}
+            onChange={(e) => setForm({ ...form, primary_color: e.target.value })}
+            sx={{ '& input': { padding: 0.5 } }}
+          />
+          <TextField
+            label="Secondary colour"
+            type="color"
+            value={form.secondary_color}
+            onChange={(e) => setForm({ ...form, secondary_color: e.target.value })}
+            sx={{ '& input': { padding: 0.5 } }}
+          />
           <Box sx={{ display: 'flex', gap: 1 }}>
             <Button type="submit" variant="contained" startIcon={<AddRounded />}>
               {editingId ? 'Save' : 'Add'}
@@ -113,13 +136,13 @@ export default function ManageTeams() {
           <Box sx={{ display: 'flex', flexDirection: 'column' }}>
             {teams.map((t) => (
               <Box key={t.id} sx={{ display: 'flex', alignItems: 'center', gap: 1.5, py: 1.25, borderBottom: '1px solid rgba(255,255,255,0.06)', flexWrap: 'wrap' }}>
-                <Box sx={{ width: 34, height: 34, borderRadius: '50%', bgcolor: t.color, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                  <Typography sx={{ fontWeight: 900, color: '#0a0f1c', fontSize: 12 }}>{t.short_name}</Typography>
+                <Box sx={{ width: 34, height: 34, borderRadius: '50%', bgcolor: t.primary_color, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <Typography sx={{ fontWeight: 900, color: readableTextOn(t.primary_color), fontSize: 12 }}>{t.short_name}</Typography>
                 </Box>
                 <Box sx={{ flex: 1, minWidth: 140 }}>
                   <Typography sx={{ fontWeight: 700 }}>{t.name}</Typography>
                   <Typography variant="caption" color="text.secondary">
-                    {matchCount(t.id)} matches
+                    {t.city}{t.stadium ? ` • ${t.stadium}` : ''} • {matchCount(t.id)} matches
                   </Typography>
                 </Box>
                 <Button size="small" startIcon={<EditRounded />} onClick={() => startEdit(t)}>

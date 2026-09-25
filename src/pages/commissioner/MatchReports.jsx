@@ -36,7 +36,7 @@ export default function MatchReports() {
   if (!loaded) return <LoadingSpinner message="Loading reports…" />;
 
   const teamName = (id) => teams.find((t) => t.id === id)?.name || 'TBD';
-  const teamColor = (id) => teams.find((t) => t.id === id)?.color || 'grey';
+  const teamColor = (id) => teams.find((t) => t.id === id)?.primary_color || 'grey';
 
   return (
     <div>

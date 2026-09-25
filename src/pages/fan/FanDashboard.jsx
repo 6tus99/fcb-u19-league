@@ -127,7 +127,7 @@ export default function FanDashboard() {
                   <Typography sx={{ width: 20, fontWeight: 800, color: i === 0 ? 'secondary.main' : 'text.secondary' }}>
                     {i + 1}
                   </Typography>
-                  <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: r.team.color, flexShrink: 0 }} />
+                  <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: r.team.primary_color, flexShrink: 0 }} />
                   <Typography sx={{ flex: 1, fontWeight: 600 }} noWrap>
                     {r.team.name}
                   </Typography>

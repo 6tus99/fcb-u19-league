@@ -91,7 +91,7 @@ export default function MatchDetail() {
 
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
           <Box sx={{ flex: 1, textAlign: 'right' }}>
-            <Box sx={{ width: 14, height: 14, borderRadius: '50%', bgcolor: home ? home.color : 'grey', ml: 'auto', mb: 1 }} />
+            <Box sx={{ width: 14, height: 14, borderRadius: '50%', bgcolor: home ? home.primary_color : 'grey', ml: 'auto', mb: 1 }} />
             <Typography variant="h5">{home ? home.name : 'TBD'}</Typography>
           </Box>
           <Box sx={{ textAlign: 'center' }}>
@@ -105,7 +105,7 @@ export default function MatchDetail() {
             )}
           </Box>
           <Box sx={{ flex: 1, textAlign: 'left' }}>
-            <Box sx={{ width: 14, height: 14, borderRadius: '50%', bgcolor: away ? away.color : 'grey', mb: 1 }} />
+            <Box sx={{ width: 14, height: 14, borderRadius: '50%', bgcolor: away ? away.primary_color : 'grey', mb: 1 }} />
             <Typography variant="h5">{away ? away.name : 'TBD'}</Typography>
           </Box>
         </Box>
@@ -135,7 +135,7 @@ export default function MatchDetail() {
                         {ev.minute != null ? `${ev.minute}'` : '—'}
                       </Typography>
                       <Typography sx={{ fontSize: 20 }}>{EVENT_ICONS[ev.event_type] || '📝'}</Typography>
-                      {team && <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: team.color }} />}
+                      {team && <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: team.primary_color }} />}
                       <Typography>{ev.description || ev.event_type.replace('_', ' ')}</Typography>
                     </Box>
                   );
