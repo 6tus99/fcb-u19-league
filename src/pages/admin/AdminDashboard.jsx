@@ -66,8 +66,8 @@ export default function AdminDashboard() {
         news: n.count || 0,
         officials: o.count || 0,
       });
-      setTeams(teamsData || []);
-      setRecent(matchesData || []);
+      setTeams(teamsData?.data || []);
+      setRecent(matchesData?.data || []);
       setLoaded(true);
     });
   }, []);
