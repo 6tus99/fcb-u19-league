@@ -75,3 +75,12 @@ src/
 
 - The anon key is public by design — all data access is protected by Postgres **row-level security** (see `schema.sql`): only admins write teams/officials/settings; only admins & commissioners write matches/events/news; users can only edit their own profile.
 - Registration can only self-assign `fan`, `player` or `manager` (enforced in the database trigger, not just the UI).
+
+## Deployment
+
+Hosted on **Vercel** (auto-deploys from `main`):
+
+- Production URL: `https://fcb-u19-league.vercel.app`
+- Build: Create React App preset — `npm run build`, output `build/`
+- Environment variables (set in the Vercel dashboard, never in the repo): `REACT_APP_SUPABASE_URL`, `REACT_APP_SUPABASE_ANON_KEY`
+- Backend: Supabase (project `fcb-u19-league`, West EU) — auth, Postgres data, realtime
