@@ -91,6 +91,13 @@ export default function ManagerDashboard() {
     );
   }
 
+  // players who already have a pending add-request for this team are hidden
+  // from the dropdown (and blocked at the database level as well)
+  const pendingPlayerIds = new Set(
+    requests.filter((r) => r.status === 'pending').map((r) => r.player_profile_id)
+  );
+  const openPlayers = available.filter((p) => !pendingPlayerIds.has(p.id));
+
   const submitAdd = async () => {
     if (!selected) return;
     if (pendingPlayerIds.has(selected)) {
