@@ -19,6 +19,7 @@ import DarkModeRounded from '@mui/icons-material/DarkModeRounded';
 import { useAuth } from '../context/AuthContext';
 import { useThemeMode } from '../context/ThemeContext';
 import { homeForRole } from './ProtectedRoute';
+import NotificationBell from './NotificationBell';
 import supabase from '../lib/supabase';
 
 const NAV = {
@@ -143,6 +144,7 @@ export default function AppLayout() {
           <IconButton onClick={toggle} size="small" aria-label="Toggle light/dark mode" sx={{ color: 'text.secondary' }}>
             {mode === 'dark' ? <LightModeRounded /> : <DarkModeRounded />}
           </IconButton>
+          <NotificationBell />
           <IconButton onClick={(e) => setAnchorEl(e.currentTarget)} size="small" aria-label="Account menu">
             <Avatar sx={{ width: 34, height: 34, bgcolor: 'primary.main', fontSize: 13, fontWeight: 800 }}>{initials}</Avatar>
           </IconButton>
