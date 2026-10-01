@@ -93,6 +93,10 @@ export default function ManagerDashboard() {
 
   const submitAdd = async () => {
     if (!selected) return;
+    if (pendingPlayerIds.has(selected)) {
+      setMessage({ severity: 'warning', text: 'A pending request already exists for this player.' });
+      return;
+    }
     setBusy(true);
     setMessage(null);
     const { error } = await supabase.from('requests').insert({
@@ -213,8 +217,8 @@ export default function ManagerDashboard() {
                 {message.text}
               </Alert>
             )}
-            {available.length === 0 ? (
-              <EmptyState message="No registered players without a team right now." />
+            {openPlayers.length === 0 ? (
+              <EmptyState message="No registered players without a team right now. Players with a pending request are hidden from this list — check “Squad requests”." />
             ) : (
               <>
                 <TextField
@@ -227,7 +231,7 @@ export default function ManagerDashboard() {
                   inputProps={{ 'aria-label': 'Player to add' }}
                 >
                   <MenuItem value="">— select a player —</MenuItem>
-                  {available.map((p) => (
+                  {openPlayers.map((p) => (
                     <MenuItem key={p.id} value={p.id}>
                       {p.full_name} ({p.email})
                     </MenuItem>
