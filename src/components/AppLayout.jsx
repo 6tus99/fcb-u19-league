@@ -123,29 +123,28 @@ export default function AppLayout() {
           borderColor: 'divider',
         }}
       >
-        <Toolbar sx={{ gap: 1, flexWrap: 'wrap', rowGap: 0.5, minHeight: 64 }}>
-          <IconButton onClick={handleBack} size="small" aria-label="Go back" sx={{ color: 'text.secondary' }}>
+        <Toolbar sx={{ gap: 1, minHeight: 64 }}>
+          <IconButton onClick={handleBack} size="small" aria-label="Go back" sx={{ color: 'text.secondary', flexShrink: 0 }}>
             <ArrowBackIosRounded sx={{ fontSize: 20 }} />
           </IconButton>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25 }}>
-            <SportsSoccerRounded color="primary" />
-            <Box>
-              <Typography variant="subtitle1" sx={{ fontWeight: 800, lineHeight: 1.15 }} noWrap>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, minWidth: 0, flexGrow: 1 }}>
+            <SportsSoccerRounded color="primary" sx={{ fontSize: 26, flexShrink: 0 }} />
+            <Box sx={{ minWidth: 0 }}>
+              <Typography variant="subtitle1" noWrap sx={{ fontWeight: 800, lineHeight: 1.15 }}>
                 {leagueName}
               </Typography>
               <Chip
                 label={ROLE_LABEL[profile.role]}
                 size="small"
-                sx={{ height: 18, fontSize: 10, fontWeight: 700, bgcolor: 'rgba(74,222,128,0.12)', color: 'primary.main' }}
+                sx={{ height: 16, fontSize: 9, fontWeight: 700, mt: 0.25, bgcolor: 'rgba(74,222,128,0.12)', color: 'primary.main' }}
               />
             </Box>
           </Box>
-          <Box sx={{ flexGrow: 1 }} />
-          <IconButton onClick={toggle} size="small" aria-label="Toggle light/dark mode" sx={{ color: 'text.secondary' }}>
+          <IconButton onClick={toggle} size="small" aria-label="Toggle light/dark mode" sx={{ color: 'text.secondary', flexShrink: 0 }}>
             {mode === 'dark' ? <LightModeRounded /> : <DarkModeRounded />}
           </IconButton>
           <NotificationBell />
-          <IconButton onClick={(e) => setAnchorEl(e.currentTarget)} size="small" aria-label="Account menu">
+          <IconButton onClick={(e) => setAnchorEl(e.currentTarget)} size="small" aria-label="Account menu" sx={{ flexShrink: 0 }}>
             <Avatar sx={{ width: 34, height: 34, bgcolor: 'primary.main', fontSize: 13, fontWeight: 800 }}>{initials}</Avatar>
           </IconButton>
         </Toolbar>

@@ -11,6 +11,8 @@ export default function MatchCard({ match, teams }) {
   const home = teams.find((t) => t.id === match.home_team_id);
   const away = teams.find((t) => t.id === match.away_team_id);
   const isLive = match.status === 'live';
+  const timeOnly = (iso) =>
+    new Date(iso).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
   return (
     <Card
@@ -25,9 +27,10 @@ export default function MatchCard({ match, teams }) {
       }}
     >
       <CardContent>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
-          <Typography variant="caption" color="text.secondary">
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1, gap: 1 }}>
+          <Typography variant="caption" color="text.secondary" sx={{ minWidth: 0 }}>
             Week {match.week}
+            {match.status === 'scheduled' ? ` • ${formatDate(match.scheduled_at, false)}` : ''}
           </Typography>
           <StatusChip status={match.status} />
         </Box>
@@ -40,7 +43,7 @@ export default function MatchCard({ match, teams }) {
           </Box>
           <Box
             sx={{
-              px: 1.25,
+              px: { xs: 0.75, sm: 1.25 },
               py: 0.5,
               borderRadius: 2,
               bgcolor: 'rgba(0,0,0,0.35)',
@@ -50,8 +53,8 @@ export default function MatchCard({ match, teams }) {
               flexShrink: 0,
             }}
           >
-            <Typography sx={{ fontWeight: 800, fontSize: 16, color: isLive ? 'primary.main' : 'inherit' }}>
-              {match.status === 'scheduled' ? formatDate(match.scheduled_at, true) : `${match.home_score} – ${match.away_score}`}
+            <Typography sx={{ fontWeight: 800, fontSize: { xs: 14, sm: 16 }, color: isLive ? 'primary.main' : 'inherit' }}>
+              {match.status === 'scheduled' ? timeOnly(match.scheduled_at) : `${match.home_score} – ${match.away_score}`}
             </Typography>
           </Box>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, flex: 1, minWidth: 0 }}>

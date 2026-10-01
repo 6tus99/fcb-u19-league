@@ -9,8 +9,8 @@ import TableRow from '@mui/material/TableRow';
 export default function StandingsTable({ rows }) {
   const header = ['#', 'Team', 'P', 'W', 'D', 'L', 'GF', 'GA', 'GD', 'Pts'];
   return (
-    <TableContainer>
-      <Table size="small">
+    <TableContainer sx={{ overflowX: 'auto' }}>
+      <Table size="small" sx={{ minWidth: 620 }}>
         <TableHead>
           <TableRow>
             {header.map((h) => (
