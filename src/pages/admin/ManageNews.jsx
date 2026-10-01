@@ -90,7 +90,7 @@ export default function ManageNews() {
         ) : (
           <Box sx={{ display: 'flex', flexDirection: 'column' }}>
             {articles.map((a) => (
-              <Box key={a.id} sx={{ py: 1.5, borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+              <Box key={a.id} sx={{ py: 1.5, borderBottom: '1px solid', borderColor: 'divider' }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
                   <Typography sx={{ fontWeight: 700, flex: 1 }}>{a.title}</Typography>
                   <Typography variant="caption" color="text.secondary">

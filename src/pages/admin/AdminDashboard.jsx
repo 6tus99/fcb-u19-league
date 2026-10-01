@@ -5,14 +5,16 @@ import Paper from '@mui/material/Paper';
 import Typography from '@mui/material/Typography';
 import Grid from '@mui/material/Grid';
 import Link from '@mui/material/Link';
+import Chip from '@mui/material/Chip';
 import PageHeader from '../../components/PageHeader';
 import GlassCard from '../../components/GlassCard';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import MatchCard from '../../components/MatchCard';
 import EmptyState from '../../components/EmptyState';
+import { formatDate } from '../../utils/standings';
 import supabase from '../../lib/supabase';
 
-function StatCard({ label, value, to, color = '#4ade80' }) {
+function StatCard({ label, value, to, color = 'primary.main' }) {
   return (
     <Paper
       component={to ? RouterLink : 'div'}
@@ -20,8 +22,8 @@ function StatCard({ label, value, to, color = '#4ade80' }) {
       sx={{
         p: 2.5,
         borderRadius: 3,
-        border: '1px solid rgba(255,255,255,0.08)',
-        bgcolor: 'rgba(255,255,255,0.03)',
+        border: '1px solid', borderColor: 'divider',
+        bgcolor: 'tint',
         textDecoration: 'none',
         color: 'inherit',
         display: 'block',
@@ -42,6 +44,7 @@ export default function AdminDashboard() {
   const [counts, setCounts] = useState({ users: 0, teams: 0, scheduled: 0, live: 0, finished: 0, news: 0, officials: 0 });
   const [teams, setTeams] = useState([]);
   const [recent, setRecent] = useState([]);
+  const [pending, setPending] = useState([]);
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
@@ -56,7 +59,15 @@ export default function AdminDashboard() {
       count('officials'),
       supabase.from('teams').select('*'),
       supabase.from('matches').select('*').order('scheduled_at', { ascending: false }).limit(4),
-    ]).then(([u, t, s, l, f, n, o, teamsData, matchesData]) => {
+      supabase
+        .from('requests')
+        .select(
+          '*, player:profiles!requests_player_profile_id_fkey (id, full_name), team:teams!requests_team_id_fkey (id, name), from_team:teams!requests_from_team_id_fkey (id, name), requester:profiles!requests_requested_by_fkey (id, full_name)'
+        )
+        .eq('status', 'pending')
+        .order('created_at', { ascending: false })
+        .limit(5),
+    ]).then(([u, t, s, l, f, n, o, teamsData, matchesData, reqData]) => {
       setCounts({
         users: u.count || 0,
         teams: t.count || 0,
@@ -68,6 +79,7 @@ export default function AdminDashboard() {
       });
       setTeams(teamsData?.data || []);
       setRecent(matchesData?.data || []);
+      setPending(reqData?.data || []);
       setLoaded(true);
     });
   }, []);
@@ -92,6 +104,40 @@ export default function AdminDashboard() {
           <StatCard label="News articles" value={counts.news} to="/admin/news" color="#facc15" />
         </Grid>
       </Grid>
+
+      <GlassCard
+        title="Pending team requests"
+        action={<Link component={RouterLink} to="/admin/requests" variant="body2">Review all</Link>}
+        sx={{ mb: 3 }}
+      >
+        {pending.length === 0 ? (
+          <EmptyState message="No pending requests. When managers add players or players request transfers, they appear here for your approval." />
+        ) : (
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+            {pending.map((r) => (
+              <Box key={r.id} sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap' }}>
+                <Chip
+                  label={r.type === 'add_player' ? 'Add player' : 'Transfer'}
+                  size="small"
+                  color="warning"
+                  sx={{ fontWeight: 700, height: 20, fontSize: 11 }}
+                />
+                <Typography sx={{ fontWeight: 600 }}>{r.player?.full_name || 'Unknown'}</Typography>
+                <Typography color="text.secondary" sx={{ flexGrow: 1 }}>
+                  {r.type === 'add_player'
+                    ? `to ${r.team?.name || 'team'}`
+                    : `from ${r.from_team?.name || '?'} to ${r.team?.name || '?'}`}
+                  {' • requested by '}
+                  {r.requester?.full_name || 'unknown'}
+                </Typography>
+                <Typography variant="caption" color="text.secondary">
+                  {formatDate(r.created_at)}
+                </Typography>
+              </Box>
+            ))}
+          </Box>
+        )}
+      </GlassCard>
 
       <GlassCard title="Latest activity" action={<Link component={RouterLink} to="/admin/matches" variant="body2">Manage matches</Link>}>
         {recent.length === 0 ? (

@@ -8,8 +8,9 @@ export default function GlassCard({ title, action, children, sx }) {
   return (
     <Card
       sx={{
-        bgcolor: 'rgba(255,255,255,0.04)',
-        border: '1px solid rgba(255,255,255,0.08)',
+        bgcolor: 'tint',
+        border: '1px solid',
+        borderColor: 'divider',
         backdropFilter: 'blur(8px)',
         ...(sx || {}),
       }}

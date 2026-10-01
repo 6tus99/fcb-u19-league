@@ -17,8 +17,8 @@ export default function MatchCard({ match, teams }) {
       component={RouterLink}
       to={`/matches/${match.id}`}
       sx={{
-        bgcolor: 'rgba(255,255,255,0.03)',
-        border: '1px solid rgba(255,255,255,0.08)',
+        bgcolor: 'tint',
+        border: '1px solid', borderColor: 'divider',
         display: 'block',
         transition: 'all 0.15s ease',
         '&:hover': { transform: 'translateY(-2px)', borderColor: 'rgba(74,222,128,0.45)' },
@@ -44,7 +44,7 @@ export default function MatchCard({ match, teams }) {
               py: 0.5,
               borderRadius: 2,
               bgcolor: 'rgba(0,0,0,0.35)',
-              border: '1px solid rgba(255,255,255,0.1)',
+              border: '1px solid', borderColor: 'divider',
               textAlign: 'center',
               whiteSpace: 'nowrap',
               flexShrink: 0,

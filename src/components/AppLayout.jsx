@@ -13,13 +13,19 @@ import Chip from '@mui/material/Chip';
 import Container from '@mui/material/Container';
 import SportsSoccerRounded from '@mui/icons-material/SportsSoccerRounded';
 import LogoutRounded from '@mui/icons-material/LogoutRounded';
+import ArrowBackIosRounded from '@mui/icons-material/ArrowBackIosRounded';
+import LightModeRounded from '@mui/icons-material/LightModeRounded';
+import DarkModeRounded from '@mui/icons-material/DarkModeRounded';
 import { useAuth } from '../context/AuthContext';
+import { useThemeMode } from '../context/ThemeContext';
+import { homeForRole } from './ProtectedRoute';
 import supabase from '../lib/supabase';
 
 const NAV = {
   admin: [
     { to: '/admin', label: 'Dashboard' },
     { to: '/admin/users', label: 'Users' },
+    { to: '/admin/requests', label: 'Requests' },
     { to: '/admin/teams', label: 'Teams' },
     { to: '/admin/matches', label: 'Matches' },
     { to: '/admin/news', label: 'News' },
@@ -67,6 +73,7 @@ const ROLE_LABEL = {
 
 export default function AppLayout() {
   const { profile, signOut } = useAuth();
+  const { mode, toggle } = useThemeMode();
   const location = useLocation();
   const navigate = useNavigate();
   const [anchorEl, setAnchorEl] = useState(null);
@@ -98,18 +105,27 @@ export default function AppLayout() {
     navigate('/login');
   };
 
+  const handleBack = () => {
+    if (window.history.length > 1) navigate(-1);
+    else navigate(homeForRole(profile.role));
+  };
+
   return (
     <Box sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
       <AppBar
         position="sticky"
         elevation={0}
         sx={{
-          bgcolor: 'rgba(10,15,28,0.92)',
+          bgcolor: 'appbar',
           backdropFilter: 'blur(8px)',
-          borderBottom: '1px solid rgba(255,255,255,0.08)',
+          borderBottom: '1px solid',
+          borderColor: 'divider',
         }}
       >
         <Toolbar sx={{ gap: 1, flexWrap: 'wrap', rowGap: 0.5, minHeight: 64 }}>
+          <IconButton onClick={handleBack} size="small" aria-label="Go back" sx={{ color: 'text.secondary' }}>
+            <ArrowBackIosRounded sx={{ fontSize: 20 }} />
+          </IconButton>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25 }}>
             <SportsSoccerRounded color="primary" />
             <Box>
@@ -124,6 +140,9 @@ export default function AppLayout() {
             </Box>
           </Box>
           <Box sx={{ flexGrow: 1 }} />
+          <IconButton onClick={toggle} size="small" aria-label="Toggle light/dark mode" sx={{ color: 'text.secondary' }}>
+            {mode === 'dark' ? <LightModeRounded /> : <DarkModeRounded />}
+          </IconButton>
           <IconButton onClick={(e) => setAnchorEl(e.currentTarget)} size="small" aria-label="Account menu">
             <Avatar sx={{ width: 34, height: 34, bgcolor: 'primary.main', fontSize: 13, fontWeight: 800 }}>{initials}</Avatar>
           </IconButton>
@@ -146,7 +165,7 @@ export default function AppLayout() {
                   color: active ? 'primary.main' : 'text.secondary',
                   bgcolor: active ? 'rgba(74,222,128,0.1)' : 'transparent',
                   whiteSpace: 'nowrap',
-                  '&:hover': { bgcolor: 'rgba(255,255,255,0.06)' },
+                  '&:hover': { bgcolor: 'tintHover' },
                 }}
               >
                 {item.label}
@@ -162,7 +181,7 @@ export default function AppLayout() {
 
       <Box
         component="footer"
-        sx={{ py: 3, textAlign: 'center', borderTop: '1px solid rgba(255,255,255,0.08)', color: 'text.secondary', fontSize: 13 }}
+        sx={{ py: 3, textAlign: 'center', borderTop: '1px solid', borderColor: 'divider', color: 'text.secondary', fontSize: 13 }}
       >
         {leagueName}
         {season ? ` • ${season}` : ''}

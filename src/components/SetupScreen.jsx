@@ -5,7 +5,7 @@ import Paper from '@mui/material/Paper';
 import SportsScoreRounded from '@mui/icons-material/SportsScoreRounded';
 
 const Code = ({ children }) => (
-  <Typography component="code" sx={{ fontFamily: 'monospace', px: 0.5, py: 0.25, borderRadius: 1, bgcolor: 'rgba(255,255,255,0.08)' }}>
+  <Typography component="code" sx={{ fontFamily: 'monospace', px: 0.5, py: 0.25, borderRadius: 1, bgcolor: 'tintHover' }}>
     {children}
   </Typography>
 );

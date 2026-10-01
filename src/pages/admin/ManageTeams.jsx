@@ -135,7 +135,7 @@ export default function ManageTeams() {
         ) : (
           <Box sx={{ display: 'flex', flexDirection: 'column' }}>
             {teams.map((t) => (
-              <Box key={t.id} sx={{ display: 'flex', alignItems: 'center', gap: 1.5, py: 1.25, borderBottom: '1px solid rgba(255,255,255,0.06)', flexWrap: 'wrap' }}>
+              <Box key={t.id} sx={{ display: 'flex', alignItems: 'center', gap: 1.5, py: 1.25, borderBottom: '1px solid', borderColor: 'divider', flexWrap: 'wrap' }}>
                 <Box sx={{ width: 34, height: 34, borderRadius: '50%', bgcolor: t.primary_color, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                   <Typography sx={{ fontWeight: 900, color: readableTextOn(t.primary_color), fontSize: 12 }}>{t.short_name}</Typography>
                 </Box>

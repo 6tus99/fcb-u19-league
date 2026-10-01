@@ -41,8 +41,8 @@ export default function Teams() {
               component={RouterLink}
               to={`/teams/${t.id}`}
               sx={{
-                bgcolor: 'rgba(255,255,255,0.03)',
-                border: '1px solid rgba(255,255,255,0.08)',
+                bgcolor: 'tint',
+                border: '1px solid', borderColor: 'divider',
                 transition: 'all .15s ease',
                 '&:hover': { transform: 'translateY(-2px)', borderColor: 'rgba(74,222,128,0.45)' },
               }}

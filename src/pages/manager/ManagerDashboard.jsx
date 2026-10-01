@@ -1,17 +1,26 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { Link as RouterLink } from 'react-router-dom';
 import Box from '@mui/material/Box';
 import Paper from '@mui/material/Paper';
 import Typography from '@mui/material/Typography';
 import Grid from '@mui/material/Grid';
+import Button from '@mui/material/Button';
+import TextField from '@mui/material/TextField';
+import MenuItem from '@mui/material/MenuItem';
+import Alert from '@mui/material/Alert';
+import PersonAddAlt1Rounded from '@mui/icons-material/PersonAddAlt1Rounded';
 import PageHeader from '../../components/PageHeader';
 import GlassCard from '../../components/GlassCard';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import MatchCard from '../../components/MatchCard';
 import EmptyState from '../../components/EmptyState';
-import { computeStandings, readableTextOn } from '../../utils/standings';
+import StatusChip from '../../components/StatusChip';
+import { computeStandings, formatDate, readableTextOn } from '../../utils/standings';
 import { useAuth } from '../../context/AuthContext';
 import supabase from '../../lib/supabase';
+
+const REQUESTS_SELECT =
+  '*, player:profiles!requests_player_profile_id_fkey (id, full_name, email)';
 
 export default function ManagerDashboard() {
   const { profile } = useAuth();
@@ -19,9 +28,27 @@ export default function ManagerDashboard() {
   const [teams, setTeams] = useState([]);
   const [matches, setMatches] = useState([]);
   const [squad, setSquad] = useState([]);
+  const [available, setAvailable] = useState([]);
+  const [requests, setRequests] = useState([]);
+  const [selected, setSelected] = useState('');
+  const [note, setNote] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [message, setMessage] = useState(null);
   const [loaded, setLoaded] = useState(false);
 
   const teamId = profile?.team_id;
+
+  const loadRequests = useCallback(async () => {
+    if (!teamId) return;
+    const rq = await supabase
+      .from('requests')
+      .select(REQUESTS_SELECT)
+      .eq('team_id', teamId)
+      .eq('type', 'add_player')
+      .order('created_at', { ascending: false })
+      .limit(15);
+    setRequests(rq.data || []);
+  }, [teamId]);
 
   useEffect(() => {
     if (!teamId) {
@@ -33,15 +60,23 @@ export default function ManagerDashboard() {
       supabase.from('teams').select('*'),
       supabase.from('matches').select('*'),
       supabase.from('profiles').select('id, full_name, role').eq('team_id', teamId).in('role', ['player', 'manager']),
-    ]).then(([t, all, m, sq]) => {
+      supabase
+        .from('profiles')
+        .select('id, full_name, email, role')
+        .in('role', ['player', 'fan'])
+        .is('team_id', null)
+        .order('full_name'),
+    ]).then(([t, all, m, sq, av]) => {
       setTeam(t.data);
       setTeams(all.data || []);
       setMatches(m.data || []);
       setSquad(sq.data || []);
+      setAvailable((av.data || []).filter((p) => p.id !== profile.id));
       setLoaded(true);
     });
+    loadRequests();
     return undefined;
-  }, [teamId]);
+  }, [teamId, profile.id, loadRequests]);
 
   if (!loaded) return <LoadingSpinner message="Loading your club…" />;
 
@@ -56,6 +91,28 @@ export default function ManagerDashboard() {
     );
   }
 
+  const submitAdd = async () => {
+    if (!selected) return;
+    setBusy(true);
+    setMessage(null);
+    const { error } = await supabase.from('requests').insert({
+      type: 'add_player',
+      requested_by: profile.id,
+      team_id: teamId,
+      player_profile_id: selected,
+      note: note.trim() || null,
+    });
+    setBusy(false);
+    if (error) {
+      setMessage({ severity: 'error', text: error.message });
+      return;
+    }
+    setMessage({ severity: 'success', text: 'Request sent to the league admin.' });
+    setSelected('');
+    setNote('');
+    loadRequests();
+  };
+
   const teamMatches = matches
     .filter((m) => m.home_team_id === team.id || m.away_team_id === team.id)
     .sort((a, b) => new Date(a.scheduled_at) - new Date(b.scheduled_at));
@@ -69,13 +126,14 @@ export default function ManagerDashboard() {
         sx={{
           p: { xs: 3, md: 4 },
           borderRadius: 3,
-          border: '1px solid rgba(255,255,255,0.08)',
+          border: '1px solid',
+          borderColor: 'divider',
           mb: 3,
           display: 'flex',
           alignItems: 'center',
           gap: 2,
           flexWrap: 'wrap',
-          bgcolor: 'rgba(255,255,255,0.03)',
+          bgcolor: 'tint',
         }}
       >
         <Box sx={{ width: 54, height: 54, borderRadius: '50%', bgcolor: team.primary_color, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
@@ -86,7 +144,7 @@ export default function ManagerDashboard() {
           {row && (
             <Typography color="text.secondary">
               {row.P} played • {row.W}–{row.D}–{row.L} • {row.GF}–{row.GA} goals •{' '}
-              <strong style={{ color: '#4ade80' }}>{row.Pts} points</strong>
+              <Typography component="span" sx={{ color: 'primary.main', fontWeight: 800 }}>{row.Pts} points</Typography>
             </Typography>
           )}
         </Box>
@@ -119,7 +177,7 @@ export default function ManagerDashboard() {
         <Grid size={{ xs: 12, md: 5 }}>
           <GlassCard title={`Squad (${squad.length})`}>
             {squad.length === 0 ? (
-              <EmptyState message="No squad members yet. Players can register with your team from the sign-up page." />
+              <EmptyState message="No squad members yet. Use “Add a player” below to send a request." />
             ) : (
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
                 {squad.map((p) => (
@@ -139,6 +197,95 @@ export default function ManagerDashboard() {
               View standings →
             </RouterLink>
           </Typography>
+        </Grid>
+      </Grid>
+
+      <Grid container spacing={3} sx={{ mt: 0 }}>
+        <Grid size={{ xs: 12, md: 6 }}>
+          <GlassCard title="Add a player">
+            <Alert severity="info" sx={{ mb: 2, fontSize: 13 }}>
+              The player needs a registered account on this website first. Pick them below — the
+              league admin approves or rejects the request, and once approved they appear in your
+              squad.
+            </Alert>
+            {message && (
+              <Alert severity={message.severity} sx={{ mb: 1.5 }} onClose={() => setMessage(null)}>
+                {message.text}
+              </Alert>
+            )}
+            {available.length === 0 ? (
+              <EmptyState message="No registered players without a team right now." />
+            ) : (
+              <>
+                <TextField
+                  select
+                  fullWidth
+                  label="Registered player (no team yet)"
+                  value={selected}
+                  onChange={(e) => setSelected(e.target.value)}
+                  sx={{ mb: 1.5 }}
+                  inputProps={{ 'aria-label': 'Player to add' }}
+                >
+                  <MenuItem value="">— select a player —</MenuItem>
+                  {available.map((p) => (
+                    <MenuItem key={p.id} value={p.id}>
+                      {p.full_name} ({p.email})
+                    </MenuItem>
+                  ))}
+                </TextField>
+                <TextField
+                  fullWidth
+                  label="Note for the admin (optional)"
+                  value={note}
+                  onChange={(e) => setNote(e.target.value)}
+                  sx={{ mb: 1.5 }}
+                />
+                <Button
+                  variant="contained"
+                  startIcon={<PersonAddAlt1Rounded />}
+                  onClick={submitAdd}
+                  disabled={busy || !selected}
+                >
+                  Send request to admin
+                </Button>
+              </>
+            )}
+          </GlassCard>
+        </Grid>
+        <Grid size={{ xs: 12, md: 6 }}>
+          <GlassCard title="Squad requests">
+            {requests.length === 0 ? (
+              <EmptyState message="No requests yet. When you add a player, the request appears here until the admin responds." />
+            ) : (
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                {requests.map((r) => (
+                  <Box
+                    key={r.id}
+                    sx={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 1.5,
+                      py: 0.75,
+                      borderBottom: '1px solid',
+                      borderColor: 'divider',
+                      flexWrap: 'wrap',
+                    }}
+                  >
+                    <Box sx={{ flexGrow: 1, minWidth: 140 }}>
+                      <Typography sx={{ fontWeight: 600 }}>
+                        {r.player?.full_name || 'Unknown player'}
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        {formatDate(r.created_at)}
+                        {r.note ? ` • ${r.note}` : ''}
+                      </Typography>
+                    </Box>
+                    <StatusChip status={r.status} />
+                  </Box>
+                ))}
+              </Box>
+            )}
+          </GlassCard>
         </Grid>
       </Grid>
     </div>

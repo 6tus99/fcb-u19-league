@@ -36,8 +36,8 @@ export default function News() {
               component={RouterLink}
               to={`/news/${n.id}`}
               sx={{
-                bgcolor: 'rgba(255,255,255,0.03)',
-                border: '1px solid rgba(255,255,255,0.08)',
+                bgcolor: 'tint',
+                border: '1px solid', borderColor: 'divider',
                 '&:hover': { borderColor: 'rgba(74,222,128,0.45)' },
               }}
             >

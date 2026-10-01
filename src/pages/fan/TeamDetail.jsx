@@ -54,8 +54,8 @@ export default function TeamDetail() {
           mt: 1.5,
           p: { xs: 3, md: 4 },
           borderRadius: 3,
-          border: '1px solid rgba(255,255,255,0.08)',
-          bgcolor: 'rgba(255,255,255,0.03)',
+          border: '1px solid', borderColor: 'divider',
+          bgcolor: 'tint',
           mb: 3,
         }}
       >
@@ -72,7 +72,7 @@ export default function TeamDetail() {
             {row && (
               <Typography color="text.secondary">
                 {row.P} played • {row.W} wins • {row.D} draws • {row.L} losses • {row.GF}–{row.GA} goals •{' '}
-                <strong style={{ color: '#4ade80' }}>{row.Pts} points</strong>
+                <Typography component="span" sx={{ color: 'primary.main', fontWeight: 800 }}>{row.Pts} points</Typography>
               </Typography>
             )}
           </Box>

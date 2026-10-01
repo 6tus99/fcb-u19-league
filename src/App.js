@@ -25,6 +25,7 @@ import MatchEvents from './pages/commissioner/MatchEvents';
 import MatchReports from './pages/commissioner/MatchReports';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import ManageUsers from './pages/admin/ManageUsers';
+import ManageRequests from './pages/admin/ManageRequests';
 import ManageTeams from './pages/admin/ManageTeams';
 import ManageMatches from './pages/admin/ManageMatches';
 import ManageNews from './pages/admin/ManageNews';
@@ -147,6 +148,14 @@ export default function App() {
             element={
               <ProtectedRoute roles={ADMIN}>
                 <ManageUsers />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/requests"
+            element={
+              <ProtectedRoute roles={ADMIN}>
+                <ManageRequests />
               </ProtectedRoute>
             }
           />

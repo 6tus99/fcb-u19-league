@@ -3,20 +3,32 @@ import ReactDOM from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
 import { ThemeProvider } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
-import theme from './theme';
+import { buildTheme } from './theme';
 import App from './App';
 import { AuthProvider } from './context/AuthContext';
+import { ThemeManager, useThemeMode } from './context/ThemeContext';
+
+function ThemedShell({ children }) {
+  const { mode } = useThemeMode();
+  return (
+    <ThemeProvider theme={buildTheme(mode)}>
+      <CssBaseline />
+      {children}
+    </ThemeProvider>
+  );
+}
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
   <React.StrictMode>
-    <ThemeProvider theme={theme}>
-      <CssBaseline />
+    <ThemeManager>
       <BrowserRouter>
         <AuthProvider>
-          <App />
+          <ThemedShell>
+            <App />
+          </ThemedShell>
         </AuthProvider>
       </BrowserRouter>
-    </ThemeProvider>
+    </ThemeManager>
   </React.StrictMode>
 );

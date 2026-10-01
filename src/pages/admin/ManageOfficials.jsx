@@ -89,7 +89,7 @@ export default function ManageOfficials() {
         ) : (
           <Box sx={{ display: 'flex', flexDirection: 'column' }}>
             {officials.map((o) => (
-              <Box key={o.id} sx={{ display: 'flex', alignItems: 'center', gap: 1.5, py: 1.25, borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+              <Box key={o.id} sx={{ display: 'flex', alignItems: 'center', gap: 1.5, py: 1.25, borderBottom: '1px solid', borderColor: 'divider' }}>
                 <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: o.type === 'referee' ? '#4ade80' : '#38bdf8' }} />
                 <Typography sx={{ fontWeight: 700, flex: 1 }}>{o.name}</Typography>
                 <Typography variant="body2" color="text.secondary" sx={{ textTransform: 'capitalize' }}>

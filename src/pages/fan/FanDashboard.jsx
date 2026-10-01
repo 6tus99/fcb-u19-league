@@ -11,10 +11,12 @@ import MatchCard from '../../components/MatchCard';
 import EmptyState from '../../components/EmptyState';
 import { computeStandings, formatDate } from '../../utils/standings';
 import { useAuth } from '../../context/AuthContext';
+import { useThemeMode } from '../../context/ThemeContext';
 import supabase from '../../lib/supabase';
 
 export default function FanDashboard() {
   const { profile } = useAuth();
+  const { mode } = useThemeMode();
   const [teams, setTeams] = useState([]);
   const [matches, setMatches] = useState([]);
   const [news, setNews] = useState([]);
@@ -58,8 +60,11 @@ export default function FanDashboard() {
           mb: 3,
           borderRadius: 3,
           background:
-            'linear-gradient(120deg, rgba(34,197,94,0.16), rgba(10,15,28,0.4) 55%, rgba(59,130,246,0.14))',
-          border: '1px solid rgba(255,255,255,0.08)',
+            mode === 'dark'
+              ? 'linear-gradient(120deg, rgba(34,197,94,0.16), rgba(10,15,28,0.4) 55%, rgba(59,130,246,0.14))'
+              : 'linear-gradient(120deg, rgba(34,197,94,0.16), rgba(255,255,255,0.5) 55%, rgba(59,130,246,0.12))',
+          border: '1px solid',
+          borderColor: 'divider',
         }}
       >
         <Typography variant="h4">{leagueName}</Typography>

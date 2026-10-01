@@ -1,17 +1,25 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { Link as RouterLink } from 'react-router-dom';
 import Box from '@mui/material/Box';
 import Paper from '@mui/material/Paper';
 import Typography from '@mui/material/Typography';
 import Grid from '@mui/material/Grid';
+import Button from '@mui/material/Button';
+import TextField from '@mui/material/TextField';
+import MenuItem from '@mui/material/MenuItem';
+import Alert from '@mui/material/Alert';
+import TransferWithinAStationRounded from '@mui/icons-material/TransferWithinAStationRounded';
 import PageHeader from '../../components/PageHeader';
 import GlassCard from '../../components/GlassCard';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import MatchCard from '../../components/MatchCard';
 import EmptyState from '../../components/EmptyState';
-import { readableTextOn } from '../../utils/standings';
+import StatusChip from '../../components/StatusChip';
+import { formatDate, readableTextOn } from '../../utils/standings';
 import { useAuth } from '../../context/AuthContext';
 import supabase from '../../lib/supabase';
+
+const TRANSFERS_SELECT = '*, team:teams!requests_team_id_fkey (id, name)';
 
 export default function PlayerDashboard() {
   const { profile } = useAuth();
@@ -20,9 +28,26 @@ export default function PlayerDashboard() {
   const [matches, setMatches] = useState([]);
   const [squad, setSquad] = useState([]);
   const [myEvents, setMyEvents] = useState([]);
+  const [myTransfers, setMyTransfers] = useState([]);
+  const [target, setTarget] = useState('');
+  const [note, setNote] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [message, setMessage] = useState(null);
   const [loaded, setLoaded] = useState(false);
 
   const teamId = profile?.team_id;
+
+  const loadTransfers = useCallback(async () => {
+    if (!teamId) return;
+    const res = await supabase
+      .from('requests')
+      .select(TRANSFERS_SELECT)
+      .eq('player_profile_id', profile.id)
+      .eq('type', 'transfer')
+      .order('created_at', { ascending: false })
+      .limit(10);
+    setMyTransfers(res.data || []);
+  }, [teamId, profile.id]);
 
   useEffect(() => {
     if (!teamId) {
@@ -43,8 +68,9 @@ export default function PlayerDashboard() {
       setMyEvents(ev.data || []);
       setLoaded(true);
     });
+    loadTransfers();
     return undefined;
-  }, [teamId, profile.id]);
+  }, [teamId, profile.id, loadTransfers]);
 
   if (!loaded) return <LoadingSpinner message="Loading your club…" />;
 
@@ -53,7 +79,7 @@ export default function PlayerDashboard() {
       <div>
         <PageHeader title="My Team" subtitle="Player area" />
         <GlassCard>
-          <EmptyState message="You are not assigned to a team yet. Ask your league admin to assign you, or register again with a team." />
+          <EmptyState message="You are not assigned to a team yet. Ask your team manager to add you, or ask the league admin to assign you." />
         </GlassCard>
       </div>
     );
@@ -62,6 +88,30 @@ export default function PlayerDashboard() {
   const teamMatches = matches
     .filter((m) => m.home_team_id === team.id || m.away_team_id === team.id)
     .sort((a, b) => new Date(a.scheduled_at) - new Date(b.scheduled_at));
+  const pendingTransfer = myTransfers.find((r) => r.status === 'pending');
+
+  const submitTransfer = async () => {
+    if (!target || pendingTransfer) return;
+    setBusy(true);
+    setMessage(null);
+    const { error } = await supabase.from('requests').insert({
+      type: 'transfer',
+      requested_by: profile.id,
+      player_profile_id: profile.id,
+      from_team_id: teamId,
+      team_id: target,
+      note: note.trim() || null,
+    });
+    setBusy(false);
+    if (error) {
+      setMessage({ severity: 'error', text: error.message });
+      return;
+    }
+    setMessage({ severity: 'success', text: 'Transfer request sent to the league admin.' });
+    setTarget('');
+    setNote('');
+    loadTransfers();
+  };
 
   return (
     <div>
@@ -71,13 +121,14 @@ export default function PlayerDashboard() {
         sx={{
           p: { xs: 3, md: 4 },
           borderRadius: 3,
-          border: '1px solid rgba(255,255,255,0.08)',
+          border: '1px solid',
+          borderColor: 'divider',
           mb: 3,
           display: 'flex',
           alignItems: 'center',
           gap: 2,
           flexWrap: 'wrap',
-          bgcolor: 'rgba(255,255,255,0.03)',
+          bgcolor: 'tint',
         }}
       >
         <Box sx={{ width: 54, height: 54, borderRadius: '50%', bgcolor: team.primary_color, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
@@ -109,7 +160,17 @@ export default function PlayerDashboard() {
             ) : (
               <Box sx={{ display: 'flex', flexDirection: 'column' }}>
                 {myEvents.map((ev) => (
-                  <Box key={ev.id} sx={{ display: 'flex', alignItems: 'center', gap: 1.5, py: 1, borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+                  <Box
+                    key={ev.id}
+                    sx={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 1.5,
+                      py: 1,
+                      borderBottom: '1px solid',
+                      borderColor: 'divider',
+                    }}
+                  >
                     <Typography sx={{ width: 44, fontWeight: 800, color: 'text.secondary' }}>
                       {ev.minute != null ? `${ev.minute}'` : '—'}
                     </Typography>
@@ -139,6 +200,82 @@ export default function PlayerDashboard() {
                     <Typography variant="caption" color="text.secondary" sx={{ ml: 'auto' }}>
                       {p.role === 'manager' ? 'Manager' : 'Player'}
                     </Typography>
+                  </Box>
+                ))}
+              </Box>
+            )}
+          </GlassCard>
+
+          <GlassCard title="Transfer request" sx={{ mt: 3 }}>
+            <Alert severity="info" sx={{ mb: 2, fontSize: 13 }}>
+              Want to play for another club? Send a transfer request — the league admin approves or
+              rejects it, and once approved you are moved instantly.
+            </Alert>
+            {message && (
+              <Alert severity={message.severity} sx={{ mb: 1.5 }} onClose={() => setMessage(null)}>
+                {message.text}
+              </Alert>
+            )}
+            {pendingTransfer ? (
+              <Alert severity="warning">
+                Your transfer request to <strong>{pendingTransfer.team?.name || '…'}</strong> is
+                waiting for the league admin.
+              </Alert>
+            ) : (
+              <>
+                <TextField
+                  select
+                  fullWidth
+                  label="Transfer to team"
+                  value={target}
+                  onChange={(e) => setTarget(e.target.value)}
+                  sx={{ mb: 1.5 }}
+                  inputProps={{ 'aria-label': 'Transfer to team' }}
+                >
+                  <MenuItem value="">— select a team —</MenuItem>
+                  {teams
+                    .filter((t) => t.id !== team.id)
+                    .map((t) => (
+                      <MenuItem key={t.id} value={t.id}>
+                        {t.name}
+                      </MenuItem>
+                    ))}
+                </TextField>
+                <TextField
+                  fullWidth
+                  label="Reason (optional)"
+                  value={note}
+                  onChange={(e) => setNote(e.target.value)}
+                  sx={{ mb: 1.5 }}
+                />
+                <Button
+                  variant="contained"
+                  startIcon={<TransferWithinAStationRounded />}
+                  onClick={submitTransfer}
+                  disabled={busy || !target}
+                >
+                  Request transfer
+                </Button>
+              </>
+            )}
+            {myTransfers.length > 0 && (
+              <Box sx={{ mt: 2, display: 'flex', flexDirection: 'column', gap: 1 }}>
+                <Typography
+                  variant="caption"
+                  color="text.secondary"
+                  sx={{ fontWeight: 700, textTransform: 'uppercase', fontSize: 11 }}
+                >
+                  History
+                </Typography>
+                {myTransfers.map((r) => (
+                  <Box key={r.id} sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                    <Typography sx={{ fontWeight: 600, flexGrow: 1 }}>
+                      → {r.team?.name || 'Unknown team'}
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      {formatDate(r.created_at)}
+                    </Typography>
+                    <StatusChip status={r.status} />
                   </Box>
                 ))}
               </Box>

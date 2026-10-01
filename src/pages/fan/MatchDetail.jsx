@@ -77,8 +77,8 @@ export default function MatchDetail() {
           mt: 1.5,
           p: { xs: 3, md: 4 },
           borderRadius: 3,
-          border: '1px solid rgba(255,255,255,0.08)',
-          bgcolor: 'rgba(255,255,255,0.03)',
+          border: '1px solid', borderColor: 'divider',
+          bgcolor: 'tint',
         }}
       >
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
@@ -128,7 +128,7 @@ export default function MatchDetail() {
                         alignItems: 'center',
                         gap: 1.5,
                         py: 1,
-                        borderBottom: '1px solid rgba(255,255,255,0.06)',
+                        borderBottom: '1px solid', borderColor: 'divider',
                       }}
                     >
                       <Typography sx={{ width: 44, fontWeight: 800, color: 'text.secondary' }}>

@@ -29,7 +29,7 @@ export default function NewsDetail() {
       <Link component={RouterLink} to="/news" variant="body2" sx={{ fontWeight: 600 }}>
         ← All news
       </Link>
-      <Paper sx={{ mt: 1.5, p: { xs: 3, md: 5 }, borderRadius: 3, border: '1px solid rgba(255,255,255,0.08)', bgcolor: 'rgba(255,255,255,0.03)' }}>
+      <Paper sx={{ mt: 1.5, p: { xs: 3, md: 5 }, borderRadius: 3, border: '1px solid', borderColor: 'divider', bgcolor: 'tint' }}>
         <Typography variant="h4">{article.title}</Typography>
         <Typography variant="caption" color="text.secondary" sx={{ mb: 2, display: 'block' }}>
           {formatDate(article.created_at)}

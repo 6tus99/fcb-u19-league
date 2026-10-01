@@ -43,7 +43,7 @@ export default function MatchReports() {
       <PageHeader title="Match Reports" subtitle="Post-match summaries for every finished game" />
 
       {matches.length === 0 ? (
-        <Paper sx={{ border: '1px solid rgba(255,255,255,0.08)', borderRadius: 3, p: 3 }}>
+        <Paper sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 3, p: 3 }}>
           <EmptyState message="No finished matches yet." />
         </Paper>
       ) : (
@@ -56,7 +56,7 @@ export default function MatchReports() {
             const winner =
               m.home_score > m.away_score ? teamName(m.home_team_id) : m.away_score > m.home_score ? teamName(m.away_team_id) : null;
             return (
-              <Paper key={m.id} sx={{ p: { xs: 2.5, md: 3 }, borderRadius: 3, border: '1px solid rgba(255,255,255,0.08)', bgcolor: 'rgba(255,255,255,0.03)' }}>
+              <Paper key={m.id} sx={{ p: { xs: 2.5, md: 3 }, borderRadius: 3, border: '1px solid', borderColor: 'divider', bgcolor: 'tint' }}>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 1, mb: 1 }}>
                   <Typography sx={{ fontWeight: 800 }}>
                     <span style={{ color: teamColor(m.home_team_id) }}>{teamName(m.home_team_id)}</span> {m.home_score} – {m.away_score}{' '}
