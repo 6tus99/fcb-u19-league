@@ -9,6 +9,12 @@ import TextField from '@mui/material/TextField';
 import MenuItem from '@mui/material/MenuItem';
 import Alert from '@mui/material/Alert';
 import TransferWithinAStationRounded from '@mui/icons-material/TransferWithinAStationRounded';
+import SportsSoccerRounded from '@mui/icons-material/SportsSoccerRounded';
+import SportsScoreRounded from '@mui/icons-material/SportsScoreRounded';
+import EmojiEventsRounded from '@mui/icons-material/EmojiEventsRounded';
+import HandshakeRounded from '@mui/icons-material/HandshakeRounded';
+import { alpha } from '@mui/material/styles';
+import StatTile from '../../components/StatTile';
 import PageHeader from '../../components/PageHeader';
 import GlassCard from '../../components/GlassCard';
 import LoadingSpinner from '../../components/LoadingSpinner';
@@ -120,7 +126,7 @@ export default function PlayerDashboard() {
       <Paper
         sx={{
           p: { xs: 3, md: 4 },
-          borderRadius: 3,
+          borderRadius: 3.5,
           border: '1px solid',
           borderColor: 'divider',
           mb: 3,
@@ -129,6 +135,7 @@ export default function PlayerDashboard() {
           gap: 2,
           flexWrap: 'wrap',
           bgcolor: 'tint',
+          backgroundImage: `linear-gradient(120deg, ${alpha(team.primary_color, 0.22)} 0%, rgba(0,0,0,0) 60%)`,
         }}
       >
         <Box sx={{ width: 54, height: 54, borderRadius: '50%', bgcolor: team.primary_color, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
@@ -139,6 +146,42 @@ export default function PlayerDashboard() {
           <Typography color="text.secondary">{squad.length} registered squad members</Typography>
         </Box>
       </Paper>
+
+      <Grid container spacing={2} sx={{ mb: 3 }}>
+        <Grid size={{ xs: 6, md: 3 }}>
+          <StatTile
+            icon={<SportsSoccerRounded sx={{ fontSize: 26 }} />}
+            label="Club"
+            value={team.short_name}
+            sub={team.name}
+            tone="blue"
+          />
+        </Grid>
+        <Grid size={{ xs: 6, md: 3 }}>
+          <StatTile
+            icon={<SportsScoreRounded sx={{ fontSize: 26 }} />}
+            label="Team matches played"
+            value={teamMatches.filter((m) => m.status === 'finished').length}
+            tone="slate"
+          />
+        </Grid>
+        <Grid size={{ xs: 6, md: 3 }}>
+          <StatTile
+            icon={<EmojiEventsRounded sx={{ fontSize: 26 }} />}
+            label="My goals"
+            value={myEvents.filter((e) => e.type === 'goal').length}
+            tone="green"
+          />
+        </Grid>
+        <Grid size={{ xs: 6, md: 3 }}>
+          <StatTile
+            icon={<HandshakeRounded sx={{ fontSize: 26 }} />}
+            label="My assists"
+            value={myEvents.filter((e) => e.type === 'assist').length}
+            tone="amber"
+          />
+        </Grid>
+      </Grid>
 
       <Grid container spacing={3}>
         <Grid size={{ xs: 12, md: 7 }}>

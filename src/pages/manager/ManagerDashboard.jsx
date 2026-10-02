@@ -9,6 +9,12 @@ import TextField from '@mui/material/TextField';
 import MenuItem from '@mui/material/MenuItem';
 import Alert from '@mui/material/Alert';
 import PersonAddAlt1Rounded from '@mui/icons-material/PersonAddAlt1Rounded';
+import LeaderboardRounded from '@mui/icons-material/LeaderboardRounded';
+import EmojiEventsRounded from '@mui/icons-material/EmojiEventsRounded';
+import SportsSoccerRounded from '@mui/icons-material/SportsSoccerRounded';
+import PersonRounded from '@mui/icons-material/PersonRounded';
+import { alpha } from '@mui/material/styles';
+import StatTile from '../../components/StatTile';
 import PageHeader from '../../components/PageHeader';
 import GlassCard from '../../components/GlassCard';
 import LoadingSpinner from '../../components/LoadingSpinner';
@@ -128,6 +134,9 @@ export default function ManagerDashboard() {
     .filter((m) => m.home_team_id === team.id || m.away_team_id === team.id)
     .sort((a, b) => new Date(a.scheduled_at) - new Date(b.scheduled_at));
   const row = computeStandings(matches, teams).find((r) => r.team.id === team.id);
+  const rank = row
+    ? computeStandings(matches, teams).findIndex((r) => r.team.id === team.id) + 1
+    : null;
 
   return (
     <div>
@@ -136,7 +145,7 @@ export default function ManagerDashboard() {
       <Paper
         sx={{
           p: { xs: 3, md: 4 },
-          borderRadius: 3,
+          borderRadius: 3.5,
           border: '1px solid',
           borderColor: 'divider',
           mb: 3,
@@ -145,6 +154,7 @@ export default function ManagerDashboard() {
           gap: 2,
           flexWrap: 'wrap',
           bgcolor: 'tint',
+          backgroundImage: `linear-gradient(120deg, ${alpha(team.primary_color, 0.22)} 0%, rgba(0,0,0,0) 60%)`,
         }}
       >
         <Box sx={{ width: 54, height: 54, borderRadius: '50%', bgcolor: team.primary_color, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
@@ -162,7 +172,7 @@ export default function ManagerDashboard() {
         {row && (
           <Box sx={{ textAlign: 'center' }}>
             <Typography variant="h3" sx={{ fontWeight: 900, color: 'primary.main' }}>
-              #{teams.length ? computeStandings(matches, teams).findIndex((r) => r.team.id === team.id) + 1 : '—'}
+              #{rank}
             </Typography>
             <Typography variant="caption" color="text.secondary">
               in the table
@@ -170,6 +180,43 @@ export default function ManagerDashboard() {
           </Box>
         )}
       </Paper>
+
+      <Grid container spacing={2} sx={{ mb: 3 }}>
+        <Grid size={{ xs: 6, md: 3 }}>
+          <StatTile
+            icon={<LeaderboardRounded sx={{ fontSize: 26 }} />}
+            label="Position"
+            value={rank ? `#${rank} of ${teams.length}` : '—'}
+            tone="blue"
+            to="/standings"
+          />
+        </Grid>
+        <Grid size={{ xs: 6, md: 3 }}>
+          <StatTile
+            icon={<EmojiEventsRounded sx={{ fontSize: 26 }} />}
+            label="Points"
+            value={row ? row.Pts : 0}
+            tone="green"
+          />
+        </Grid>
+        <Grid size={{ xs: 6, md: 3 }}>
+          <StatTile
+            icon={<SportsSoccerRounded sx={{ fontSize: 26 }} />}
+            label="Wins"
+            value={row ? row.W : 0}
+            sub={row ? `${row.D} draws • ${row.L} losses` : ''}
+            tone="amber"
+          />
+        </Grid>
+        <Grid size={{ xs: 6, md: 3 }}>
+          <StatTile
+            icon={<PersonRounded sx={{ fontSize: 26 }} />}
+            label="Squad size"
+            value={squad.length}
+            tone="slate"
+          />
+        </Grid>
+      </Grid>
 
       <Grid container spacing={3}>
         <Grid size={{ xs: 12, md: 7 }}>

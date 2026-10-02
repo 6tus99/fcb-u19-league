@@ -1,11 +1,15 @@
 import React, { useEffect, useState } from 'react';
 import { Link as RouterLink } from 'react-router-dom';
 import Box from '@mui/material/Box';
-import Paper from '@mui/material/Paper';
 import Typography from '@mui/material/Typography';
 import Grid from '@mui/material/Grid';
 import Link from '@mui/material/Link';
 import Chip from '@mui/material/Chip';
+import PersonRounded from '@mui/icons-material/PersonRounded';
+import SportsSoccerRounded from '@mui/icons-material/SportsSoccerRounded';
+import LocalFireDepartmentRounded from '@mui/icons-material/LocalFireDepartmentRounded';
+import ArticleRounded from '@mui/icons-material/ArticleRounded';
+import StatTile from '../../components/StatTile';
 import PageHeader from '../../components/PageHeader';
 import GlassCard from '../../components/GlassCard';
 import LoadingSpinner from '../../components/LoadingSpinner';
@@ -13,32 +17,6 @@ import MatchCard from '../../components/MatchCard';
 import EmptyState from '../../components/EmptyState';
 import { formatDate } from '../../utils/standings';
 import supabase from '../../lib/supabase';
-
-function StatCard({ label, value, to, color = 'primary.main' }) {
-  return (
-    <Paper
-      component={to ? RouterLink : 'div'}
-      to={to}
-      sx={{
-        p: 2.5,
-        borderRadius: 3,
-        border: '1px solid', borderColor: 'divider',
-        bgcolor: 'tint',
-        textDecoration: 'none',
-        color: 'inherit',
-        display: 'block',
-        '&:hover': to ? { borderColor: 'rgba(74,222,128,0.45)' } : {},
-      }}
-    >
-      <Typography variant="h3" sx={{ fontWeight: 900, color }}>
-        {value}
-      </Typography>
-      <Typography color="text.secondary" sx={{ fontWeight: 600 }}>
-        {label}
-      </Typography>
-    </Paper>
-  );
-}
 
 export default function AdminDashboard() {
   const [counts, setCounts] = useState({ users: 0, teams: 0, scheduled: 0, live: 0, finished: 0, news: 0, officials: 0 });
@@ -92,16 +70,40 @@ export default function AdminDashboard() {
 
       <Grid container spacing={2} sx={{ mb: 3 }}>
         <Grid size={{ xs: 6, md: 3 }}>
-          <StatCard label="Registered users" value={counts.users} to="/admin/users" />
+          <StatTile
+            icon={<PersonRounded sx={{ fontSize: 26 }} />}
+            label="Registered users"
+            value={counts.users}
+            tone="green"
+            to="/admin/users"
+          />
         </Grid>
         <Grid size={{ xs: 6, md: 3 }}>
-          <StatCard label="Teams" value={counts.teams} to="/admin/teams" color="#38bdf8" />
+          <StatTile
+            icon={<SportsSoccerRounded sx={{ fontSize: 26 }} />}
+            label="Teams"
+            value={counts.teams}
+            tone="blue"
+            to="/admin/teams"
+          />
         </Grid>
         <Grid size={{ xs: 6, md: 3 }}>
-          <StatCard label="Matches (live / finished)" value={`${counts.live} / ${counts.finished}`} to="/admin/matches" color="#f87171" />
+          <StatTile
+            icon={<LocalFireDepartmentRounded sx={{ fontSize: 26 }} />}
+            label="Live / finished matches"
+            value={`${counts.live} / ${counts.finished}`}
+            tone="red"
+            to="/admin/matches"
+          />
         </Grid>
         <Grid size={{ xs: 6, md: 3 }}>
-          <StatCard label="News articles" value={counts.news} to="/admin/news" color="#facc15" />
+          <StatTile
+            icon={<ArticleRounded sx={{ fontSize: 26 }} />}
+            label="News articles"
+            value={counts.news}
+            tone="amber"
+            to="/admin/news"
+          />
         </Grid>
       </Grid>
 

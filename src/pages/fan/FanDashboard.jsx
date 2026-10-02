@@ -4,8 +4,13 @@ import Box from '@mui/material/Box';
 import Grid from '@mui/material/Grid';
 import Typography from '@mui/material/Typography';
 import Link from '@mui/material/Link';
-import Paper from '@mui/material/Paper';
+import Chip from '@mui/material/Chip';
+import SportsScoreRounded from '@mui/icons-material/SportsScoreRounded';
+import LocalFireDepartmentRounded from '@mui/icons-material/LocalFireDepartmentRounded';
+import EmojiEventsRounded from '@mui/icons-material/EmojiEventsRounded';
+import SportsSoccerRounded from '@mui/icons-material/SportsSoccerRounded';
 import GlassCard from '../../components/GlassCard';
+import StatTile from '../../components/StatTile';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import MatchCard from '../../components/MatchCard';
 import EmptyState from '../../components/EmptyState';
@@ -51,27 +56,83 @@ export default function FanDashboard() {
   const liveMatches = matches.filter((m) => m.status === 'live');
   const top5 = computeStandings(matches, teams).slice(0, 5);
   const firstName = (profile?.full_name || profile?.email || '').split(' ')[0];
+  const goalsScored = matches
+    .filter((m) => m.status === 'finished')
+    .reduce((s, m) => s + (m.home_score || 0) + (m.away_score || 0), 0);
 
   return (
     <Box>
-      <Paper
+      <Box
         sx={{
+          position: 'relative',
+          overflow: 'hidden',
+          borderRadius: 3.5,
           p: { xs: 3, md: 4 },
           mb: 3,
-          borderRadius: 3,
+          color: '#ffffff',
           background:
             mode === 'dark'
-              ? 'linear-gradient(120deg, rgba(34,197,94,0.16), rgba(10,15,28,0.4) 55%, rgba(59,130,246,0.14))'
-              : 'linear-gradient(120deg, rgba(34,197,94,0.16), rgba(255,255,255,0.5) 55%, rgba(59,130,246,0.12))',
-          border: '1px solid',
-          borderColor: 'divider',
+              ? 'radial-gradient(120% 180% at 88% 0%, rgba(74,222,128,0.28) 0%, transparent 48%), linear-gradient(120deg, #0d1a3d 15%, #16295e 55%, #14532d 135%)'
+              : 'radial-gradient(120% 180% at 88% 0%, rgba(74,222,128,0.4) 0%, transparent 48%), linear-gradient(120deg, #1e3a8a 15%, #1d4ed8 55%, #166534 135%)',
+          border: '1px solid rgba(255,255,255,0.14)',
+          boxShadow: '0 12px 32px rgba(30,58,138,0.28)',
         }}
       >
-        <Typography variant="h4">{leagueName}</Typography>
-        <Typography color="text.secondary" sx={{ mt: 0.5 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap' }}>
+          <SportsSoccerRounded sx={{ fontSize: 34, flexShrink: 0 }} />
+          <Typography variant="h4" sx={{ fontWeight: 900 }}>{leagueName}</Typography>
+        </Box>
+        <Typography sx={{ mt: 0.5, opacity: 0.85, maxWidth: 620 }}>
           {season} — Welcome back, {firstName}!
         </Typography>
-      </Paper>
+        <Box sx={{ display: 'flex', gap: 1, mt: 2, flexWrap: 'wrap' }}>
+          <Chip label={`${teams.length} teams`} size="small" sx={{ bgcolor: 'rgba(255,255,255,0.16)', color: '#fff', fontWeight: 700 }} />
+          <Chip label={`${matches.length} matches`} size="small" sx={{ bgcolor: 'rgba(255,255,255,0.16)', color: '#fff', fontWeight: 700 }} />
+          {liveMatches.length > 0 && (
+            <Chip label={`${liveMatches.length} live now`} size="small" sx={{ bgcolor: 'rgba(74,222,128,0.3)', color: '#fff', fontWeight: 800 }} />
+          )}
+        </Box>
+      </Box>
+
+      <Grid container spacing={2} sx={{ mb: 3 }}>
+        <Grid size={{ xs: 6, md: 3 }}>
+          <StatTile
+            icon={<SportsScoreRounded sx={{ fontSize: 26 }} />}
+            label="Fixtures scheduled"
+            value={matches.filter((m) => m.status === 'scheduled').length}
+            tone="blue"
+            to="/matches"
+          />
+        </Grid>
+        <Grid size={{ xs: 6, md: 3 }}>
+          <StatTile
+            icon={<LocalFireDepartmentRounded sx={{ fontSize: 26 }} />}
+            label="Live now"
+            value={liveMatches.length}
+            tone="red"
+            to="/matches"
+          />
+        </Grid>
+        <Grid size={{ xs: 6, md: 3 }}>
+          <StatTile
+            icon={<EmojiEventsRounded sx={{ fontSize: 26 }} />}
+            label="Goals this season"
+            value={goalsScored}
+            tone="green"
+            to="/matches"
+          />
+        </Grid>
+        <Grid size={{ xs: 6, md: 3 }}>
+          <StatTile
+            icon={<SportsSoccerRounded sx={{ fontSize: 26 }} />}
+            label="League leader"
+            value={top5[0] ? top5[0].team.short_name : '—'}
+            sub={top5[0] ? `${top5[0].Pts} pts • ${top5[0].P} played` : ''}
+            tone="amber"
+            to="/standings"
+          />
+        </Grid>
+      </Grid>
 
       {liveMatches.length > 0 && (
         <GlassCard title="Live now" sx={{ mb: 3 }}>
