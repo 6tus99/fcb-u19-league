@@ -66,7 +66,7 @@ export default function NotificationBell() {
 
   return (
     <>
-      <IconButton onClick={openMenu} size="small" aria-label="Notifications" sx={{ color: 'text.secondary' }}>
+      <IconButton onClick={openMenu} size="small" aria-label="Notifications" sx={{ color: 'headerIcon' }}>
         <Badge badgeContent={unread} max={99} color="primary" sx={{ '& .MuiBadge-badge': { bgcolor: 'primary.main', color: '#04120a' } }}>
           <NotificationsNoneRounded />
         </Badge>

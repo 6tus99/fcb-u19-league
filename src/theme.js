@@ -10,12 +10,15 @@ export function buildTheme(mode) {
       error: { main: dark ? '#f87171' : '#dc2626' },
       divider: dark ? 'rgba(255,255,255,0.08)' : 'rgba(15,23,42,0.14)',
       background: dark
-        ? { default: '#0a0f1c', paper: '#111a2e' }
-        : { default: '#f3f5fb', paper: '#ffffff' },
-      // custom keys used across components (theme-aware surfaces)
-      appbar: dark ? 'rgba(10,15,28,0.92)' : 'rgba(255,255,255,0.92)',
-      tint: dark ? 'rgba(255,255,255,0.04)' : 'rgba(15,23,42,0.045)',
-      tintHover: dark ? 'rgba(255,255,255,0.08)' : 'rgba(15,23,42,0.08)',
+        ? { default: '#0a1128', paper: '#111c3a' }
+        : { default: '#f2f5fb', paper: '#ffffff' },
+      // bank brand: blue header + green accents + white body (light mode),
+      // dark blue throughout (dark mode)
+      appbar: dark ? 'rgba(15,28,64,0.94)' : '#1e3a8a',
+      tint: dark ? 'rgba(255,255,255,0.04)' : 'rgba(30,58,138,0.045)',
+      tintHover: dark ? 'rgba(255,255,255,0.08)' : 'rgba(30,58,138,0.08)',
+      headerText: '#ffffff',
+      headerIcon: 'rgba(255,255,255,0.85)',
     },
     typography: {
       fontFamily: '"Segoe UI", Roboto, Helvetica, Arial, sans-serif',

@@ -11,6 +11,7 @@ import SportsSoccerRounded from '@mui/icons-material/SportsSoccerRounded';
 import { useAuth } from '../../context/AuthContext';
 import { homeForRole } from '../../components/ProtectedRoute';
 import LoadingSpinner from '../../components/LoadingSpinner';
+import ThemeToggleFloat from '../../components/ThemeToggleFloat';
 
 export default function Login() {
   const { user, profile, login } = useAuth();
@@ -46,6 +47,7 @@ export default function Login() {
         background: 'radial-gradient(circle at 20% 10%, rgba(34,197,94,0.12), transparent 45%), radial-gradient(circle at 85% 90%, rgba(59,130,246,0.10), transparent 45%)',
       }}
     >
+      <ThemeToggleFloat />
       <Paper sx={{ p: 4, width: '100%', maxWidth: 420, borderRadius: 3 }}>
         <Box sx={{ textAlign: 'center', mb: 3 }}>
           <SportsSoccerRounded color="primary" sx={{ fontSize: 52 }} />

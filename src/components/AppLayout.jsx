@@ -119,36 +119,36 @@ export default function AppLayout() {
         sx={{
           bgcolor: 'appbar',
           backdropFilter: 'blur(8px)',
-          borderBottom: '1px solid',
-          borderColor: 'divider',
+          borderBottom: '1px solid rgba(255,255,255,0.14)',
+          color: 'headerText',
         }}
       >
-        <Toolbar sx={{ gap: 1, minHeight: 64 }}>
-          <IconButton onClick={handleBack} size="small" aria-label="Go back" sx={{ color: 'text.secondary', flexShrink: 0 }}>
+        <Toolbar sx={{ gap: 1, minHeight: 64, color: 'inherit' }}>
+          <IconButton onClick={handleBack} size="small" aria-label="Go back" sx={{ color: 'headerIcon', flexShrink: 0 }}>
             <ArrowBackIosRounded sx={{ fontSize: 20 }} />
           </IconButton>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, minWidth: 0, flexGrow: 1 }}>
-            <SportsSoccerRounded color="primary" sx={{ fontSize: 26, flexShrink: 0 }} />
+            <SportsSoccerRounded sx={{ color: 'headerText', fontSize: 26, flexShrink: 0 }} />
             <Box sx={{ minWidth: 0 }}>
-              <Typography variant="subtitle1" noWrap sx={{ fontWeight: 800, lineHeight: 1.15 }}>
+              <Typography variant="subtitle1" noWrap sx={{ fontWeight: 800, lineHeight: 1.15, color: 'headerText' }}>
                 {leagueName}
               </Typography>
               <Chip
                 label={ROLE_LABEL[profile.role]}
                 size="small"
-                sx={{ height: 16, fontSize: 9, fontWeight: 700, mt: 0.25, bgcolor: 'rgba(74,222,128,0.12)', color: 'primary.main' }}
+                sx={{ height: 16, fontSize: 9, fontWeight: 700, mt: 0.25, bgcolor: 'rgba(255,255,255,0.16)', color: '#ffffff' }}
               />
             </Box>
           </Box>
-          <IconButton onClick={toggle} size="small" aria-label="Toggle light/dark mode" sx={{ color: 'text.secondary', flexShrink: 0 }}>
+          <IconButton onClick={toggle} size="small" aria-label="Toggle light/dark mode" sx={{ color: 'headerIcon', flexShrink: 0 }}>
             {mode === 'dark' ? <LightModeRounded /> : <DarkModeRounded />}
           </IconButton>
           <NotificationBell />
           <IconButton onClick={(e) => setAnchorEl(e.currentTarget)} size="small" aria-label="Account menu" sx={{ flexShrink: 0 }}>
-            <Avatar sx={{ width: 34, height: 34, bgcolor: 'primary.main', fontSize: 13, fontWeight: 800 }}>{initials}</Avatar>
+            <Avatar sx={{ width: 34, height: 34, bgcolor: 'primary.main', color: '#04120a', fontSize: 13, fontWeight: 800 }}>{initials}</Avatar>
           </IconButton>
         </Toolbar>
-        <Toolbar sx={{ gap: 0.5, px: 2, minHeight: 48, overflowX: 'auto' }}>
+        <Toolbar sx={{ gap: 0.5, px: 2, minHeight: 48, overflowX: 'auto', color: 'inherit' }}>
           {items.map((item) => {
             const active =
               location.pathname === item.to || location.pathname.startsWith(`${item.to}/`);
@@ -163,10 +163,10 @@ export default function AppLayout() {
                   borderRadius: 2,
                   fontSize: 14,
                   fontWeight: active ? 700 : 500,
-                  color: active ? 'primary.main' : 'text.secondary',
-                  bgcolor: active ? 'rgba(74,222,128,0.1)' : 'transparent',
+                  color: active ? '#ffffff' : 'rgba(255,255,255,0.72)',
+                  bgcolor: active ? 'rgba(74,222,128,0.22)' : 'transparent',
                   whiteSpace: 'nowrap',
-                  '&:hover': { bgcolor: 'tintHover' },
+                  '&:hover': { bgcolor: 'rgba(255,255,255,0.12)' },
                 }}
               >
                 {item.label}
