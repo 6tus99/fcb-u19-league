@@ -3,7 +3,16 @@ import { Navigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import LoadingSpinner from './LoadingSpinner';
 
-export function homeForRole(role) {
+// Every user — whatever their role — lands on the fan view (the league home)
+// when they log in. It is the default screen for everyone.
+export function homeForRole() {
+  return '/fan';
+}
+
+// The dashboard that a particular user has been ASSIGNED to. The "My
+// dashboard" header button takes users here: admins control the league,
+// managers edit their team, players see their club, etc.
+export function dashboardForRole(role) {
   switch (role) {
     case 'admin':
       return '/admin';

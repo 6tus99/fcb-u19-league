@@ -27,7 +27,7 @@ import SpaceDashboardRounded from '@mui/icons-material/SpaceDashboardRounded';
 import HourglassTopRounded from '@mui/icons-material/HourglassTopRounded';
 import { useAuth } from '../context/AuthContext';
 import { useThemeMode } from '../context/ThemeContext';
-import { homeForRole } from './ProtectedRoute';
+import { homeForRole, dashboardForRole } from './ProtectedRoute';
 import NotificationBell from './NotificationBell';
 import supabase from '../lib/supabase';
 
@@ -152,7 +152,13 @@ export default function AppLayout() {
     setVerifyMsg({ severity: 'error', text: (data && data.error) || 'Verification failed. Try again.' });
   };
 
-  const items = NAV[profile.role] || NAV.fan;
+  // Everyone sees the fan view (fan home + fan menu) by default. When a user
+  // enters the area they were assigned (via "My dashboard"), the menu for
+  // that area takes over.
+  const inRoleArea =
+    profile.role !== 'fan' &&
+    location.pathname.startsWith(dashboardForRole(profile.role));
+  const items = inRoleArea ? NAV[profile.role] || NAV.fan : NAV.fan;
   const name = profile.full_name || profile.email || '?';
   const initials = name
     .split(' ')
@@ -227,7 +233,7 @@ export default function AppLayout() {
               size="small"
               variant="outlined"
               startIcon={<SpaceDashboardRounded fontSize="small" />}
-              onClick={() => navigate(homeForRole(profile.role))}
+              onClick={() => navigate(dashboardForRole(profile.role))}
               sx={{
                 flexShrink: 0,
                 fontWeight: 700,
