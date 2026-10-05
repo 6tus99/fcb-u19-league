@@ -4,6 +4,7 @@ import AppBar from '@mui/material/AppBar';
 import Toolbar from '@mui/material/Toolbar';
 import Typography from '@mui/material/Typography';
 import Box from '@mui/material/Box';
+import Button from '@mui/material/Button';
 import ButtonBase from '@mui/material/ButtonBase';
 import IconButton from '@mui/material/IconButton';
 import Menu from '@mui/material/Menu';
@@ -11,11 +12,19 @@ import MenuItem from '@mui/material/MenuItem';
 import Avatar from '@mui/material/Avatar';
 import Chip from '@mui/material/Chip';
 import Container from '@mui/material/Container';
+import Dialog from '@mui/material/Dialog';
+import DialogTitle from '@mui/material/DialogTitle';
+import DialogContent from '@mui/material/DialogContent';
+import DialogActions from '@mui/material/DialogActions';
+import Alert from '@mui/material/Alert';
+import TextField from '@mui/material/TextField';
 import SportsSoccerRounded from '@mui/icons-material/SportsSoccerRounded';
 import LogoutRounded from '@mui/icons-material/LogoutRounded';
 import ArrowBackIosRounded from '@mui/icons-material/ArrowBackIosRounded';
 import LightModeRounded from '@mui/icons-material/LightModeRounded';
 import DarkModeRounded from '@mui/icons-material/DarkModeRounded';
+import SpaceDashboardRounded from '@mui/icons-material/SpaceDashboardRounded';
+import HourglassTopRounded from '@mui/icons-material/HourglassTopRounded';
 import { useAuth } from '../context/AuthContext';
 import { useThemeMode } from '../context/ThemeContext';
 import { homeForRole } from './ProtectedRoute';
@@ -80,6 +89,11 @@ export default function AppLayout() {
   const [anchorEl, setAnchorEl] = useState(null);
   const [leagueName, setLeagueName] = useState('FCB Under 19 Football League');
   const [season, setSeason] = useState('');
+  const [pendingChange, setPendingChange] = useState(null);
+  const [verifyOpen, setVerifyOpen] = useState(false);
+  const [verifyCode, setVerifyCode] = useState('');
+  const [verifyBusy, setVerifyBusy] = useState(false);
+  const [verifyMsg, setVerifyMsg] = useState(null);
 
   useEffect(() => {
     supabase.from('league_settings').select('key, value').then(({ data }) => {
@@ -89,6 +103,54 @@ export default function AppLayout() {
       });
     });
   }, []);
+
+  // A role upgrade granted by an admin waits here until the user verifies the
+  // 6-digit code sent to their phone (multi-authentication step).
+  useEffect(() => {
+    if (!profile?.id) {
+      setPendingChange(null);
+      return undefined;
+    }
+    let active = true;
+    supabase
+      .from('pending_role_changes')
+      .select('id, new_role, phone, expires_at')
+      .eq('profile_id', profile.id)
+      .eq('status', 'pending')
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .then(({ data }) => {
+        if (!active) return;
+        const row = data?.[0];
+        setPendingChange(row && new Date(row.expires_at) > new Date() ? row : null);
+      });
+    return () => {
+      active = false;
+    };
+  }, [profile?.id]);
+
+  const submitVerify = async () => {
+    setVerifyBusy(true);
+    setVerifyMsg(null);
+    const { data, error } = await supabase.functions.invoke('verify-role-code', {
+      body: { code: verifyCode.trim() },
+    });
+    setVerifyBusy(false);
+    if (error) {
+      setVerifyMsg({
+        severity: 'warning',
+        text: 'Verification is not set up yet. The admin needs to add the two small Supabase functions (send-role-code and verify-role-code). Your code is stored and will work as soon as that is done.',
+      });
+      return;
+    }
+    if (data && data.ok) {
+      setPendingChange(null);
+      setVerifyOpen(false);
+      window.location.reload(); // re-fetch the profile so the new role applies
+      return;
+    }
+    setVerifyMsg({ severity: 'error', text: (data && data.error) || 'Verification failed. Try again.' });
+  };
 
   const items = NAV[profile.role] || NAV.fan;
   const name = profile.full_name || profile.email || '?';
@@ -140,6 +202,43 @@ export default function AppLayout() {
               />
             </Box>
           </Box>
+          {pendingChange ? (
+            <Button
+              size="small"
+              variant="contained"
+              startIcon={<HourglassTopRounded fontSize="small" />}
+              onClick={() => {
+                setVerifyCode('');
+                setVerifyMsg(null);
+                setVerifyOpen(true);
+              }}
+              sx={{
+                flexShrink: 0,
+                fontWeight: 800,
+                bgcolor: '#facc15',
+                color: '#1a1a1a',
+                '&:hover': { bgcolor: '#eab308' },
+              }}
+            >
+              Verify role
+            </Button>
+          ) : profile.role !== 'fan' ? (
+            <Button
+              size="small"
+              variant="outlined"
+              startIcon={<SpaceDashboardRounded fontSize="small" />}
+              onClick={() => navigate(homeForRole(profile.role))}
+              sx={{
+                flexShrink: 0,
+                fontWeight: 700,
+                color: '#ffffff',
+                borderColor: 'rgba(255,255,255,0.55)',
+                '&:hover': { borderColor: '#ffffff', bgcolor: 'rgba(255,255,255,0.12)' },
+              }}
+            >
+              My dashboard
+            </Button>
+          ) : null}
           <IconButton onClick={toggle} size="small" aria-label="Toggle light/dark mode" sx={{ color: 'headerIcon', flexShrink: 0 }}>
             {mode === 'dark' ? <LightModeRounded /> : <DarkModeRounded />}
           </IconButton>
@@ -199,6 +298,37 @@ export default function AppLayout() {
           <LogoutRounded sx={{ mr: 1, fontSize: 18 }} /> Sign out
         </MenuItem>
       </Menu>
+
+      <Dialog open={verifyOpen} onClose={() => !verifyBusy && setVerifyOpen(false)} maxWidth="xs" fullWidth>
+        <DialogTitle>Verify your new role</DialogTitle>
+        <DialogContent>
+          {pendingChange && (
+            <Typography>
+              The league admin granted you the <b>{ROLE_LABEL[pendingChange.new_role] || pendingChange.new_role}</b> role.
+              Enter the 6-digit code sent to{' '}
+              <b>{pendingChange.phone || 'your phone number'}</b> to activate it.
+            </Typography>
+          )}
+          {verifyMsg && (
+            <Alert severity={verifyMsg.severity} sx={{ mt: 2 }}>
+              {verifyMsg.text}
+            </Alert>
+          )}
+          <TextField
+            label="6-digit code"
+            value={verifyCode}
+            onChange={(e) => setVerifyCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+            sx={{ mt: 2, width: '100%' }}
+            inputProps={{ inputMode: 'numeric', 'aria-label': 'Verification code' }}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setVerifyOpen(false)} disabled={verifyBusy}>Cancel</Button>
+          <Button onClick={submitVerify} variant="contained" disabled={verifyBusy || verifyCode.length !== 6}>
+            {verifyBusy ? 'Checking…' : 'Verify'}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }

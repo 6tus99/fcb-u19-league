@@ -1,13 +1,14 @@
 import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
 
-const ThemeContext = createContext({ mode: 'dark', toggle: () => {} });
+const ThemeContext = createContext({ mode: 'light', toggle: () => {} });
 
 export function ThemeManager({ children }) {
   const [mode, setMode] = useState(() => {
     try {
-      return window.localStorage.getItem('fcb-theme') || 'dark';
+      // Light is the default; dark is a personal choice the user makes (and we remember).
+      return window.localStorage.getItem('fcb-theme') || 'light';
     } catch {
-      return 'dark';
+      return 'light';
     }
   });
 

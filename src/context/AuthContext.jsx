@@ -48,15 +48,18 @@ export function AuthProvider({ children }) {
     if (error) throw new Error(error.message);
   };
 
-  const register = async ({ fullName, email, password, role, teamId }) => {
+  const register = async ({ fullName, email, password, phone }) => {
+    // Everyone registers as a fan. Role upgrades are granted later by a
+    // league admin (with a phone verification code — see pending_role_changes).
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
         data: {
           full_name: fullName,
-          role: role || 'fan',
-          team_id: teamId || null,
+          role: 'fan',
+          phone: phone || null,
+          team_id: null,
         },
       },
     });
