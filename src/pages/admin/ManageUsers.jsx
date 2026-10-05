@@ -41,11 +41,16 @@ export default function ManageUsers() {
     const [u, t] = await Promise.all([
       supabase
         .from('profiles')
-        .select('*, pending_role_changes(id, status, new_role, expires_at)')
+        .select('*, pending_role_changes!pending_role_changes_profile_id_fkey(id, status, new_role, expires_at)')
         .order('created_at'),
       supabase.from('teams').select('*'),
     ]);
-    setUsers(u.data || []);
+    if (u.error) {
+      setMessage({ severity: 'error', text: u.error.message });
+      setUsers([]);
+    } else {
+      setUsers(u.data || []);
+    }
     setTeams(t.data || []);
     setLoaded(true);
   }, []);
