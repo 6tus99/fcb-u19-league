@@ -311,8 +311,7 @@ export default function AppLayout() {
           {pendingChange && (
             <Typography>
               The league admin granted you the <b>{ROLE_LABEL[pendingChange.new_role] || pendingChange.new_role}</b> role.
-              Enter the 6-digit code sent to{' '}
-              <b>{pendingChange.phone || 'your phone number'}</b> to activate it.
+              Enter the 6-digit code sent to <b>your email address</b> to activate it.
             </Typography>
           )}
           {verifyMsg && (

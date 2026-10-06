@@ -107,8 +107,24 @@ export default function ManageUsers() {
 
     setGrantBusy(false);
     setGrant(null);
-    setGrantResult({ name: user.full_name, phone: user.phone, sent, code: devCode, role });
+    setGrantResult({
+      name: user.full_name,
+      email: data && data.email ? data.email : user.email,
+      sent,
+      code: devCode,
+      role,
+    });
     load();
+  };
+
+  const saveEmail = async (userId, email) => {
+    const { error } = await supabase.from('profiles').update({ email }).eq('id', userId);
+    if (error) {
+      setMessage({ severity: 'error', text: error.message });
+    } else {
+      setMessage({ severity: 'success', text: 'Email saved.' });
+      load();
+    }
   };
 
   const changeTeam = async (userId, teamId) => {
@@ -164,11 +180,24 @@ export default function ManageUsers() {
                   const pending = pendingChange(u);
                   return (
                     <TableRow key={u.id} hover>
-                      <TableCell sx={{ fontWeight: 600, whiteSpace: 'nowrap' }}>
-                        {u.full_name}
-                        {u.id === me?.id ? ' (you)' : ''}
-                      </TableCell>
-                      <TableCell sx={{ color: 'text.secondary', whiteSpace: 'nowrap' }}>{u.email}</TableCell>
+                  <TableCell sx={{ fontWeight: 600, whiteSpace: 'nowrap' }}>
+                    {u.full_name}
+                    {u.id === me?.id ? ' (you)' : ''}
+                  </TableCell>
+                  <TableCell>
+                    <TextField
+                      size="small"
+                      value={u.email || ''}
+                      onChange={(e) =>
+                        setUsers((prev) => prev.map((x) => (x.id === u.id ? { ...x, email: e.target.value } : x)))
+                      }
+                      onBlur={(e) => {
+                        if ((e.target.value || '').trim() !== (u.email || '')) saveEmail(u.id, e.target.value.trim());
+                      }}
+                      sx={{ minWidth: 180 }}
+                      inputProps={{ 'aria-label': `Email for ${u.full_name}` }}
+                    />
+                  </TableCell>
                       <TableCell>
                         <TextField
                           size="small"
@@ -244,9 +273,9 @@ export default function ManageUsers() {
                 Grant <b>{grant.user.full_name}</b> the <b>{grant.role}</b> role?
               </Typography>
               <Alert severity="info" sx={{ mt: 2 }}>
-                A 6-digit security code will be sent to their phone
-                {grant.user.phone ? ` (${grant.user.phone})` : ' — no phone number on file, so you will need to send it yourself'}
-                . The role only activates after they enter the code in the app (it expires in 15 minutes).
+                A 6-digit security code will be sent by email to{' '}
+                <b>{grant.user.email}</b>. The role only activates after they enter the
+                code in the app (it expires in 15 minutes).
               </Alert>
             </>
           )}
@@ -269,10 +298,10 @@ export default function ManageUsers() {
               </Typography>
               <Alert severity={grantResult.sent ? 'success' : 'warning'} sx={{ mt: 2 }}>
                 {grantResult.sent ? (
-                  `Code sent by SMS to ${grantResult.phone}.`
+                  `Code sent by email to ${grantResult.email}. Check the inbox (and spam).`
                 ) : (
                   <>
-                    SMS delivery is not configured yet. Send this code to {grantResult.phone || 'the user'}:
+                    Email delivery is not configured yet. Send this code to {grantResult.email} by any means:
                     <Typography sx={{ fontSize: 28, fontWeight: 900, letterSpacing: 4, mt: 1 }}>
                       {grantResult.code}
                     </Typography>

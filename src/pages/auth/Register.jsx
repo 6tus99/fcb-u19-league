@@ -101,12 +101,11 @@ export default function Register() {
           />
           <TextField
             label="Phone number"
-            required
             value={phone}
             onChange={(e) => setPhone(e.target.value)}
             fullWidth
             placeholder="+265 99 123 4567"
-            helperText="Used to send security codes if an admin upgrades your role"
+            helperText="Optional for now — security codes are sent by email. SMS will use this number later."
             autoComplete="tel"
           />
           <Button type="submit" variant="contained" size="large" disabled={busy}>
