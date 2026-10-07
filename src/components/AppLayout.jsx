@@ -137,10 +137,27 @@ export default function AppLayout() {
     });
     setVerifyBusy(false);
     if (error) {
-      setVerifyMsg({
-        severity: 'warning',
-        text: 'Verification is not set up yet. The admin needs to add the two small Supabase functions (send-role-code and verify-role-code). Your code is stored and will work as soon as that is done.',
-      });
+      // The function may be alive and reporting a specific problem
+      // (wrong code, expired, nothing pending) — surface that instead of
+      // assuming the whole service is missing.
+      let detail = '';
+      try {
+        if (error.context && typeof error.context.json === 'function') {
+          const ctx = await error.context.json();
+          detail = (ctx && (ctx.error || ctx.message)) || '';
+        }
+      } catch {
+        /* response was not JSON — fall through to the error message */
+      }
+      if (!detail) detail = error.message || '';
+      if (!detail || /not found/i.test(detail)) {
+        setVerifyMsg({
+          severity: 'warning',
+          text: 'Verification is not set up yet. The admin needs to add the two small Supabase functions (send-role-code and verify-role-code). Your code is stored and will work as soon as that is done.',
+        });
+      } else {
+        setVerifyMsg({ severity: 'error', text: detail });
+      }
       return;
     }
     if (data && data.ok) {
