@@ -55,10 +55,16 @@ Deno.serve(async (req) => {
   if (insErr) return json({ error: insErr.message }, 500);
 
   let sent = false;
+  let emailError = '';
 
-  // Email via Resend
+  // Email via Resend — when it cannot send, it says exactly why.
   const resendKey = Deno.env.get("RESEND_API_KEY");
-  if (resendKey && target.email) {
+  if (!resendKey) {
+    emailError =
+      'RESEND_API_KEY secret is not visible to this function. Check Functions → Secrets, then re-deploy this function (secrets are loaded at deploy time).';
+  } else if (!target.email) {
+    emailError = 'The user has no email address on file.';
+  } else {
     try {
       const res = await fetch("https://api.resend.com/emails", {
         method: "POST",
@@ -81,9 +87,14 @@ Deno.serve(async (req) => {
           </div>`,
         }),
       });
-      sent = res.ok;
-    } catch {
-      sent = false;
+      if (res.ok) {
+        sent = true;
+      } else {
+        const errText = await res.text().catch(() => '');
+        emailError = `Resend refused the email (HTTP ${res.status}): ${errText.slice(0, 300)}`;
+      }
+    } catch (e) {
+      emailError = `Resend request failed: ${e instanceof Error ? e.message : String(e)}`;
     }
   }
 
@@ -124,6 +135,7 @@ Deno.serve(async (req) => {
     devCode: sent ? null : code,
     email: target.email,
     phone: target.phone,
+    emailError,
   });
 });
 

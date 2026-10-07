@@ -82,18 +82,21 @@ export default function ManageUsers() {
     const expiresAt = new Date(Date.now() + 15 * 60 * 1000).toISOString();
     let sent = false;
     let devCode = code;
+    let emailError = '';
 
-    // Preferred path: Supabase edge function (sends the SMS if Twilio is
-    // configured there). Fallback: store the pending change directly.
+    // Preferred path: Supabase edge function (sends the email via Resend).
+    // Fallback: store the pending change directly.
     const { data } = await supabase.functions.invoke('send-role-code', {
       body: { profile_id: user.id, new_role: role, phone: user.phone || '', requested_by: me.id },
     });
     if (data && data.ok) {
       sent = !!data.sent;
       devCode = data.devCode || code;
+      emailError = data.emailError || '';
     } else if (data && data.error) {
       setMessage({ severity: 'error', text: `Verification service: ${data.error}` });
     } else {
+      emailError = 'The mailer function could not be reached — check that send-role-code is deployed.';
       const { error: insErr } = await supabase.from('pending_role_changes').insert({
         profile_id: user.id,
         new_role: role,
@@ -117,6 +120,7 @@ export default function ManageUsers() {
       email: data && data.email ? data.email : user.email,
       sent,
       code: devCode,
+      emailError,
       role,
     });
     load();
@@ -338,6 +342,11 @@ export default function ManageUsers() {
                   </>
                 )}
               </Alert>
+              {grantResult.emailError && !grantResult.sent && (
+                <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1.5 }}>
+                  Why: {grantResult.emailError}
+                </Typography>
+              )}
               <Typography variant="caption" color="text.secondary">
                 The code expires in 15 minutes. If it is wrong or expired, grant the role again to send a new code.
               </Typography>
