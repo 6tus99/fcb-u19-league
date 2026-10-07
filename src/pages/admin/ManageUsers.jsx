@@ -11,6 +11,9 @@ import MenuItem from '@mui/material/MenuItem';
 import Alert from '@mui/material/Alert';
 import Chip from '@mui/material/Chip';
 import Button from '@mui/material/Button';
+import IconButton from '@mui/material/IconButton';
+import DeleteOutlineRounded from '@mui/icons-material/DeleteOutlineRounded';
+import EditableCell from '../../components/EditableCell';
 import Dialog from '@mui/material/Dialog';
 import DialogTitle from '@mui/material/DialogTitle';
 import DialogContent from '@mui/material/DialogContent';
@@ -35,7 +38,9 @@ export default function ManageUsers() {
   const [message, setMessage] = useState(null);
   const [grant, setGrant] = useState(null); // { user, role } awaiting confirm
   const [grantBusy, setGrantBusy] = useState(false);
-  const [grantResult, setGrantResult] = useState(null); // { name, phone, sent, code, role }
+  const [grantResult, setGrantResult] = useState(null); // { name, email, sent, code, role }
+  const [deleteTarget, setDeleteTarget] = useState(null);
+  const [deleteBusy, setDeleteBusy] = useState(false);
 
   const load = useCallback(async () => {
     const [u, t] = await Promise.all([
@@ -127,6 +132,29 @@ export default function ManageUsers() {
     }
   };
 
+  const confirmDelete = async () => {
+    setDeleteBusy(true);
+    // Deleting a login needs the Supabase "delete-user" function (it uses a
+    // server-only key — a website can never do this on its own).
+    const { data, error } = await supabase.functions.invoke('delete-user', {
+      body: { id: deleteTarget.id },
+    });
+    setDeleteBusy(false);
+    setDeleteTarget(null);
+    if (error || (data && data.error)) {
+      setMessage({
+        severity: 'error',
+        text:
+          (data && data.error) ||
+          (error && error.message) ||
+          'Delete failed. The delete-user function may not be deployed yet.',
+      });
+    } else {
+      setMessage({ severity: 'success', text: 'Account deleted.' });
+      load();
+    }
+  };
+
   const changeTeam = async (userId, teamId) => {
     const { error } = await supabase.from('profiles').update({ team_id: teamId || null }).eq('id', userId);
     if (error) {
@@ -173,6 +201,7 @@ export default function ManageUsers() {
                   <TableCell sx={{ fontWeight: 700 }}>Role</TableCell>
                   <TableCell sx={{ fontWeight: 700 }}>Team</TableCell>
                   <TableCell sx={{ fontWeight: 700 }}>Joined</TableCell>
+                  <TableCell sx={{ fontWeight: 700 }} />
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -185,33 +214,22 @@ export default function ManageUsers() {
                     {u.id === me?.id ? ' (you)' : ''}
                   </TableCell>
                   <TableCell>
-                    <TextField
-                      size="small"
-                      value={u.email || ''}
-                      onChange={(e) =>
-                        setUsers((prev) => prev.map((x) => (x.id === u.id ? { ...x, email: e.target.value } : x)))
-                      }
-                      onBlur={(e) => {
-                        if ((e.target.value || '').trim() !== (u.email || '')) saveEmail(u.id, e.target.value.trim());
-                      }}
-                      sx={{ minWidth: 180 }}
-                      inputProps={{ 'aria-label': `Email for ${u.full_name}` }}
+                    <EditableCell
+                      value={u.email}
+                      onSave={(v) => saveEmail(u.id, v)}
+                      label={`Email for ${u.full_name}`}
+                      width={190}
                     />
                   </TableCell>
-                      <TableCell>
-                        <TextField
-                          size="small"
-                          value={u.phone || ''}
-                          onChange={(e) =>
-                            setUsers((prev) => prev.map((x) => (x.id === u.id ? { ...x, phone: e.target.value } : x)))
-                          }
-                          onBlur={(e) => {
-                            if ((e.target.value || '') !== (u.phone || '')) savePhone(u.id, e.target.value.trim());
-                          }}
-                          sx={{ minWidth: 150 }}
-                          inputProps={{ 'aria-label': `Phone for ${u.full_name}`, placeholder: 'no phone' }}
-                        />
-                      </TableCell>
+                  <TableCell>
+                    <EditableCell
+                      value={u.phone}
+                      onSave={(v) => savePhone(u.id, v)}
+                      label={`Phone for ${u.full_name}`}
+                      width={140}
+                      placeholder="no phone"
+                    />
+                  </TableCell>
                       <TableCell>
                         <Box>
                           <TextField
@@ -255,6 +273,18 @@ export default function ManageUsers() {
                         </TextField>
                       </TableCell>
                       <TableCell sx={{ color: 'text.secondary', whiteSpace: 'nowrap' }}>{formatDate(u.created_at)}</TableCell>
+                      <TableCell>
+                        {u.id !== me?.id && (
+                          <IconButton
+                            size="small"
+                            color="error"
+                            aria-label={`Delete ${u.full_name}`}
+                            onClick={() => setDeleteTarget(u)}
+                          >
+                            <DeleteOutlineRounded fontSize="small" />
+                          </IconButton>
+                        )}
+                      </TableCell>
                     </TableRow>
                   );
                 })}
@@ -316,6 +346,28 @@ export default function ManageUsers() {
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setGrantResult(null)} variant="contained">Done</Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog open={!!deleteTarget} onClose={() => !deleteBusy && setDeleteTarget(null)} maxWidth="xs" fullWidth>
+        <DialogTitle>Delete account</DialogTitle>
+        <DialogContent>
+          {deleteTarget && (
+            <>
+              <Typography>
+                Permanently delete <b>{deleteTarget.full_name}</b> ({deleteTarget.email})?
+              </Typography>
+              <Alert severity="warning" sx={{ mt: 2 }}>
+                This removes their login and all their league data. It cannot be undone.
+              </Alert>
+            </>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setDeleteTarget(null)} disabled={deleteBusy}>Cancel</Button>
+          <Button onClick={confirmDelete} color="error" variant="contained" disabled={deleteBusy}>
+            {deleteBusy ? 'Deleting…' : 'Delete'}
+          </Button>
         </DialogActions>
       </Dialog>
     </div>
