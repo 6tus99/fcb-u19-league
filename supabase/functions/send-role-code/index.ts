@@ -10,6 +10,9 @@
 //   RESEND_FROM      optional, e.g.  FCB U19 League <onboarding@resend.dev>
 
 Deno.serve(async (req) => {
+  // Answer the browser's handshake.
+  if (req.method === "OPTIONS") return new Response("ok", { headers: cors() });
+
   const { createClient } = await import("npm:@supabase/supabase-js@2");
   const service = createClient(
     Deno.env.get("SUPABASE_URL")!,
@@ -147,9 +150,18 @@ async function sha256Hex(text: string): Promise<string> {
     .join("");
 }
 
+function cors() {
+  return {
+    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Headers":
+      "authorization, x-client-info, apikey, content-type, x-supabase-api-version",
+    "Access-Control-Allow-Methods": "POST, OPTIONS",
+  };
+}
+
 function json(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), {
     status,
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", ...cors() },
   });
 }

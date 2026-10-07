@@ -1,11 +1,11 @@
 // Supabase Edge Function: verify-role-code
-// Called by the user who was granted a role. Checks the 6-digit code against
-// the stored hash (and expiry), then applies the new role.
-//
-// Setup (Supabase Dashboard):
-//   Functions → Create new function → name: verify-role-code → paste this file.
+// Checks the 6-digit code a user entered against the stored hash, then
+// applies the new role. Includes CORS headers so browser calls work.
 
 Deno.serve(async (req) => {
+  // Answer the browser's handshake.
+  if (req.method === "OPTIONS") return new Response("ok", { headers: cors() });
+
   const { createClient } = await import("npm:@supabase/supabase-js@2");
   const service = createClient(
     Deno.env.get("SUPABASE_URL")!,
@@ -53,6 +53,15 @@ Deno.serve(async (req) => {
   return json({ ok: true, role: pending.new_role });
 });
 
+function cors() {
+  return {
+    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Headers":
+      "authorization, x-client-info, apikey, content-type, x-supabase-api-version",
+    "Access-Control-Allow-Methods": "POST, OPTIONS",
+  };
+}
+
 async function sha256Hex(text: string): Promise<string> {
   const data = new TextEncoder().encode(text);
   const hash = await crypto.subtle.digest("SHA-256", data);
@@ -64,6 +73,6 @@ async function sha256Hex(text: string): Promise<string> {
 function json(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), {
     status,
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", ...cors() },
   });
 }
