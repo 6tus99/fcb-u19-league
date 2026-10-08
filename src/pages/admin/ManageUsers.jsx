@@ -1,7 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import Box from '@mui/material/Box';
 import Paper from '@mui/material/Paper';
-import Grid from '@mui/material/Grid';
 import Button from '@mui/material/Button';
 import TextField from '@mui/material/TextField';
 import MenuItem from '@mui/material/MenuItem';
@@ -10,12 +9,14 @@ import Chip from '@mui/material/Chip';
 import IconButton from '@mui/material/IconButton';
 import Avatar from '@mui/material/Avatar';
 import Typography from '@mui/material/Typography';
+import Collapse from '@mui/material/Collapse';
 import Dialog from '@mui/material/Dialog';
 import DialogTitle from '@mui/material/DialogTitle';
 import DialogContent from '@mui/material/DialogContent';
 import DialogActions from '@mui/material/DialogActions';
 import SearchRounded from '@mui/icons-material/SearchRounded';
 import DeleteOutlineRounded from '@mui/icons-material/DeleteOutlineRounded';
+import ChevronRightRounded from '@mui/icons-material/ChevronRightRounded';
 import EditableCell from '../../components/EditableCell';
 import PageHeader from '../../components/PageHeader';
 import GlassCard from '../../components/GlassCard';
@@ -61,6 +62,7 @@ export default function ManageUsers() {
   const [deleteBusy, setDeleteBusy] = useState(false);
   const [tab, setTab] = useState('all'); // 'all' or one of ROLES
   const [query, setQuery] = useState('');
+  const [openId, setOpenId] = useState(null); // expanded row (accordion: one at a time)
 
   const load = useCallback(async () => {
     const [u, t] = await Promise.all([
@@ -235,24 +237,24 @@ export default function ManageUsers() {
           <EmptyState message="No registered users yet." />
         ) : (
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-            {/* Search + role filter pills */}
-            <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', alignItems: 'center' }}>
-              <TextField
-                size="small"
-                placeholder="Search by name or email…"
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                inputProps={{ 'aria-label': 'Search users' }}
-                sx={{ flexGrow: 1, minWidth: 220, maxWidth: 380 }}
-                InputProps={{
-                  startAdornment: (
-                    <Box component="span" sx={{ color: 'text.secondary', mr: 0.5 }}>
-                      <SearchRounded fontSize="small" />
-                    </Box>
-                  ),
-                }}
-              />
-            </Box>
+            {/* Search */}
+            <TextField
+              size="small"
+              placeholder="Search by name or email…"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              inputProps={{ 'aria-label': 'Search users' }}
+              sx={{ width: { xs: '100%', md: 340 } }}
+              InputProps={{
+                startAdornment: (
+                  <Box component="span" sx={{ color: 'text.secondary', mr: 0.5 }}>
+                    <SearchRounded fontSize="small" />
+                  </Box>
+                ),
+              }}
+            />
+
+            {/* Role filter pills */}
             <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
               {['all', ...ROLES].map((r) => {
                 const active = tab === r;
@@ -297,7 +299,7 @@ export default function ManageUsers() {
               })}
             </Box>
 
-            {/* User cards */}
+            {/* User list — slim rows that expand on click */}
             {visible.length === 0 ? (
               <EmptyState
                 message={
@@ -309,97 +311,126 @@ export default function ManageUsers() {
                 }
               />
             ) : (
-              <Grid container spacing={2}>
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
                 {visible.map((u) => {
                   const pending = pendingChange(u);
                   const roleStyle = ROLE_STYLES[u.role] || ROLE_STYLES.fan;
+                  const open = openId === u.id;
                   return (
-                    <Grid key={u.id} size={{ xs: 12, sm: 6, lg: 4 }}>
-                      <Paper
+                    <Paper
+                      key={u.id}
+                      sx={{
+                        borderRadius: 2.5,
+                        border: '1.5px solid',
+                        borderColor: open ? roleStyle.solid : 'divider',
+                        bgcolor: 'tint',
+                        overflow: 'hidden',
+                        transition: 'border-color 0.15s ease',
+                      }}
+                    >
+                      {/* Collapsed row — click to expand */}
+                      <Box
+                        onClick={() => setOpenId(open ? null : u.id)}
                         sx={{
-                          p: 2.25,
-                          borderRadius: 3,
-                          border: '1px solid',
-                          borderColor: 'divider',
-                          bgcolor: 'tint',
-                          height: '100%',
                           display: 'flex',
-                          flexDirection: 'column',
+                          alignItems: 'center',
                           gap: 1.5,
-                          transition: 'all 0.2s ease',
-                          '&:hover': {
-                            boxShadow: `0 10px 28px ${roleStyle.tint}`,
-                            transform: 'translateY(-2px)',
-                          },
+                          p: { xs: 1.25, md: 1.5 },
+                          cursor: 'pointer',
                         }}
                       >
-                        {/* Header: avatar, name, role, delete */}
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                          <Avatar
-                            sx={{
-                              width: 44,
-                              height: 44,
-                              bgcolor: roleStyle.solid,
-                              color: '#fff',
-                              fontWeight: 800,
-                              fontSize: 16,
-                            }}
+                        <Avatar
+                          sx={{
+                            width: 36,
+                            height: 36,
+                            bgcolor: roleStyle.solid,
+                            color: '#fff',
+                            fontWeight: 800,
+                            fontSize: 13,
+                            flexShrink: 0,
+                          }}
+                        >
+                          {initialsOf(u.full_name)}
+                        </Avatar>
+                        <Box sx={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: 1 }}>
+                          <Typography
+                            noWrap
+                            sx={{ fontWeight: 700, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}
                           >
-                            {initialsOf(u.full_name)}
-                          </Avatar>
-                          <Box sx={{ flex: 1, minWidth: 0 }}>
-                            <Typography
-                              sx={{
-                                fontWeight: 700,
-                                whiteSpace: 'nowrap',
-                                overflow: 'hidden',
-                                textOverflow: 'ellipsis',
-                              }}
-                            >
-                              {u.full_name}
-                              {u.id === me?.id ? ' (you)' : ''}
-                            </Typography>
+                            {u.full_name}
+                            {u.id === me?.id ? ' (you)' : ''}
+                          </Typography>
+                          <Chip
+                            label={cap(u.role)}
+                            size="small"
+                            sx={{
+                              bgcolor: roleStyle.tint,
+                              color: roleStyle.solid,
+                              fontWeight: 800,
+                              fontSize: 10.5,
+                              height: 20,
+                              flexShrink: 0,
+                            }}
+                          />
+                          {pending && (
                             <Chip
-                              label={cap(u.role)}
+                              label="code waiting"
                               size="small"
-                              sx={{
-                                bgcolor: roleStyle.tint,
-                                color: roleStyle.solid,
-                                fontWeight: 800,
-                                fontSize: 11,
-                                height: 20,
-                              }}
+                              color="warning"
+                              variant="outlined"
+                              sx={{ fontSize: 10.5, height: 20, fontWeight: 700, flexShrink: 0 }}
                             />
-                          </Box>
-                          {u.id !== me?.id && (
-                            <IconButton
-                              size="small"
-                              color="error"
-                              aria-label={`Delete ${u.full_name}`}
-                              onClick={() => setDeleteTarget(u)}
-                            >
-                              <DeleteOutlineRounded fontSize="small" />
-                            </IconButton>
                           )}
                         </Box>
-
-                        {pending && (
-                          <Chip
-                            label={`code sent → ${cap(pending.new_role)}`}
+                        <Typography
+                          noWrap
+                          variant="body2"
+                          color="text.secondary"
+                          sx={{ display: { xs: 'none', sm: 'block' }, maxWidth: 220 }}
+                        >
+                          {u.email}
+                        </Typography>
+                        {u.id !== me?.id && (
+                          <IconButton
                             size="small"
-                            color="warning"
-                            variant="outlined"
-                            sx={{ alignSelf: 'flex-start', fontSize: 11, fontWeight: 700 }}
-                          />
+                            color="error"
+                            aria-label={`Delete ${u.full_name}`}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setDeleteTarget(u);
+                            }}
+                          >
+                            <DeleteOutlineRounded fontSize="small" />
+                          </IconButton>
                         )}
+                        <ChevronRightRounded
+                          sx={{
+                            color: 'text.secondary',
+                            flexShrink: 0,
+                            transform: open ? 'rotate(90deg)' : 'none',
+                            transition: 'transform 0.2s ease',
+                          }}
+                        />
+                      </Box>
 
-                        {/* Fields */}
-                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.25 }}>
+                      {/* Expanded detail — only for the clicked row */}
+                      <Collapse in={open}>
+                        <Box
+                          sx={{
+                            px: { xs: 1.5, md: 2 },
+                            py: 2,
+                            borderTop: '1px solid',
+                            borderColor: 'divider',
+                            display: 'grid',
+                            gap: 1.75,
+                            gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' },
+                          }}
+                        >
                           <Box>
                             <Typography
                               variant="caption"
                               color="text.secondary"
-                              sx={{ fontWeight: 800, letterSpacing: 0.8, fontSize: 10.5 }}
+                              sx={{ fontWeight: 800, letterSpacing: 0.8, fontSize: 10.5, display: 'block', mb: 0.25 }}
                             >
                               EMAIL
                             </Typography>
@@ -407,14 +438,14 @@ export default function ManageUsers() {
                               value={u.email}
                               onSave={(v) => saveEmail(u.id, v)}
                               label={`Email for ${u.full_name}`}
-                              width={230}
+                              width={220}
                             />
                           </Box>
                           <Box>
                             <Typography
                               variant="caption"
                               color="text.secondary"
-                              sx={{ fontWeight: 800, letterSpacing: 0.8, fontSize: 10.5 }}
+                              sx={{ fontWeight: 800, letterSpacing: 0.8, fontSize: 10.5, display: 'block', mb: 0.25 }}
                             >
                               PHONE
                             </Typography>
@@ -422,7 +453,7 @@ export default function ManageUsers() {
                               value={u.phone}
                               onSave={(v) => savePhone(u.id, v)}
                               label={`Phone for ${u.full_name}`}
-                              width={170}
+                              width={160}
                               placeholder="no phone"
                             />
                           </Box>
@@ -430,7 +461,7 @@ export default function ManageUsers() {
                             <Typography
                               variant="caption"
                               color="text.secondary"
-                              sx={{ fontWeight: 800, letterSpacing: 0.8, fontSize: 10.5, mb: 0.25, display: 'block' }}
+                              sx={{ fontWeight: 800, letterSpacing: 0.8, fontSize: 10.5, display: 'block', mb: 0.25 }}
                             >
                               TEAM
                             </Typography>
@@ -454,7 +485,7 @@ export default function ManageUsers() {
                             <Typography
                               variant="caption"
                               color="text.secondary"
-                              sx={{ fontWeight: 800, letterSpacing: 0.8, fontSize: 10.5, mb: 0.25, display: 'block' }}
+                              sx={{ fontWeight: 800, letterSpacing: 0.8, fontSize: 10.5, display: 'block', mb: 0.25 }}
                             >
                               ROLE
                             </Typography>
@@ -473,18 +504,17 @@ export default function ManageUsers() {
                               ))}
                             </TextField>
                           </Box>
+                          <Box sx={{ gridColumn: '1 / -1' }}>
+                            <Typography variant="caption" color="text.secondary">
+                              Joined {formatDate(u.created_at)}
+                            </Typography>
+                          </Box>
                         </Box>
-
-                        <Box sx={{ mt: 'auto', pt: 1, borderTop: '1px solid', borderColor: 'divider' }}>
-                          <Typography variant="caption" color="text.secondary">
-                            Joined {formatDate(u.created_at)}
-                          </Typography>
-                        </Box>
-                      </Paper>
-                    </Grid>
+                      </Collapse>
+                    </Paper>
                   );
                 })}
-              </Grid>
+              </Box>
             )}
           </Box>
         )}
