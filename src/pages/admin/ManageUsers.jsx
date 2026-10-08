@@ -6,6 +6,8 @@ import TableCell from '@mui/material/TableCell';
 import TableContainer from '@mui/material/TableContainer';
 import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
+import Tabs from '@mui/material/Tabs';
+import Tab from '@mui/material/Tab';
 import TextField from '@mui/material/TextField';
 import MenuItem from '@mui/material/MenuItem';
 import Alert from '@mui/material/Alert';
@@ -29,6 +31,7 @@ import { useAuth } from '../../context/AuthContext';
 import supabase from '../../lib/supabase';
 
 const ROLES = ['admin', 'commissioner', 'manager', 'player', 'fan'];
+const cap = (s) => s.charAt(0).toUpperCase() + s.slice(1);
 
 export default function ManageUsers() {
   const { profile: me } = useAuth();
@@ -41,6 +44,7 @@ export default function ManageUsers() {
   const [grantResult, setGrantResult] = useState(null); // { name, email, sent, code, role }
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [deleteBusy, setDeleteBusy] = useState(false);
+  const [tab, setTab] = useState('all'); // 'all' or one of ROLES
 
   const load = useCallback(async () => {
     const [u, t] = await Promise.all([
@@ -181,6 +185,12 @@ export default function ManageUsers() {
 
   if (!loaded) return <LoadingSpinner message="Loading users…" />;
 
+  const counts = { all: users.length };
+  ROLES.forEach((r) => {
+    counts[r] = users.filter((u) => u.role === r).length;
+  });
+  const visible = tab === 'all' ? users : users.filter((u) => u.role === tab);
+
   return (
     <div>
       <PageHeader title="Manage Users" subtitle="Change roles and team assignments for every registered member" />
@@ -195,6 +205,23 @@ export default function ManageUsers() {
         {users.length === 0 ? (
           <EmptyState message="No registered users yet." />
         ) : (
+          <Box>
+            <Tabs
+              value={tab}
+              onChange={(_, v) => setTab(v)}
+              variant="scrollable"
+              allowScrollButtonsMobile
+              scrollButtons="auto"
+              sx={{ borderBottom: 1, borderColor: 'divider', mb: 1 }}
+            >
+              <Tab label={`All (${counts.all})`} value="all" />
+              {ROLES.map((r) => (
+                <Tab key={r} label={`${cap(r)} (${counts[r]})`} value={r} />
+              ))}
+            </Tabs>
+            {visible.length === 0 ? (
+              <EmptyState message={`No ${cap(tab)}s yet.`} />
+            ) : (
           <TableContainer sx={{ overflowX: 'auto' }}>
             <Table size="small">
               <TableHead>
@@ -209,7 +236,7 @@ export default function ManageUsers() {
                 </TableRow>
               </TableHead>
               <TableBody>
-                {users.map((u) => {
+                {visible.map((u) => {
                   const pending = pendingChange(u);
                   return (
                     <TableRow key={u.id} hover>
@@ -295,6 +322,8 @@ export default function ManageUsers() {
               </TableBody>
             </Table>
           </TableContainer>
+            )}
+          </Box>
         )}
       </GlassCard>
 
