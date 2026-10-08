@@ -1,26 +1,22 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import Box from '@mui/material/Box';
-import Table from '@mui/material/Table';
-import TableBody from '@mui/material/TableBody';
-import TableCell from '@mui/material/TableCell';
-import TableContainer from '@mui/material/TableContainer';
-import TableHead from '@mui/material/TableHead';
-import TableRow from '@mui/material/TableRow';
-import Tabs from '@mui/material/Tabs';
-import Tab from '@mui/material/Tab';
+import Paper from '@mui/material/Paper';
+import Grid from '@mui/material/Grid';
+import Button from '@mui/material/Button';
 import TextField from '@mui/material/TextField';
 import MenuItem from '@mui/material/MenuItem';
 import Alert from '@mui/material/Alert';
 import Chip from '@mui/material/Chip';
-import Button from '@mui/material/Button';
 import IconButton from '@mui/material/IconButton';
-import DeleteOutlineRounded from '@mui/icons-material/DeleteOutlineRounded';
-import EditableCell from '../../components/EditableCell';
+import Avatar from '@mui/material/Avatar';
+import Typography from '@mui/material/Typography';
 import Dialog from '@mui/material/Dialog';
 import DialogTitle from '@mui/material/DialogTitle';
 import DialogContent from '@mui/material/DialogContent';
 import DialogActions from '@mui/material/DialogActions';
-import Typography from '@mui/material/Typography';
+import SearchRounded from '@mui/icons-material/SearchRounded';
+import DeleteOutlineRounded from '@mui/icons-material/DeleteOutlineRounded';
+import EditableCell from '../../components/EditableCell';
 import PageHeader from '../../components/PageHeader';
 import GlassCard from '../../components/GlassCard';
 import LoadingSpinner from '../../components/LoadingSpinner';
@@ -32,6 +28,25 @@ import supabase from '../../lib/supabase';
 
 const ROLES = ['admin', 'commissioner', 'manager', 'player', 'fan'];
 const cap = (s) => s.charAt(0).toUpperCase() + s.slice(1);
+
+// One identity color per role — used on the avatar, the badge and the tab pill.
+const ROLE_STYLES = {
+  all: { solid: '#16a34a', tint: 'rgba(22, 163, 74, 0.12)' },
+  admin: { solid: '#7c3aed', tint: 'rgba(124, 58, 237, 0.12)' },
+  commissioner: { solid: '#2563eb', tint: 'rgba(37, 99, 235, 0.12)' },
+  manager: { solid: '#16a34a', tint: 'rgba(22, 163, 74, 0.12)' },
+  player: { solid: '#d97706', tint: 'rgba(217, 119, 6, 0.12)' },
+  fan: { solid: '#64748b', tint: 'rgba(100, 116, 139, 0.14)' },
+};
+
+const initialsOf = (name) =>
+  (name || '?')
+    .split(' ')
+    .filter(Boolean)
+    .map((w) => w[0])
+    .slice(0, 2)
+    .join('')
+    .toUpperCase();
 
 export default function ManageUsers() {
   const { profile: me } = useAuth();
@@ -45,6 +60,7 @@ export default function ManageUsers() {
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [deleteBusy, setDeleteBusy] = useState(false);
   const [tab, setTab] = useState('all'); // 'all' or one of ROLES
+  const [query, setQuery] = useState('');
 
   const load = useCallback(async () => {
     const [u, t] = await Promise.all([
@@ -185,15 +201,28 @@ export default function ManageUsers() {
 
   if (!loaded) return <LoadingSpinner message="Loading users…" />;
 
+  // Counts always reflect the whole group (search doesn't shrink them).
   const counts = { all: users.length };
   ROLES.forEach((r) => {
     counts[r] = users.filter((u) => u.role === r).length;
   });
-  const visible = tab === 'all' ? users : users.filter((u) => u.role === tab);
+
+  const q = query.trim().toLowerCase();
+  const visible = users
+    .filter((u) => (tab === 'all' ? true : u.role === tab))
+    .filter(
+      (u) =>
+        !q ||
+        (u.full_name || '').toLowerCase().includes(q) ||
+        (u.email || '').toLowerCase().includes(q)
+    );
 
   return (
     <div>
-      <PageHeader title="Manage Users" subtitle="Change roles and team assignments for every registered member" />
+      <PageHeader
+        title="Manage Users"
+        subtitle="Change roles and team assignments for every registered member"
+      />
 
       {message && (
         <Alert severity={message.severity} sx={{ mb: 2 }} onClose={() => setMessage(null)}>
@@ -205,123 +234,257 @@ export default function ManageUsers() {
         {users.length === 0 ? (
           <EmptyState message="No registered users yet." />
         ) : (
-          <Box>
-            <Tabs
-              value={tab}
-              onChange={(_, v) => setTab(v)}
-              variant="scrollable"
-              allowScrollButtonsMobile
-              scrollButtons="auto"
-              sx={{ borderBottom: 1, borderColor: 'divider', mb: 1 }}
-            >
-              <Tab label={`All (${counts.all})`} value="all" />
-              {ROLES.map((r) => (
-                <Tab key={r} label={`${cap(r)} (${counts[r]})`} value={r} />
-              ))}
-            </Tabs>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            {/* Search + role filter pills */}
+            <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', alignItems: 'center' }}>
+              <TextField
+                size="small"
+                placeholder="Search by name or email…"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                inputProps={{ 'aria-label': 'Search users' }}
+                sx={{ flexGrow: 1, minWidth: 220, maxWidth: 380 }}
+                InputProps={{
+                  startAdornment: (
+                    <Box component="span" sx={{ color: 'text.secondary', mr: 0.5 }}>
+                      <SearchRounded fontSize="small" />
+                    </Box>
+                  ),
+                }}
+              />
+            </Box>
+            <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+              {['all', ...ROLES].map((r) => {
+                const active = tab === r;
+                return (
+                  <Button
+                    key={r}
+                    onClick={() => setTab(r)}
+                    startIcon={
+                      <Box
+                        component="span"
+                        sx={{
+                          width: 8,
+                          height: 8,
+                          borderRadius: '50%',
+                          bgcolor: active ? '#ffffff' : ROLE_STYLES[r].solid,
+                          display: 'inline-block',
+                        }}
+                      />
+                    }
+                    variant="text"
+                    color="inherit"
+                    disableRipple
+                    sx={{
+                      borderRadius: 999,
+                      px: 1.75,
+                      py: 0.6,
+                      fontWeight: 800,
+                      fontSize: 13,
+                      textTransform: 'none',
+                      lineHeight: 1.4,
+                      border: '1.5px solid',
+                      borderColor: active ? 'transparent' : 'divider',
+                      bgcolor: active ? ROLE_STYLES[r].solid : 'transparent',
+                      color: active ? '#ffffff' : 'text.secondary',
+                      transition: 'all 0.18s ease',
+                      '&:hover': { bgcolor: active ? ROLE_STYLES[r].solid : ROLE_STYLES[r].tint },
+                    }}
+                  >
+                    {r === 'all' ? 'All' : cap(r)} · {counts[r]}
+                  </Button>
+                );
+              })}
+            </Box>
+
+            {/* User cards */}
             {visible.length === 0 ? (
-              <EmptyState message={`No ${cap(tab)}s yet.`} />
+              <EmptyState
+                message={
+                  q
+                    ? 'No users match your search.'
+                    : tab === 'all'
+                      ? 'No registered users yet.'
+                      : `No ${cap(tab)}s yet.`
+                }
+              />
             ) : (
-          <TableContainer sx={{ overflowX: 'auto' }}>
-            <Table size="small">
-              <TableHead>
-                <TableRow>
-                  <TableCell sx={{ fontWeight: 700 }}>Name</TableCell>
-                  <TableCell sx={{ fontWeight: 700 }}>Email</TableCell>
-                  <TableCell sx={{ fontWeight: 700 }}>Phone</TableCell>
-                  <TableCell sx={{ fontWeight: 700 }}>Role</TableCell>
-                  <TableCell sx={{ fontWeight: 700 }}>Team</TableCell>
-                  <TableCell sx={{ fontWeight: 700 }}>Joined</TableCell>
-                  <TableCell sx={{ fontWeight: 700 }} />
-                </TableRow>
-              </TableHead>
-              <TableBody>
+              <Grid container spacing={2}>
                 {visible.map((u) => {
                   const pending = pendingChange(u);
+                  const roleStyle = ROLE_STYLES[u.role] || ROLE_STYLES.fan;
                   return (
-                    <TableRow key={u.id} hover>
-                  <TableCell sx={{ fontWeight: 600, whiteSpace: 'nowrap' }}>
-                    {u.full_name}
-                    {u.id === me?.id ? ' (you)' : ''}
-                  </TableCell>
-                  <TableCell>
-                    <EditableCell
-                      value={u.email}
-                      onSave={(v) => saveEmail(u.id, v)}
-                      label={`Email for ${u.full_name}`}
-                      width={190}
-                    />
-                  </TableCell>
-                  <TableCell>
-                    <EditableCell
-                      value={u.phone}
-                      onSave={(v) => savePhone(u.id, v)}
-                      label={`Phone for ${u.full_name}`}
-                      width={140}
-                      placeholder="no phone"
-                    />
-                  </TableCell>
-                      <TableCell>
-                        <Box>
-                          <TextField
-                            select
-                            value={u.role}
-                            onChange={(e) => changeRole(u, e.target.value)}
-                            sx={{ minWidth: 140 }}
-                            inputProps={{ 'aria-label': `Role for ${u.full_name}` }}
+                    <Grid key={u.id} size={{ xs: 12, sm: 6, lg: 4 }}>
+                      <Paper
+                        sx={{
+                          p: 2.25,
+                          borderRadius: 3,
+                          border: '1px solid',
+                          borderColor: 'divider',
+                          bgcolor: 'tint',
+                          height: '100%',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: 1.5,
+                          transition: 'all 0.2s ease',
+                          '&:hover': {
+                            boxShadow: `0 10px 28px ${roleStyle.tint}`,
+                            transform: 'translateY(-2px)',
+                          },
+                        }}
+                      >
+                        {/* Header: avatar, name, role, delete */}
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                          <Avatar
+                            sx={{
+                              width: 44,
+                              height: 44,
+                              bgcolor: roleStyle.solid,
+                              color: '#fff',
+                              fontWeight: 800,
+                              fontSize: 16,
+                            }}
                           >
-                            {ROLES.map((r) => (
-                              <MenuItem key={r} value={r}>
-                                {r}
-                              </MenuItem>
-                            ))}
-                          </TextField>
-                          {pending && (
+                            {initialsOf(u.full_name)}
+                          </Avatar>
+                          <Box sx={{ flex: 1, minWidth: 0 }}>
+                            <Typography
+                              sx={{
+                                fontWeight: 700,
+                                whiteSpace: 'nowrap',
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                              }}
+                            >
+                              {u.full_name}
+                              {u.id === me?.id ? ' (you)' : ''}
+                            </Typography>
                             <Chip
-                              label={`code sent → ${pending.new_role}`}
+                              label={cap(u.role)}
                               size="small"
-                              color="warning"
-                              variant="outlined"
-                              sx={{ mt: 0.5, fontSize: 10, fontWeight: 700 }}
+                              sx={{
+                                bgcolor: roleStyle.tint,
+                                color: roleStyle.solid,
+                                fontWeight: 800,
+                                fontSize: 11,
+                                height: 20,
+                              }}
                             />
+                          </Box>
+                          {u.id !== me?.id && (
+                            <IconButton
+                              size="small"
+                              color="error"
+                              aria-label={`Delete ${u.full_name}`}
+                              onClick={() => setDeleteTarget(u)}
+                            >
+                              <DeleteOutlineRounded fontSize="small" />
+                            </IconButton>
                           )}
                         </Box>
-                      </TableCell>
-                      <TableCell>
-                        <TextField
-                          select
-                          value={u.team_id || ''}
-                          onChange={(e) => changeTeam(u.id, e.target.value)}
-                          sx={{ minWidth: 180 }}
-                          inputProps={{ 'aria-label': `Team for ${u.full_name}` }}
-                        >
-                          <MenuItem value="">— no team —</MenuItem>
-                          {teams.map((t) => (
-                            <MenuItem key={t.id} value={t.id}>
-                              {t.name}
-                            </MenuItem>
-                          ))}
-                        </TextField>
-                      </TableCell>
-                      <TableCell sx={{ color: 'text.secondary', whiteSpace: 'nowrap' }}>{formatDate(u.created_at)}</TableCell>
-                      <TableCell>
-                        {u.id !== me?.id && (
-                          <IconButton
+
+                        {pending && (
+                          <Chip
+                            label={`code sent → ${cap(pending.new_role)}`}
                             size="small"
-                            color="error"
-                            aria-label={`Delete ${u.full_name}`}
-                            onClick={() => setDeleteTarget(u)}
-                          >
-                            <DeleteOutlineRounded fontSize="small" />
-                          </IconButton>
+                            color="warning"
+                            variant="outlined"
+                            sx={{ alignSelf: 'flex-start', fontSize: 11, fontWeight: 700 }}
+                          />
                         )}
-                      </TableCell>
-                    </TableRow>
+
+                        {/* Fields */}
+                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.25 }}>
+                          <Box>
+                            <Typography
+                              variant="caption"
+                              color="text.secondary"
+                              sx={{ fontWeight: 800, letterSpacing: 0.8, fontSize: 10.5 }}
+                            >
+                              EMAIL
+                            </Typography>
+                            <EditableCell
+                              value={u.email}
+                              onSave={(v) => saveEmail(u.id, v)}
+                              label={`Email for ${u.full_name}`}
+                              width={230}
+                            />
+                          </Box>
+                          <Box>
+                            <Typography
+                              variant="caption"
+                              color="text.secondary"
+                              sx={{ fontWeight: 800, letterSpacing: 0.8, fontSize: 10.5 }}
+                            >
+                              PHONE
+                            </Typography>
+                            <EditableCell
+                              value={u.phone}
+                              onSave={(v) => savePhone(u.id, v)}
+                              label={`Phone for ${u.full_name}`}
+                              width={170}
+                              placeholder="no phone"
+                            />
+                          </Box>
+                          <Box>
+                            <Typography
+                              variant="caption"
+                              color="text.secondary"
+                              sx={{ fontWeight: 800, letterSpacing: 0.8, fontSize: 10.5, mb: 0.25, display: 'block' }}
+                            >
+                              TEAM
+                            </Typography>
+                            <TextField
+                              select
+                              size="small"
+                              value={u.team_id || ''}
+                              onChange={(e) => changeTeam(u.id, e.target.value)}
+                              sx={{ width: '100%' }}
+                              inputProps={{ 'aria-label': `Team for ${u.full_name}` }}
+                            >
+                              <MenuItem value="">— no team —</MenuItem>
+                              {teams.map((t) => (
+                                <MenuItem key={t.id} value={t.id}>
+                                  {t.name}
+                                </MenuItem>
+                              ))}
+                            </TextField>
+                          </Box>
+                          <Box>
+                            <Typography
+                              variant="caption"
+                              color="text.secondary"
+                              sx={{ fontWeight: 800, letterSpacing: 0.8, fontSize: 10.5, mb: 0.25, display: 'block' }}
+                            >
+                              ROLE
+                            </Typography>
+                            <TextField
+                              select
+                              size="small"
+                              value={u.role}
+                              onChange={(e) => changeRole(u, e.target.value)}
+                              sx={{ width: '100%' }}
+                              inputProps={{ 'aria-label': `Role for ${u.full_name}` }}
+                            >
+                              {ROLES.map((r) => (
+                                <MenuItem key={r} value={r}>
+                                  {cap(r)}
+                                </MenuItem>
+                              ))}
+                            </TextField>
+                          </Box>
+                        </Box>
+
+                        <Box sx={{ mt: 'auto', pt: 1, borderTop: '1px solid', borderColor: 'divider' }}>
+                          <Typography variant="caption" color="text.secondary">
+                            Joined {formatDate(u.created_at)}
+                          </Typography>
+                        </Box>
+                      </Paper>
+                    </Grid>
                   );
                 })}
-              </TableBody>
-            </Table>
-          </TableContainer>
+              </Grid>
             )}
           </Box>
         )}
@@ -344,7 +507,9 @@ export default function ManageUsers() {
           )}
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setGrant(null)} disabled={grantBusy}>Cancel</Button>
+          <Button onClick={() => setGrant(null)} disabled={grantBusy}>
+            Cancel
+          </Button>
           <Button onClick={confirmGrant} variant="contained" disabled={grantBusy}>
             {grantBusy ? 'Sending…' : 'Send code'}
           </Button>
@@ -383,7 +548,9 @@ export default function ManageUsers() {
           )}
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setGrantResult(null)} variant="contained">Done</Button>
+          <Button onClick={() => setGrantResult(null)} variant="contained">
+            Done
+          </Button>
         </DialogActions>
       </Dialog>
 
@@ -402,7 +569,9 @@ export default function ManageUsers() {
           )}
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setDeleteTarget(null)} disabled={deleteBusy}>Cancel</Button>
+          <Button onClick={() => setDeleteTarget(null)} disabled={deleteBusy}>
+            Cancel
+          </Button>
           <Button onClick={confirmDelete} color="error" variant="contained" disabled={deleteBusy}>
             {deleteBusy ? 'Deleting…' : 'Delete'}
           </Button>
