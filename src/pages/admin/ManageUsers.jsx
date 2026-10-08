@@ -91,6 +91,25 @@ export default function ManageUsers() {
       (p) => p.status === 'pending' && new Date(p.expires_at) > new Date()
     );
 
+  // supabase-js functions.invoke never throws — it returns { data, error }.
+  // This digs the real reason out of that error (the HTTP response body when
+  // there is one, otherwise the network/relay failure message).
+  const invokeDetail = async (err) => {
+    if (!err) return '';
+    let detail = '';
+    try {
+      if (err.context && typeof err.context.json === 'function') {
+        const body = await err.context.json();
+        detail = (body && (body.error || body.message)) || JSON.stringify(body);
+      }
+    } catch (e) {
+      /* response body was not JSON */
+    }
+    if (!detail && err.context && err.context.message) detail = err.context.message;
+    if (!detail) detail = err.message || 'unknown error';
+    return detail;
+  };
+
   const changeRole = async (user, role) => {
     if (role === user.role) return;
     setGrant({ user, role });
@@ -108,7 +127,7 @@ export default function ManageUsers() {
 
     // Preferred path: Supabase edge function (sends the email via Resend).
     // Fallback: store the pending change directly.
-    const { data } = await supabase.functions.invoke('send-role-code', {
+    const { data, error: invErr } = await supabase.functions.invoke('send-role-code', {
       body: { profile_id: user.id, new_role: role, phone: user.phone || '', requested_by: me.id },
     });
     if (data && data.ok) {
@@ -118,7 +137,9 @@ export default function ManageUsers() {
     } else if (data && data.error) {
       setMessage({ severity: 'error', text: `Verification service: ${data.error}` });
     } else {
-      emailError = 'The mailer function could not be reached — check that send-role-code is deployed.';
+      emailError =
+        (await invokeDetail(invErr)) ||
+        'The mailer function could not be reached — check that send-role-code is deployed.';
       const { error: insErr } = await supabase.from('pending_role_changes').insert({
         profile_id: user.id,
         new_role: role,
@@ -172,7 +193,7 @@ export default function ManageUsers() {
         severity: 'error',
         text:
           (data && data.error) ||
-          (error && error.message) ||
+          (await invokeDetail(error)) ||
           'Delete failed. The delete-user function may not be deployed yet.',
       });
     } else {
