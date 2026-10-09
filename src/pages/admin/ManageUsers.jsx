@@ -84,6 +84,18 @@ export default function ManageUsers() {
 
   useEffect(() => {
     load();
+    // Live updates: reload whenever a profile changes or a role code is sent /
+    // verified, so the list stays current without a manual page refresh.
+    // (Needs the tables in the supabase_realtime publication —
+    // supabase/migration-realtime.sql.)
+    const channel = supabase
+      .channel('manage-users-live')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, () => load())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'pending_role_changes' }, () => load())
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [load]);
 
   const pendingChange = (u) =>
