@@ -118,6 +118,11 @@ export default function ManageUsers() {
   const confirmGrant = async () => {
     const { user, role } = grant;
     setGrantBusy(true);
+    // A long-open tab can hold an expired access token, which makes the edge
+    // function answer "Unauthorized". Refresh the session first so the call
+    // always carries a fresh token — this is why a page refresh used to be
+    // needed before sending worked.
+    await supabase.auth.refreshSession().catch(() => {});
     const code = String(Math.floor(100000 + Math.random() * 900000));
     const codeHash = await sha256Hex(code);
     const expiresAt = new Date(Date.now() + 15 * 60 * 1000).toISOString();
