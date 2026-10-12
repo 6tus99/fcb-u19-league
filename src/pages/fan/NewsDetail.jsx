@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useParams, Link as RouterLink } from 'react-router-dom';
 import Box from '@mui/material/Box';
 import Paper from '@mui/material/Paper';
@@ -11,9 +11,15 @@ import Avatar from '@mui/material/Avatar';
 import IconButton from '@mui/material/IconButton';
 import DeleteOutlineRounded from '@mui/icons-material/DeleteOutlineRounded';
 import ShareRounded from '@mui/icons-material/ShareRounded';
+import MicRounded from '@mui/icons-material/MicRounded';
+import StopRounded from '@mui/icons-material/StopRounded';
+import CancelRounded from '@mui/icons-material/CancelRounded';
+import EditRounded from '@mui/icons-material/EditRounded';
+import CheckRounded from '@mui/icons-material/CheckRounded';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import EmptyState from '../../components/EmptyState';
 import GlassCard from '../../components/GlassCard';
+import useVoiceRecorder from '../../hooks/useVoiceRecorder';
 import { formatDate } from '../../utils/standings';
 import { useAuth } from '../../context/AuthContext';
 import supabase from '../../lib/supabase';
@@ -23,6 +29,8 @@ const REACTIONS = [
   { id: 'fire', emoji: '🔥', label: 'Fire' },
   { id: 'clap', emoji: '👏', label: 'Clap' },
 ];
+
+const fmtClock = (s) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
 
 export default function NewsDetail() {
   const { id } = useParams();
@@ -37,11 +45,23 @@ export default function NewsDetail() {
   const [message, setMessage] = useState(null);
   const [socialReady, setSocialReady] = useState(true);
 
+  const [editingId, setEditingId] = useState(null);
+  const [editDraft, setEditDraft] = useState('');
+
+  const rec = useVoiceRecorder(60);
+  const previewUrl = useMemo(
+    () => (rec.blob ? URL.createObjectURL(rec.blob) : null),
+    [rec.blob]
+  );
+  useEffect(() => () => {
+    if (previewUrl) URL.revokeObjectURL(previewUrl);
+  }, [previewUrl]);
+
   const loadSocial = useCallback(async () => {
     const [c, r] = await Promise.all([
       supabase
         .from('news_comments')
-        .select('id, body, created_at, user_id, profile:profiles!news_comments_user_id_fkey(full_name)')
+        .select('id, body, voice_url, created_at, user_id, profile:profiles!news_comments_user_id_fkey(full_name)')
         .eq('news_id', id)
         .order('created_at', { ascending: false }),
       supabase.from('news_reactions').select('id, reaction, user_id').eq('news_id', id),
@@ -70,34 +90,76 @@ export default function NewsDetail() {
 
   const mine = (row) => row.user_id === me?.id;
   const countOf = (rid) => reactions.filter((r) => r.reaction === rid).length;
-  const iReacted = (rid) => reactions.some((r) => r.reaction === rid && mine(r));
+  const myReaction = reactions.find((r) => mine(r))?.reaction || null;
 
+  // ONE reaction per user: tap the same one to remove, a different one to switch.
   const toggleReaction = async (rid) => {
-    if (iReacted(rid)) {
-      await supabase.from('news_reactions').delete().eq('news_id', id).eq('reaction', rid).eq('user_id', me.id);
+    if (myReaction === rid) {
+      await supabase.from('news_reactions').delete().eq('news_id', id).eq('user_id', me.id);
     } else {
-      await supabase.from('news_reactions').insert({ news_id: id, user_id: me.id, reaction: rid });
+      await supabase
+        .from('news_reactions')
+        .upsert({ news_id: id, user_id: me.id, reaction: rid }, { onConflict: 'news_id,user_id' });
     }
     loadSocial();
+  };
+
+  const uploadVoice = async (blob) => {
+    const ext = blob.type && blob.type.includes('mp4') ? 'mp4' : 'webm';
+    const path = `${me.id}/voice_${Date.now()}.${ext}`;
+    const { error } = await supabase.storage
+      .from('voice-notes')
+      .upload(path, blob, { contentType: blob.type || 'audio/webm' });
+    if (error) throw new Error(error.message);
+    return supabase.storage.from('voice-notes').getPublicUrl(path).data.publicUrl;
   };
 
   const addComment = async (e) => {
     e.preventDefault();
     const body = draft.trim();
-    if (!body) return;
+    if (!body && !rec.blob) return;
     setBusy(true);
-    const { error } = await supabase.from('news_comments').insert({ news_id: id, user_id: me.id, body });
-    setBusy(false);
-    if (error) {
-      setMessage({ severity: 'error', text: error.message });
-    } else {
-      setDraft('');
-      loadSocial();
+    try {
+      let voiceUrl = null;
+      if (rec.blob) voiceUrl = await uploadVoice(rec.blob);
+      const { error } = await supabase.from('news_comments').insert({
+        news_id: id,
+        user_id: me.id,
+        body: body || null,
+        voice_url: voiceUrl,
+      });
+      if (error) {
+        setMessage({ severity: 'error', text: error.message });
+      } else {
+        setDraft('');
+        rec.clearBlob();
+        loadSocial();
+      }
+    } catch (err) {
+      setMessage({ severity: 'error', text: `Voice note could not be saved: ${err.message}` });
     }
+    setBusy(false);
   };
 
-  const deleteComment = async (cid) => {
-    await supabase.from('news_comments').delete().eq('id', cid).eq('user_id', me.id);
+  const saveEdit = async (cid) => {
+    const body = editDraft.trim();
+    if (!body) return;
+    const { error } = await supabase
+      .from('news_comments')
+      .update({ body, updated_at: new Date().toISOString() })
+      .eq('id', cid)
+      .eq('user_id', me.id);
+    if (error) setMessage({ severity: 'error', text: error.message });
+    setEditingId(null);
+    loadSocial();
+  };
+
+  const deleteComment = async (c) => {
+    await supabase.from('news_comments').delete().eq('id', c.id).eq('user_id', me.id);
+    if (c.voice_url) {
+      const path = c.voice_url.split('/voice-notes/')[1];
+      if (path) supabase.storage.from('voice-notes').remove([path]);
+    }
     loadSocial();
   };
 
@@ -109,6 +171,25 @@ export default function NewsDetail() {
       setMessage({ severity: 'error', text: 'Could not copy the link. Copy it from the address bar instead.' });
     }
   };
+
+  const startRecording = async () => {
+    try {
+      await rec.start();
+    } catch (err) {
+      setMessage({
+        severity: 'error',
+        text: 'Microphone access is needed for voice notes. Allow it in your browser and try again.',
+      });
+    }
+  };
+
+  const myInitials = (me?.full_name || me?.email || '?')
+    .split(' ')
+    .filter(Boolean)
+    .map((w) => w[0])
+    .slice(0, 2)
+    .join('')
+    .toUpperCase();
 
   return (
     <Box>
@@ -126,7 +207,7 @@ export default function NewsDetail() {
 
         <Box sx={{ display: 'flex', gap: 1, mt: 3, flexWrap: 'wrap', alignItems: 'center' }}>
           {REACTIONS.map((r) => {
-            const active = iReacted(r.id);
+            const active = myReaction === r.id;
             return (
               <Button
                 key={r.id}
@@ -162,50 +243,160 @@ export default function NewsDetail() {
       {/* Comments */}
       <GlassCard title={`Comments (${comments.length})`} sx={{ mt: 3 }} accent="blue">
         {!socialReady ? (
-          <Alert severity="info">Comments and reactions are being set up — they'll appear here in a moment.</Alert>
+          <Alert severity="info">Comments, reactions and voice notes are being set up — they'll appear here in a moment.</Alert>
         ) : (
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-            <Box component="form" onSubmit={addComment} sx={{ display: 'flex', gap: 1.5, alignItems: 'flex-start', flexWrap: 'wrap' }}>
-              <Avatar sx={{ width: 34, height: 34, bgcolor: 'primary.main', color: '#fff', fontSize: 13, fontWeight: 800, flexShrink: 0 }}>
-                {(me?.full_name || me?.email || '?').split(' ').map((w) => w[0]).slice(0, 2).join('').toUpperCase()}
-              </Avatar>
-              <TextField
-                fullWidth
-                placeholder="Add a comment…"
-                value={draft}
-                onChange={(e) => setDraft(e.target.value)}
-                inputProps={{ 'aria-label': 'Add a comment', maxLength: 500 }}
-                sx={{ minWidth: 220 }}
-              />
-              <Button type="submit" variant="contained" disabled={busy || !draft.trim()}>
-                Post
-              </Button>
+            {/* Composer */}
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+              <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'flex-start', flexWrap: 'wrap' }}>
+                <Avatar sx={{ width: 34, height: 34, bgcolor: 'primary.main', color: '#fff', fontSize: 13, fontWeight: 800, flexShrink: 0 }}>
+                  {myInitials}
+                </Avatar>
+                <TextField
+                  fullWidth
+                  placeholder="Write a comment, or tap the mic for a voice note…"
+                  value={draft}
+                  onChange={(e) => setDraft(e.target.value)}
+                  inputProps={{
+                    'aria-label': 'Add a comment',
+                    maxLength: 500,
+                    onKeyDown: (e) => {
+                      if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        addComment(e);
+                      }
+                    },
+                  }}
+                />
+                {!rec.recording ? (
+                  <IconButton
+                    onClick={startRecording}
+                    aria-label="Record voice note"
+                    title="Record a voice note (up to 60 seconds)"
+                    color="secondary"
+                    sx={{ mt: 0.5 }}
+                  >
+                    <MicRounded />
+                  </IconButton>
+                ) : (
+                  <Button
+                    onClick={rec.stop}
+                    color="error"
+                    variant="contained"
+                    startIcon={<StopRounded />}
+                    sx={{ borderRadius: 999 }}
+                  >
+                    {fmtClock(rec.seconds)} — Stop
+                  </Button>
+                )}
+                <Button variant="contained" disabled={busy || (!draft.trim() && !rec.blob)} onClick={addComment}>
+                  {busy ? 'Posting…' : 'Post'}
+                </Button>
+              </Box>
+
+              {rec.recording && (
+                <Alert
+                  severity="error"
+                  icon={<CancelRounded />}
+                  action={
+                    <Button color="inherit" size="small" onClick={rec.cancel}>
+                      Discard
+                    </Button>
+                  }
+                  sx={{ borderRadius: 2 }}
+                >
+                  Recording… {fmtClock(rec.seconds)} / 1:00. Press Stop when you're done.
+                </Alert>
+              )}
+
+              {!rec.recording && rec.blob && previewUrl && (
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap', pl: 6 }}>
+                  <audio controls src={previewUrl} style={{ height: 36, maxWidth: 300 }} />
+                  <Button size="small" color="error" startIcon={<CancelRounded />} onClick={rec.clearBlob}>
+                    Remove voice note
+                  </Button>
+                  <Typography variant="caption" color="text.secondary">
+                    You can also add text before posting.
+                  </Typography>
+                </Box>
+              )}
             </Box>
 
+            {/* List */}
             {comments.length === 0 ? (
-              <EmptyState message="No comments yet — be the first to react to the story." />
+              <EmptyState message="No comments yet — write one, or tap the mic and leave a voice note." />
             ) : (
-              comments.map((c) => (
-                <Box key={c.id} sx={{ display: 'flex', gap: 1.5, alignItems: 'flex-start' }}>
-                  <Avatar sx={{ width: 34, height: 34, bgcolor: 'secondary.main', color: '#1a1200', fontSize: 13, fontWeight: 800, flexShrink: 0 }}>
-                    {(c.profile?.full_name || '?').split(' ').map((w) => w[0]).slice(0, 2).join('').toUpperCase()}
-                  </Avatar>
-                  <Box sx={{ flex: 1, minWidth: 0 }}>
-                    <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 1, flexWrap: 'wrap' }}>
-                      <Typography sx={{ fontWeight: 700, fontSize: 14 }}>{c.profile?.full_name || 'Member'}</Typography>
-                      <Typography variant="caption" color="text.secondary">
-                        {formatDate(c.created_at, true)}
-                      </Typography>
+              comments.map((c) => {
+                const isEditing = editingId === c.id;
+                const initials = (c.profile?.full_name || '?')
+                  .split(' ')
+                  .filter(Boolean)
+                  .map((w) => w[0])
+                  .slice(0, 2)
+                  .join('')
+                  .toUpperCase();
+                return (
+                  <Box key={c.id} sx={{ display: 'flex', gap: 1.5, alignItems: 'flex-start' }}>
+                    <Avatar sx={{ width: 34, height: 34, bgcolor: 'secondary.main', color: '#1a1200', fontSize: 13, fontWeight: 800, flexShrink: 0 }}>
+                      {initials}
+                    </Avatar>
+                    <Box sx={{ flex: 1, minWidth: 0 }}>
+                      <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 1, flexWrap: 'wrap' }}>
+                        <Typography sx={{ fontWeight: 700, fontSize: 14 }}>{c.profile?.full_name || 'Member'}</Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          {formatDate(c.created_at, true)}
+                          {c.updated_at ? ' · edited' : ''}
+                        </Typography>
+                      </Box>
+
+                      {isEditing ? (
+                        <Box sx={{ mt: 0.5, display: 'flex', gap: 1, alignItems: 'center', flexWrap: 'wrap' }}>
+                          <TextField
+                            fullWidth
+                            size="small"
+                            value={editDraft}
+                            onChange={(e) => setEditDraft(e.target.value)}
+                            inputProps={{ 'aria-label': 'Edit comment', maxLength: 500 }}
+                            autoFocus
+                          />
+                          <Button size="small" variant="contained" startIcon={<CheckRounded />} onClick={() => saveEdit(c.id)}>
+                            Save
+                          </Button>
+                          <Button size="small" onClick={() => setEditingId(null)}>
+                            Cancel
+                          </Button>
+                        </Box>
+                      ) : (
+                        <>
+                          {c.body && <Typography sx={{ mt: 0.25, whiteSpace: 'pre-wrap' }}>{c.body}</Typography>}
+                          {c.voice_url && (
+                            <Box sx={{ mt: 1 }}>
+                              <audio controls src={c.voice_url} style={{ height: 36, maxWidth: 340, width: '100%' }} />
+                            </Box>
+                          )}
+                        </>
+                      )}
                     </Box>
-                    <Typography sx={{ mt: 0.25, whiteSpace: 'pre-wrap' }}>{c.body}</Typography>
+                    {mine(c) && !isEditing && (
+                      <Box sx={{ display: 'flex', gap: 0.25 }}>
+                        <IconButton
+                          size="small"
+                          aria-label="Edit comment"
+                          onClick={() => {
+                            setEditingId(c.id);
+                            setEditDraft(c.body || '');
+                          }}
+                        >
+                          <EditRounded fontSize="small" />
+                        </IconButton>
+                        <IconButton size="small" color="error" aria-label="Delete comment" onClick={() => deleteComment(c)}>
+                          <DeleteOutlineRounded fontSize="small" />
+                        </IconButton>
+                      </Box>
+                    )}
                   </Box>
-                  {mine(c) && (
-                    <IconButton size="small" color="error" aria-label="Delete comment" onClick={() => deleteComment(c.id)}>
-                      <DeleteOutlineRounded fontSize="small" />
-                    </IconButton>
-                  )}
-                </Box>
-              ))
+                );
+              })
             )}
           </Box>
         )}

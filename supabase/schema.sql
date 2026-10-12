@@ -717,28 +717,29 @@ begin
 end
 $$;
 
+
 -- =====================================================================
---  Appended: migration-social-betting.sql (news social + virtual betting)
+--  Appended: migration-social-betting-v2.sql (final: social + voice + betting)
 -- =====================================================================
 -- =====================================================================
---  FCB Under-19 — Upgrade: NEWS SOCIAL + VIRTUAL-POINTS BETTING
+--  FCB Under-19 — FINAL UPGRADE (replaces the earlier block)
+--  NEWS SOCIAL (comments + EDIT + VOICE NOTES, one reaction per user)
+--  + VIRTUAL-POINTS BETTING
+--
 --  HOW TO RUN: Supabase Dashboard -> SQL Editor -> New query
 --  -> paste everything -> Run.  (Safe to re-run; idempotent.)
 --
---  1. NEWS SOCIAL
---       - public.news_comments  (one row per comment; delete own)
---       - public.news_reactions (like / fire / clap; one per user+type)
---       - "Share" needs no table — the app copies the article link.
---
---  2. BETTING (virtual points only — NO real money)
---       - profiles.points       (every user starts with 1000 points)
---       - matches.home/draw/away_odds (admin sets these per match;
---         a match is bettable only when odds exist)
---       - public.bets           (one row per bet)
---       - placing a bet deducts points (trigger, atomic)
---       - when the commissioner marks a match FINISHED, all open bets
---         on it settle automatically: winners receive stake x odds,
---         every bettor gets a bell notification.
+--  What this does:
+--   1. news_comments  — text (500 max) and/or a voice note;
+--      you can edit and delete your own comments
+--   2. news_reactions — 👍 / 🔥 / 👏 with ONE reaction per user
+--      (tap a different one to switch, tap the same to remove)
+--   3. voice-notes    — a Supabase Storage bucket where voice clips
+--      are saved (each user's clips in their own folder)
+--   4. betting        — virtual points only, never real money:
+--      profiles.points (start 1,000), admin-set match odds, bets
+--      table, atomic point deduction, auto-settlement when the
+--      commissioner marks a match finished (+ bell notifications)
 -- =====================================================================
 
 -- ------------------- 1. NEWS: COMMENTS ----------------------------
@@ -746,8 +747,11 @@ create table if not exists public.news_comments (
   id uuid primary key default gen_random_uuid(),
   news_id uuid not null references public.news (id) on delete cascade,
   user_id uuid not null references public.profiles (id) on delete cascade,
-  body text not null check (char_length(body) between 1 and 500),
-  created_at timestamptz not null default now()
+  body text check (body is null or char_length(body) <= 500),
+  voice_url text,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz,
+  check (coalesce(body, '') <> '' or voice_url is not null)
 );
 create index if not exists news_comments_news_created_idx
   on public.news_comments (news_id, created_at desc);
@@ -759,6 +763,10 @@ create policy "news comments: viewable" on public.news_comments
 drop policy if exists "news comments: anyone can post" on public.news_comments;
 create policy "news comments: anyone can post" on public.news_comments
   for insert to authenticated with check (auth.uid() = user_id);
+drop policy if exists "news comments: edit own" on public.news_comments;
+create policy "news comments: edit own" on public.news_comments
+  for update to authenticated
+  using (auth.uid() = user_id) with check (auth.uid() = user_id);
 drop policy if exists "news comments: delete own" on public.news_comments;
 create policy "news comments: delete own" on public.news_comments
   for delete to authenticated using (auth.uid() = user_id);
@@ -770,9 +778,17 @@ create table if not exists public.news_reactions (
   user_id uuid not null references public.profiles (id) on delete cascade,
   reaction text not null check (reaction in ('like','fire','clap')),
   created_at timestamptz not null default now(),
-  unique (news_id, user_id, reaction)
+  unique (news_id, user_id)
 );
 create index if not exists news_reactions_news_idx on public.news_reactions (news_id);
+
+-- If an earlier version ever allowed several reactions per user,
+-- keep only the most recent one so the unique rule can hold.
+delete from public.news_reactions a
+using public.news_reactions b
+where a.news_id = b.news_id
+  and a.user_id = b.user_id
+  and a.created_at < b.created_at;
 
 alter table public.news_reactions enable row level security;
 drop policy if exists "news reactions: viewable" on public.news_reactions;
@@ -785,7 +801,33 @@ drop policy if exists "news reactions: unreact" on public.news_reactions;
 create policy "news reactions: unreact" on public.news_reactions
   for delete to authenticated using (auth.uid() = user_id);
 
--- ------------------- 3. BETTING: ODDS + POINTS --------------------
+-- ------------------- 3. VOICE NOTES: STORAGE ----------------------
+insert into storage.buckets (id, name, public)
+values ('voice-notes', 'voice-notes', true)
+on conflict (id) do update set public = true;
+
+drop policy if exists "voice notes: insert own" on storage.objects;
+create policy "voice notes: insert own" on storage.objects
+  for insert to authenticated
+  with check (
+    bucket_id = 'voice-notes'
+    and (storage.foldername(name))[1] = auth.uid()::text
+  );
+
+drop policy if exists "voice notes: read" on storage.objects;
+create policy "voice notes: read" on storage.objects
+  for select to authenticated
+  using (bucket_id = 'voice-notes');
+
+drop policy if exists "voice notes: delete own" on storage.objects;
+create policy "voice notes: delete own" on storage.objects
+  for delete to authenticated
+  using (
+    bucket_id = 'voice-notes'
+    and (storage.foldername(name))[1] = auth.uid()::text
+  );
+
+-- ------------------- 4. BETTING: ODDS + POINTS --------------------
 alter table public.matches
   add column if not exists home_odds numeric check (home_odds is null or home_odds >= 1.01);
 alter table public.matches
@@ -796,7 +838,7 @@ alter table public.matches
 alter table public.profiles
   add column if not exists points integer not null default 1000;
 
--- ------------------- 4. BETTING: BETS TABLE -----------------------
+-- ------------------- 5. BETTING: BETS TABLE -----------------------
 create table if not exists public.bets (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references public.profiles (id) on delete cascade,
@@ -821,7 +863,7 @@ drop policy if exists "bets: place own" on public.bets;
 create policy "bets: place own" on public.bets
   for insert to authenticated with check (user_id = auth.uid());
 
--- ------------------- 5. DEDUCT POINTS AT PLACEMENT ----------------
+-- ------------------- 6. DEDUCT POINTS AT PLACEMENT ----------------
 create or replace function public.handle_bet_placed()
 returns trigger
 language plpgsql
@@ -844,7 +886,7 @@ create trigger on_bet_placed
 before insert on public.bets
 for each row execute function public.handle_bet_placed();
 
--- ------------------- 6. SETTLE BETS WHEN MATCH FINISHES -----------
+-- ------------------- 7. SETTLE BETS WHEN MATCH FINISHES -----------
 create or replace function public.settle_match_bets(p_match uuid)
 returns void
 language plpgsql
@@ -928,7 +970,7 @@ for each row
 when (new.status = 'finished' and old.status is distinct from 'finished')
 execute function public.handle_match_settled();
 
--- ------------------- 7. REALTIME ----------------------------------
+-- ------------------- 8. REALTIME ----------------------------------
 do $$
 declare
   t text;
