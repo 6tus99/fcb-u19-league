@@ -27,7 +27,7 @@ export default function StatTile({ icon, label, value, sub, tone = 'green', to }
         borderRadius: 3.5,
         bgcolor: 'background.paper',
         border: '1px solid',
-        borderColor: 'divider',
+        borderColor: 'cardBorder',
         boxShadow:
           theme.palette.mode === 'dark'
             ? '0 8px 22px rgba(2, 6, 23, 0.45)'

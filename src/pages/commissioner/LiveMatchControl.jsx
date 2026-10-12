@@ -153,7 +153,7 @@ export default function LiveMatchControl() {
               .map((m) => (
                 <Paper
                   key={m.id}
-                  sx={{ p: 2, display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap', border: '1px solid', borderColor: 'divider', borderRadius: 2.5, bgcolor: 'tint' }}
+                  sx={{ p: 2, display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap', border: '1px solid', borderColor: 'cardBorder', borderRadius: 2.5, bgcolor: 'tint' }}
                 >
                   <Box sx={{ flex: 1, minWidth: 220 }}>
                     <Typography sx={{ fontWeight: 700 }}>
@@ -201,7 +201,7 @@ export default function LiveMatchControl() {
         </Alert>
       )}
 
-      <Paper sx={{ p: { xs: 3, md: 4 }, borderRadius: 3, border: '1px solid', borderColor: 'divider', bgcolor: 'tint', mb: 3 }}>
+      <Paper sx={{ p: { xs: 3, md: 4 }, borderRadius: 3, border: '1px solid', borderColor: 'cardBorder', bgcolor: 'tint', mb: 3 }}>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2, flexWrap: 'wrap', gap: 1 }}>
           <Typography color="text.secondary">
             Week {match.week} • {formatDate(match.scheduled_at, true)}
@@ -296,7 +296,7 @@ export default function LiveMatchControl() {
         ) : (
           <Box sx={{ display: 'flex', flexDirection: 'column' }}>
             {events.map((ev) => (
-              <Box key={ev.id} sx={{ display: 'flex', alignItems: 'center', gap: 1.5, py: 1, borderBottom: '1px solid', borderColor: 'divider' }}>
+              <Box key={ev.id} sx={{ display: 'flex', alignItems: 'center', gap: 1.5, py: 1, borderBottom: '1px solid', borderColor: 'cardBorder' }}>
                 <Typography sx={{ width: 44, fontWeight: 800, color: 'text.secondary' }}>
                   {ev.minute != null ? `${ev.minute}'` : '—'}
                 </Typography>

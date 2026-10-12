@@ -15,7 +15,7 @@ export default function ThemeToggleFloat() {
         sx={{
           bgcolor: 'background.paper',
           border: '1px solid',
-          borderColor: 'divider',
+          borderColor: 'cardBorder',
           color: 'text.secondary',
           '&:hover': { bgcolor: 'tint' },
         }}

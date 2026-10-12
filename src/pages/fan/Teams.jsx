@@ -42,7 +42,7 @@ export default function Teams() {
               to={`/teams/${t.id}`}
               sx={{
                 bgcolor: 'tint',
-                border: '1px solid', borderColor: 'divider',
+                border: '1px solid', borderColor: 'cardBorder',
                 transition: 'all .15s ease',
                 '&:hover': { transform: 'translateY(-2px)', borderColor: 'rgba(74,222,128,0.45)' },
               }}

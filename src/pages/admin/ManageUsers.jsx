@@ -355,12 +355,12 @@ export default function ManageUsers() {
                   const roleStyle = ROLE_STYLES[u.role] || ROLE_STYLES.fan;
                   const open = openId === u.id;
                   return (
-                    <Paper
+                      <Paper
                       key={u.id}
                       sx={{
                         borderRadius: 2.5,
                         border: '1.5px solid',
-                        borderColor: open ? roleStyle.solid : 'divider',
+                        borderColor: open ? roleStyle.solid : 'cardBorder',
                         bgcolor: 'tint',
                         overflow: 'hidden',
                         transition: 'border-color 0.15s ease',
@@ -458,7 +458,7 @@ export default function ManageUsers() {
                             px: { xs: 1.5, md: 2 },
                             py: 2,
                             borderTop: '1px solid',
-                            borderColor: 'divider',
+                            borderColor: 'cardBorder',
                             display: 'grid',
                             gap: 1.75,
                             gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' },

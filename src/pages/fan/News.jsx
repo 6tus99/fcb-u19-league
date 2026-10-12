@@ -37,7 +37,7 @@ export default function News() {
               to={`/news/${n.id}`}
               sx={{
                 bgcolor: 'tint',
-                border: '1px solid', borderColor: 'divider',
+                border: '1px solid', borderColor: 'cardBorder',
                 '&:hover': { borderColor: 'rgba(74,222,128,0.45)' },
               }}
             >

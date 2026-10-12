@@ -18,7 +18,7 @@ export default function GlassCard({ title, action, children, sx }) {
           ? 'linear-gradient(160deg, rgba(59, 94, 178, 0.18) 0%, rgba(17, 30, 66, 0.04) 55%)'
           : 'none',
         border: '1px solid',
-        borderColor: 'divider',
+        borderColor: 'cardBorder',
         backdropFilter: 'blur(8px)',
         boxShadow: dark
           ? '0 10px 28px rgba(2, 6, 23, 0.45), inset 0 1px 0 rgba(148, 163, 184, 0.12)'

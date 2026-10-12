@@ -13,6 +13,9 @@ export function buildTheme(mode) {
       info: { main: dark ? '#60a5fa' : '#2563eb' },
       // borders — dark mode needs real presence, not a whisper of white
       divider: dark ? 'rgba(148, 163, 184, 0.30)' : 'rgba(15,23,42,0.14)',
+      // card borders — brand-aware: navy edge on light, glowing steel-blue
+      // on dark, so every card is clearly visible against its background
+      cardBorder: dark ? 'rgba(129, 158, 224, 0.5)' : 'rgba(30, 64, 175, 0.25)',
       // three distinct navy layers: deep body → mid header → light cards
       background: dark
         ? { default: '#070d1f', paper: '#111e42' }

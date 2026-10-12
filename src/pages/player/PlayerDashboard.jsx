@@ -128,7 +128,7 @@ export default function PlayerDashboard() {
           p: { xs: 3, md: 4 },
           borderRadius: 3.5,
           border: '1px solid',
-          borderColor: 'divider',
+          borderColor: 'cardBorder',
           mb: 3,
           display: 'flex',
           alignItems: 'center',
@@ -211,7 +211,7 @@ export default function PlayerDashboard() {
                       gap: 1.5,
                       py: 1,
                       borderBottom: '1px solid',
-                      borderColor: 'divider',
+                      borderColor: 'cardBorder',
                     }}
                   >
                     <Typography sx={{ width: 44, fontWeight: 800, color: 'text.secondary' }}>

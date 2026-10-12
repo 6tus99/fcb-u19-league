@@ -147,7 +147,7 @@ export default function ManagerDashboard() {
           p: { xs: 3, md: 4 },
           borderRadius: 3.5,
           border: '1px solid',
-          borderColor: 'divider',
+          borderColor: 'cardBorder',
           mb: 3,
           display: 'flex',
           alignItems: 'center',
@@ -325,7 +325,7 @@ export default function ManagerDashboard() {
                       gap: 1.5,
                       py: 0.75,
                       borderBottom: '1px solid',
-                      borderColor: 'divider',
+                      borderColor: 'cardBorder',
                       flexWrap: 'wrap',
                     }}
                   >

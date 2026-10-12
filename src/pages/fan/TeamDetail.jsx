@@ -54,7 +54,7 @@ export default function TeamDetail() {
           mt: 1.5,
           p: { xs: 3, md: 4 },
           borderRadius: 3,
-          border: '1px solid', borderColor: 'divider',
+          border: '1px solid', borderColor: 'cardBorder',
           bgcolor: 'tint',
           mb: 3,
         }}

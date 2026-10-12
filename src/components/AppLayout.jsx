@@ -304,7 +304,7 @@ export default function AppLayout() {
 
       <Box
         component="footer"
-        sx={{ py: 3, textAlign: 'center', borderTop: '1px solid', borderColor: 'divider', color: 'text.secondary', fontSize: 13 }}
+        sx={{ py: 3, textAlign: 'center', borderTop: '1px solid', borderColor: 'cardBorder', color: 'text.secondary', fontSize: 13 }}
       >
         {leagueName}
         {season ? ` • ${season}` : ''}

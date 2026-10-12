@@ -71,7 +71,7 @@ export default function MatchEvents() {
         ) : (
           <Box sx={{ display: 'flex', flexDirection: 'column' }}>
             {events.map((ev) => (
-              <Box key={ev.id} sx={{ display: 'flex', alignItems: 'center', gap: 1.5, py: 1.25, borderBottom: '1px solid', borderColor: 'divider' }}>
+              <Box key={ev.id} sx={{ display: 'flex', alignItems: 'center', gap: 1.5, py: 1.25, borderBottom: '1px solid', borderColor: 'cardBorder' }}>
                 <Typography sx={{ width: 44, fontWeight: 800, color: 'text.secondary' }}>
                   {ev.minute != null ? `${ev.minute}'` : '—'}
                 </Typography>

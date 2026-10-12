@@ -77,7 +77,7 @@ export default function MatchDetail() {
           mt: 1.5,
           p: { xs: 3, md: 4 },
           borderRadius: 3,
-          border: '1px solid', borderColor: 'divider',
+          border: '1px solid', borderColor: 'cardBorder',
           bgcolor: 'tint',
         }}
       >
@@ -128,7 +128,7 @@ export default function MatchDetail() {
                         alignItems: 'center',
                         gap: 1.5,
                         py: 1,
-                        borderBottom: '1px solid', borderColor: 'divider',
+                        borderBottom: '1px solid', borderColor: 'cardBorder',
                       }}
                     >
                       <Typography sx={{ width: 44, fontWeight: 800, color: 'text.secondary' }}>

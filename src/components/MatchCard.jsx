@@ -20,7 +20,7 @@ export default function MatchCard({ match, teams }) {
       to={`/matches/${match.id}`}
       sx={{
         bgcolor: 'tint',
-        border: '1px solid', borderColor: 'divider',
+        border: '1px solid', borderColor: 'cardBorder',
         display: 'block',
         transition: 'all 0.15s ease',
         '&:hover': { transform: 'translateY(-2px)', borderColor: 'rgba(74,222,128,0.45)' },
@@ -47,7 +47,7 @@ export default function MatchCard({ match, teams }) {
               py: 0.5,
               borderRadius: 2,
               bgcolor: 'rgba(0,0,0,0.35)',
-              border: '1px solid', borderColor: 'divider',
+              border: '1px solid', borderColor: 'cardBorder',
               textAlign: 'center',
               whiteSpace: 'nowrap',
               flexShrink: 0,
