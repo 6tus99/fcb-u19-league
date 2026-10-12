@@ -28,7 +28,10 @@ export default function StatTile({ icon, label, value, sub, tone = 'green', to }
         bgcolor: 'background.paper',
         border: '1px solid',
         borderColor: 'divider',
-        boxShadow: '0 1px 2px rgba(15,23,42,0.05)',
+        boxShadow:
+          theme.palette.mode === 'dark'
+            ? '0 8px 22px rgba(2, 6, 23, 0.45)'
+            : '0 1px 2px rgba(15,23,42,0.05)',
         textDecoration: 'none',
         color: 'inherit',
         transition: 'transform .18s ease, box-shadow .18s ease, border-color .18s ease',
