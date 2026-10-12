@@ -4,6 +4,7 @@ import Box from '@mui/material/Box';
 import Paper from '@mui/material/Paper';
 import Typography from '@mui/material/Typography';
 import TextField from '@mui/material/TextField';
+import PasswordField from '../../components/PasswordField';
 import Button from '@mui/material/Button';
 import Alert from '@mui/material/Alert';
 import Link from '@mui/material/Link';
@@ -73,9 +74,8 @@ export default function Login() {
             onChange={(e) => setEmail(e.target.value)}
             fullWidth
           />
-          <TextField
+          <PasswordField
             label="Password"
-            type="password"
             required
             autoComplete="current-password"
             value={password}
