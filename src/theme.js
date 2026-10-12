@@ -17,13 +17,18 @@ export function buildTheme(mode) {
       background: dark
         ? { default: '#070d1f', paper: '#111e42' }
         : { default: '#f2f5fb', paper: '#ffffff' },
-      text: dark
+      // NOTE: only set `text` for dark mode. Passing `text: undefined` for
+      // light mode wipes MUI's default light text colors (MUI does not
+      // fall back) — which blanked the whole app on first render.
+      ...(dark
         ? {
-            primary: '#e9eefb',
-            secondary: '#a7b6d6',
-            disabled: 'rgba(167, 182, 214, 0.55)',
+            text: {
+              primary: '#e9eefb',
+              secondary: '#a7b6d6',
+              disabled: 'rgba(167, 182, 214, 0.55)',
+            },
           }
-        : undefined,
+        : {}),
       // bank brand: blue header + green accents + white body (light mode),
       // layered navy throughout (dark mode)
       appbar: dark ? '#0c1735' : '#1e3a8a',
