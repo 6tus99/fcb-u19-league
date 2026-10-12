@@ -76,7 +76,14 @@ export default function NotificationBell() {
         open={Boolean(anchorEl)}
         onClose={() => setAnchorEl(null)}
         slotProps={{
-          paper: { width: 380, maxWidth: '92vw', maxHeight: '70vh', overflowY: 'auto' },
+          paper: {
+            width: 380,
+            maxWidth: '92vw',
+            maxHeight: '70vh',
+            overflowY: 'auto',
+            border: '1px solid',
+            borderColor: (t) => (t.palette.mode === 'dark' ? '#60a5fa' : '#1e3a8a'),
+          },
         }}
       >
         <Box sx={{ px: 2, py: 1.25, display: 'flex', alignItems: 'center' }}>

@@ -148,6 +148,7 @@ export default function FanDashboard() {
         <Grid size={{ xs: 12, md: 7 }}>
           <GlassCard
             title="Next fixtures"
+            accent="red"
             action={
               <Link component={RouterLink} to="/matches" variant="body2">
                 All matches
@@ -169,6 +170,7 @@ export default function FanDashboard() {
         <Grid size={{ xs: 12, md: 5 }}>
           <GlassCard
             title="Standings"
+            accent="green"
             action={
               <Link component={RouterLink} to="/standings" variant="body2">
                 Full table
@@ -205,6 +207,7 @@ export default function FanDashboard() {
 
           <GlassCard
             title="Latest news"
+            accent="yellow"
             action={
               <Link component={RouterLink} to="/news" variant="body2">
                 All news
