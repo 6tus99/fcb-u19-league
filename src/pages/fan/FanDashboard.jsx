@@ -135,7 +135,7 @@ export default function FanDashboard() {
       </Grid>
 
       {liveMatches.length > 0 && (
-        <GlassCard title="Live now" sx={{ mb: 3 }}>
+        <GlassCard title="Live now" accent="orange" sx={{ mb: 3 }}>
           <Box sx={{ display: 'grid', gap: 1.5, gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' } }}>
             {liveMatches.map((m) => (
               <MatchCard key={m.id} match={m} teams={teams} />

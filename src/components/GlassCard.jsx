@@ -12,6 +12,7 @@ const ACCENTS = {
   red: (t) => t.palette.error.main, // #dc2626 / #f87171
   yellow: (t) => t.palette.secondary.main, // #ca8a04 / #facc15
   blue: (t) => (t.palette.mode === 'dark' ? '#60a5fa' : '#1e3a8a'),
+  orange: (t) => (t.palette.mode === 'dark' ? '#fb923c' : '#ea580c'),
 };
 
 const hexToRgba = (hex, a) => {

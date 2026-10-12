@@ -17,6 +17,7 @@ import Teams from './pages/fan/Teams';
 import TeamDetail from './pages/fan/TeamDetail';
 import News from './pages/fan/News';
 import NewsDetail from './pages/fan/NewsDetail';
+import Bets from './pages/fan/Bets';
 import PlayerDashboard from './pages/player/PlayerDashboard';
 import ManagerDashboard from './pages/manager/ManagerDashboard';
 import CommissionerDashboard from './pages/commissioner/CommissionerDashboard';
@@ -71,6 +72,7 @@ export default function App() {
           <Route path="/teams/:id" element={<TeamDetail />} />
           <Route path="/news" element={<News />} />
           <Route path="/news/:id" element={<NewsDetail />} />
+          <Route path="/fan/betting" element={<Bets />} />
 
           {/* player */}
           <Route

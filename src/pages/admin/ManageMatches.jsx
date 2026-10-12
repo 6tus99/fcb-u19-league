@@ -10,6 +10,7 @@ import TableCell from '@mui/material/TableCell';
 import TableContainer from '@mui/material/TableContainer';
 import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
+import Typography from '@mui/material/Typography';
 import PageHeader from '../../components/PageHeader';
 import GlassCard from '../../components/GlassCard';
 import LoadingSpinner from '../../components/LoadingSpinner';
@@ -28,6 +29,8 @@ export default function ManageMatches() {
   const [form, setForm] = useState(EMPTY);
   const [editingId, setEditingId] = useState(null);
   const [message, setMessage] = useState(null);
+  const [odds, setOdds] = useState({}); // matchId -> { h, d, a }
+  const [savingOdds, setSavingOdds] = useState(null);
   const [loaded, setLoaded] = useState(false);
 
   const load = useCallback(async () => {
@@ -35,8 +38,22 @@ export default function ManageMatches() {
       supabase.from('teams').select('*').order('name'),
       supabase.from('matches').select('*').order('scheduled_at'),
     ]);
+    const rows = m.data || [];
     setTeams(t.data || []);
-    setMatches(m.data || []);
+    setMatches(rows);
+    setOdds((prev) => {
+      const next = { ...prev };
+      rows.forEach((row) => {
+        if (!next[row.id]) {
+          next[row.id] = {
+            h: row.home_odds != null ? String(row.home_odds) : '',
+            d: row.draw_odds != null ? String(row.draw_odds) : '',
+            a: row.away_odds != null ? String(row.away_odds) : '',
+          };
+        }
+      });
+      return next;
+    });
     setLoaded(true);
   }, []);
 
@@ -96,6 +113,39 @@ export default function ManageMatches() {
     if (error) setMessage({ severity: 'error', text: error.message });
     else setMessage({ severity: 'success', text: 'Match deleted.' });
     reset();
+    load();
+  };
+
+  const numOrNull = (v) => (v === '' ? null : Number(v));
+
+  const saveOdds = async (m) => {
+    const o = odds[m.id] || {};
+    const payload = {
+      home_odds: numOrNull(o.h),
+      draw_odds: numOrNull(o.d),
+      away_odds: numOrNull(o.a),
+    };
+    const vals = [payload.home_odds, payload.draw_odds, payload.away_odds].filter((v) => v != null);
+    if (vals.length > 0 && vals.length < 3) {
+      setMessage({ severity: 'error', text: 'Set all three odds (Home / Draw / Away) or clear them all to close betting.' });
+      return;
+    }
+    if (vals.some((v) => v < 1.01)) {
+      setMessage({ severity: 'error', text: 'Odds must be at least 1.01.' });
+      return;
+    }
+    setSavingOdds(m.id);
+    const { error } = await supabase.from('matches').update(payload).eq('id', m.id);
+    setSavingOdds(null);
+    if (error) setMessage({ severity: 'error', text: error.message });
+    else
+      setMessage({
+        severity: 'success',
+        text:
+          payload.home_odds == null
+            ? 'Betting closed for this match.'
+            : 'Odds saved — this match is now open on the Betting board.',
+      });
     load();
   };
 
@@ -184,6 +234,7 @@ export default function ManageMatches() {
                   <TableCell sx={{ fontWeight: 700 }}>Venue</TableCell>
                   <TableCell sx={{ fontWeight: 700 }}>Score</TableCell>
                   <TableCell sx={{ fontWeight: 700 }}>Status</TableCell>
+                  <TableCell sx={{ fontWeight: 700 }}>Odds (H / D / A)</TableCell>
                   <TableCell sx={{ fontWeight: 700 }} align="right">
                     Actions
                   </TableCell>
@@ -203,6 +254,41 @@ export default function ManageMatches() {
                     </TableCell>
                     <TableCell>
                       <StatusChip status={m.status} />
+                    </TableCell>
+                    <TableCell>
+                      {m.status === 'scheduled' ? (
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                          {['h', 'd', 'a'].map((k) => (
+                            <TextField
+                              key={k}
+                              variant="standard"
+                              size="small"
+                              type="number"
+                              inputProps={{ min: 1.01, step: 0.01, style: { width: 54, fontWeight: 700 } }}
+                              placeholder={k.toUpperCase()}
+                              value={odds[m.id]?.[k] ?? ''}
+                              onChange={(e) =>
+                                setOdds((prev) => ({
+                                  ...prev,
+                                  [m.id]: { h: '', d: '', a: '', ...(prev[m.id] || {}), [k]: e.target.value },
+                                }))
+                              }
+                            />
+                          ))}
+                          <Button
+                            size="small"
+                            variant="outlined"
+                            disabled={savingOdds === m.id}
+                            onClick={() => saveOdds(m)}
+                          >
+                            {savingOdds === m.id ? '…' : 'Save'}
+                          </Button>
+                        </Box>
+                      ) : (
+                        <Typography variant="body2" color="text.secondary">
+                          {m.home_odds ? `${m.home_odds} / ${m.draw_odds} / ${m.away_odds}` : '—'}
+                        </Typography>
+                      )}
                     </TableCell>
                     <TableCell align="right">
                       <Button size="small" onClick={() => startEdit(m)}>

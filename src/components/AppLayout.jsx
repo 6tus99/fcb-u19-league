@@ -66,6 +66,7 @@ const NAV = {
   ],
   fan: [
     { to: '/fan', label: 'Home' },
+    { to: '/fan/betting', label: 'Betting' },
     { to: '/matches', label: 'Matches' },
     { to: '/standings', label: 'Standings' },
     { to: '/teams', label: 'Teams' },
