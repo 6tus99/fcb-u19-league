@@ -4,11 +4,13 @@ import Box from '@mui/material/Box';
 import Grid from '@mui/material/Grid';
 import Typography from '@mui/material/Typography';
 import Link from '@mui/material/Link';
+import Button from '@mui/material/Button';
 import Chip from '@mui/material/Chip';
 import SportsScoreRounded from '@mui/icons-material/SportsScoreRounded';
 import LocalFireDepartmentRounded from '@mui/icons-material/LocalFireDepartmentRounded';
 import EmojiEventsRounded from '@mui/icons-material/EmojiEventsRounded';
 import SportsSoccerRounded from '@mui/icons-material/SportsSoccerRounded';
+import CasinoRounded from '@mui/icons-material/CasinoRounded';
 import GlassCard from '../../components/GlassCard';
 import StatTile from '../../components/StatTile';
 import LoadingSpinner from '../../components/LoadingSpinner';
@@ -93,6 +95,40 @@ export default function FanDashboard() {
           )}
         </Box>
       </Box>
+
+      <GlassCard accent="orange" sx={{ mb: 3 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
+          <Box
+            sx={{
+              width: 52,
+              height: 52,
+              borderRadius: '50%',
+              bgcolor: mode === 'dark' ? 'rgba(251,146,60,0.16)' : 'rgba(234,88,12,0.12)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexShrink: 0,
+            }}
+          >
+            <CasinoRounded sx={{ fontSize: 30, color: mode === 'dark' ? '#fb923c' : '#ea580c' }} />
+          </Box>
+          <Box sx={{ flex: 1, minWidth: 200 }}>
+            <Typography sx={{ fontWeight: 900, fontSize: 18 }}>Betting board</Typography>
+            <Typography variant="body2" color="text.secondary">
+              Predict the matches with virtual points — no real money, just fun. Everyone starts
+              with 1,000 points.
+            </Typography>
+          </Box>
+          <Button
+            component={RouterLink}
+            to="/fan/betting"
+            variant="contained"
+            sx={{ borderRadius: 999, fontWeight: 800, bgcolor: mode === 'dark' ? '#fb923c' : '#ea580c', '&:hover': { bgcolor: mode === 'dark' ? '#f97316' : '#c2410c' } }}
+          >
+            Open betting board →
+          </Button>
+        </Box>
+      </GlassCard>
 
       <Grid container spacing={2} sx={{ mb: 3 }}>
         <Grid size={{ xs: 6, md: 3 }}>
