@@ -49,10 +49,23 @@ export default function FanDashboard() {
 
   if (!loaded) return <LoadingSpinner message="Loading the league…" />;
 
-  const nextMatches = matches
+  const scheduledMatches = matches
     .filter((m) => m.status === 'scheduled')
-    .sort((a, b) => new Date(a.scheduled_at) - new Date(b.scheduled_at))
-    .slice(0, 4);
+    .sort((a, b) => new Date(a.scheduled_at) - new Date(b.scheduled_at));
+  const now = new Date();
+  const isToday = (d) => {
+    const x = new Date(d);
+    return (
+      x.getFullYear() === now.getFullYear() &&
+      x.getMonth() === now.getMonth() &&
+      x.getDate() === now.getDate()
+    );
+  };
+  // "Upcoming" = today's games (or the 3 nearest ones if nothing is on today);
+  // "Next fixtures" = everything else still to play this season.
+  const todaysMatches = scheduledMatches.filter((m) => isToday(m.scheduled_at));
+  const upcomingMatches = todaysMatches.length > 0 ? todaysMatches : scheduledMatches.slice(0, 3);
+  const laterMatches = scheduledMatches.filter((m) => !upcomingMatches.includes(m));
   const liveMatches = matches.filter((m) => m.status === 'live');
   const top5 = computeStandings(matches, teams).slice(0, 5);
   const firstName = (profile?.full_name || profile?.email || '').split(' ')[0];
@@ -134,6 +147,27 @@ export default function FanDashboard() {
         </Grid>
       </Grid>
 
+      <GlassCard
+        title={todaysMatches.length > 0 ? "Today's matches" : 'Upcoming matches'}
+        accent="orange"
+        sx={{ mb: 3 }}
+        action={
+          <Link component={RouterLink} to="/matches" variant="body2">
+            All matches
+          </Link>
+        }
+      >
+        {upcomingMatches.length === 0 ? (
+          <EmptyState message="No matches scheduled." />
+        ) : (
+          <Box sx={{ display: 'grid', gap: 1.5, gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' } }}>
+            {upcomingMatches.map((m) => (
+              <MatchCard key={m.id} match={m} teams={teams} />
+            ))}
+          </Box>
+        )}
+      </GlassCard>
+
       <Grid container spacing={3}>
         <Grid size={{ xs: 12, md: 7 }}>
           <GlassCard
@@ -145,11 +179,11 @@ export default function FanDashboard() {
               </Link>
             }
           >
-            {nextMatches.length === 0 ? (
-              <EmptyState message="No upcoming fixtures." />
+            {laterMatches.length === 0 ? (
+              <EmptyState message="No further fixtures after the upcoming ones." />
             ) : (
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-                {nextMatches.map((m) => (
+                {laterMatches.map((m) => (
                   <MatchCard key={m.id} match={m} teams={teams} />
                 ))}
               </Box>
