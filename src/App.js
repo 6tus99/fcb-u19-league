@@ -32,6 +32,7 @@ import ManageMatches from './pages/admin/ManageMatches';
 import ManageNews from './pages/admin/ManageNews';
 import ManageOfficials from './pages/admin/ManageOfficials';
 import LeagueSettings from './pages/admin/LeagueSettings';
+import InstallPrompt from './components/InstallPrompt';
 import NotFound from './pages/NotFound';
 
 function RoleHome() {
@@ -56,6 +57,7 @@ export default function App() {
 
   return (
     <AuthProvider>
+      <InstallPrompt />
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />

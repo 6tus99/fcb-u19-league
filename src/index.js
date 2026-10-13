@@ -32,3 +32,11 @@ root.render(
     </ThemeManager>
   </React.StrictMode>
 );
+
+// PWA: register the service worker so the app shell is cached
+// (instant open + offline fallback). Production only.
+if ('serviceWorker' in navigator && process.env.NODE_ENV === 'production') {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js').catch(() => {});
+  });
+}
