@@ -18,7 +18,9 @@ import DialogContent from '@mui/material/DialogContent';
 import DialogActions from '@mui/material/DialogActions';
 import Alert from '@mui/material/Alert';
 import TextField from '@mui/material/TextField';
+import Fab from '@mui/material/Fab';
 import SportsSoccerRounded from '@mui/icons-material/SportsSoccerRounded';
+import CasinoRounded from '@mui/icons-material/CasinoRounded';
 import LogoutRounded from '@mui/icons-material/LogoutRounded';
 import ArrowBackIosRounded from '@mui/icons-material/ArrowBackIosRounded';
 import LightModeRounded from '@mui/icons-material/LightModeRounded';
@@ -302,6 +304,38 @@ export default function AppLayout() {
       <Container maxWidth="lg" sx={{ py: 3, flexGrow: 1 }}>
         <Outlet />
       </Container>
+
+      {/* Floating betting button — follows you down the page */}
+      {!location.pathname.startsWith('/fan/betting') && (
+        <Fab
+          component={RouterLink}
+          to="/fan/betting"
+          variant="extended"
+          aria-label="Betting board"
+          title="Betting board (virtual points)"
+          sx={{
+            position: 'fixed',
+            right: { xs: 14, sm: 24 },
+            bottom: { xs: 14, sm: 24 },
+            zIndex: 1200,
+            borderRadius: 999,
+            px: 2.2,
+            py: 1,
+            fontWeight: 800,
+            fontSize: 14,
+            bgcolor: mode === 'dark' ? '#fb923c' : '#ea580c',
+            color: mode === 'dark' ? '#1a1200' : '#ffffff',
+            boxShadow:
+              mode === 'dark'
+                ? '0 8px 26px rgba(251,146,60,0.5)'
+                : '0 8px 24px rgba(234,88,12,0.42)',
+            '&:hover': { bgcolor: mode === 'dark' ? '#f97316' : '#c2410c' },
+          }}
+        >
+          <CasinoRounded sx={{ mr: 1 }} />
+          Betting
+        </Fab>
+      )}
 
       <Box
         component="footer"
