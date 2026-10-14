@@ -14,8 +14,6 @@ import MoreVertRounded from '@mui/icons-material/MoreVertRounded';
 
 const isIOSDevice = () =>
   typeof navigator !== 'undefined' && /iphone|ipad|ipod/i.test(navigator.userAgent);
-const isAndroidDevice = () =>
-  typeof navigator !== 'undefined' && /android/i.test(navigator.userAgent);
 const isStandalone = () =>
   typeof window !== 'undefined' &&
   (window.matchMedia('(display-mode: standalone)').matches ||
