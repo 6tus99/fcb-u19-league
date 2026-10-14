@@ -9,7 +9,7 @@ import TextField from '@mui/material/TextField';
 import MenuItem from '@mui/material/MenuItem';
 import Alert from '@mui/material/Alert';
 import TransferWithinAStationRounded from '@mui/icons-material/TransferWithinAStationRounded';
-import SportsSoccerRounded from '@mui/icons-material/SportsSoccerRounded';
+import LeagueLogo from '../../components/LeagueLogo';
 import SportsScoreRounded from '@mui/icons-material/SportsScoreRounded';
 import EmojiEventsRounded from '@mui/icons-material/EmojiEventsRounded';
 import HandshakeRounded from '@mui/icons-material/HandshakeRounded';
@@ -150,7 +150,7 @@ export default function PlayerDashboard() {
       <Grid container spacing={2} sx={{ mb: 3 }}>
         <Grid size={{ xs: 6, md: 3 }}>
           <StatTile
-            icon={<SportsSoccerRounded sx={{ fontSize: 26 }} />}
+            icon={<LeagueLogo size={28} rounded={1.5} />}
             label="Club"
             value={team.short_name}
             sub={team.name}

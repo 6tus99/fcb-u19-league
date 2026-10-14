@@ -19,8 +19,8 @@ import DialogActions from '@mui/material/DialogActions';
 import Alert from '@mui/material/Alert';
 import TextField from '@mui/material/TextField';
 import Fab from '@mui/material/Fab';
-import SportsSoccerRounded from '@mui/icons-material/SportsSoccerRounded';
 import CasinoRounded from '@mui/icons-material/CasinoRounded';
+import LeagueLogo from './LeagueLogo';
 import LogoutRounded from '@mui/icons-material/LogoutRounded';
 import ArrowBackIosRounded from '@mui/icons-material/ArrowBackIosRounded';
 import LightModeRounded from '@mui/icons-material/LightModeRounded';
@@ -216,7 +216,7 @@ export default function AppLayout() {
             <ArrowBackIosRounded sx={{ fontSize: 20 }} />
           </IconButton>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, minWidth: 0, flexGrow: 1 }}>
-            <SportsSoccerRounded sx={{ color: 'headerText', fontSize: 26, flexShrink: 0 }} />
+            <LeagueLogo size={34} rounded={1.5} />
             <Box sx={{ minWidth: 0 }}>
               <Typography variant="subtitle1" noWrap sx={{ fontWeight: 800, lineHeight: 1.15, color: 'headerText' }}>
                 {leagueName}

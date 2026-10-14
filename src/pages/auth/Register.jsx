@@ -8,7 +8,7 @@ import PasswordField from '../../components/PasswordField';
 import Button from '@mui/material/Button';
 import Alert from '@mui/material/Alert';
 import Link from '@mui/material/Link';
-import SportsSoccerRounded from '@mui/icons-material/SportsSoccerRounded';
+import LeagueLogo from '../../components/LeagueLogo';
 import { useAuth } from '../../context/AuthContext';
 import { homeForRole } from '../../components/ProtectedRoute';
 import LoadingSpinner from '../../components/LoadingSpinner';
@@ -59,7 +59,7 @@ export default function Register() {
       <ThemeToggleFloat />
       <Paper sx={{ p: 4, width: '100%', maxWidth: 460, borderRadius: 3 }}>
         <Box sx={{ textAlign: 'center', mb: 3 }}>
-          <SportsSoccerRounded color="primary" sx={{ fontSize: 52 }} />
+          <LeagueLogo size={84} rounded={3} sx={{ mx: 'auto' }} />
           <Typography variant="h5" sx={{ fontWeight: 800, mt: 1 }}>
             Join the league
           </Typography>

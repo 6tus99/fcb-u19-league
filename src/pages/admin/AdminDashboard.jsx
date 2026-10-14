@@ -6,7 +6,7 @@ import Grid from '@mui/material/Grid';
 import Link from '@mui/material/Link';
 import Chip from '@mui/material/Chip';
 import PersonRounded from '@mui/icons-material/PersonRounded';
-import SportsSoccerRounded from '@mui/icons-material/SportsSoccerRounded';
+import LeagueLogo from '../../components/LeagueLogo';
 import LocalFireDepartmentRounded from '@mui/icons-material/LocalFireDepartmentRounded';
 import ArticleRounded from '@mui/icons-material/ArticleRounded';
 import StatTile from '../../components/StatTile';
@@ -80,7 +80,7 @@ export default function AdminDashboard() {
         </Grid>
         <Grid size={{ xs: 6, md: 3 }}>
           <StatTile
-            icon={<SportsSoccerRounded sx={{ fontSize: 26 }} />}
+            icon={<LeagueLogo size={28} rounded={1.5} />}
             label="Teams"
             value={counts.teams}
             tone="blue"

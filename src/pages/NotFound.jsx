@@ -3,12 +3,12 @@ import { Link as RouterLink } from 'react-router-dom';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import Button from '@mui/material/Button';
-import SportsSoccerRounded from '@mui/icons-material/SportsSoccerRounded';
+import LeagueLogo from '../components/LeagueLogo';
 
 export default function NotFound() {
   return (
     <Box sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', p: 2, textAlign: 'center' }}>
-      <SportsSoccerRounded color="primary" sx={{ fontSize: 64 }} />
+      <LeagueLogo size={96} rounded={3} />
       <Typography variant="h2" sx={{ fontWeight: 900, my: 1 }}>
         404
       </Typography>

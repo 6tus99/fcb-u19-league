@@ -8,8 +8,8 @@ import Chip from '@mui/material/Chip';
 import SportsScoreRounded from '@mui/icons-material/SportsScoreRounded';
 import LocalFireDepartmentRounded from '@mui/icons-material/LocalFireDepartmentRounded';
 import EmojiEventsRounded from '@mui/icons-material/EmojiEventsRounded';
-import SportsSoccerRounded from '@mui/icons-material/SportsSoccerRounded';
 import GlassCard from '../../components/GlassCard';
+import LeagueLogo from '../../components/LeagueLogo';
 import StatTile from '../../components/StatTile';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import MatchCard from '../../components/MatchCard';
@@ -92,7 +92,7 @@ export default function FanDashboard() {
         }}
       >
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap' }}>
-          <SportsSoccerRounded sx={{ fontSize: 34, flexShrink: 0 }} />
+          <LeagueLogo size={52} rounded={2.5} />
           <Typography variant="h4" sx={{ fontWeight: 900 }}>{leagueName}</Typography>
         </Box>
         <Typography sx={{ mt: 0.5, opacity: 0.85, maxWidth: 620 }}>
@@ -137,7 +137,7 @@ export default function FanDashboard() {
         </Grid>
         <Grid size={{ xs: 6, md: 3 }}>
           <StatTile
-            icon={<SportsSoccerRounded sx={{ fontSize: 26 }} />}
+            icon={<LeagueLogo size={28} rounded={1.5} />}
             label="League leader"
             value={top5[0] ? top5[0].team.short_name : '—'}
             sub={top5[0] ? `${top5[0].Pts} pts • ${top5[0].P} played` : ''}

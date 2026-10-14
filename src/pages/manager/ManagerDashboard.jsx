@@ -11,7 +11,7 @@ import Alert from '@mui/material/Alert';
 import PersonAddAlt1Rounded from '@mui/icons-material/PersonAddAlt1Rounded';
 import LeaderboardRounded from '@mui/icons-material/LeaderboardRounded';
 import EmojiEventsRounded from '@mui/icons-material/EmojiEventsRounded';
-import SportsSoccerRounded from '@mui/icons-material/SportsSoccerRounded';
+import LeagueLogo from '../../components/LeagueLogo';
 import PersonRounded from '@mui/icons-material/PersonRounded';
 import { alpha } from '@mui/material/styles';
 import StatTile from '../../components/StatTile';
@@ -201,7 +201,7 @@ export default function ManagerDashboard() {
         </Grid>
         <Grid size={{ xs: 6, md: 3 }}>
           <StatTile
-            icon={<SportsSoccerRounded sx={{ fontSize: 26 }} />}
+            icon={<LeagueLogo size={28} rounded={1.5} />}
             label="Wins"
             value={row ? row.W : 0}
             sub={row ? `${row.D} draws • ${row.L} losses` : ''}
