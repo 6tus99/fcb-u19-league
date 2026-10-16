@@ -12,7 +12,10 @@ function ThemedShell({ children }) {
   const { mode } = useThemeMode();
   return (
     <ThemeProvider theme={buildTheme(mode)}>
-      <CssBaseline />
+      {/* colorScheme hands the effective mode to the OS so native chrome
+          (scrollbars, pickers, number spinners, media controls) uses the
+          system's own colors for light/dark */}
+      <CssBaseline colorScheme={mode} />
       {children}
     </ThemeProvider>
   );

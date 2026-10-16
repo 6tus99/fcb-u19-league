@@ -25,6 +25,7 @@ import LogoutRounded from '@mui/icons-material/LogoutRounded';
 import ArrowBackIosRounded from '@mui/icons-material/ArrowBackIosRounded';
 import LightModeRounded from '@mui/icons-material/LightModeRounded';
 import DarkModeRounded from '@mui/icons-material/DarkModeRounded';
+import BrightnessAutoRounded from '@mui/icons-material/BrightnessAutoRounded';
 import SpaceDashboardRounded from '@mui/icons-material/SpaceDashboardRounded';
 import HourglassTopRounded from '@mui/icons-material/HourglassTopRounded';
 import { useAuth } from '../context/AuthContext';
@@ -86,10 +87,11 @@ const ROLE_LABEL = {
 
 export default function AppLayout() {
   const { profile, signOut } = useAuth();
-  const { mode, toggle } = useThemeMode();
+  const { mode, choice, setChoice } = useThemeMode();
   const location = useLocation();
   const navigate = useNavigate();
   const [anchorEl, setAnchorEl] = useState(null);
+  const [themeAnchor, setThemeAnchor] = useState(null);
   const [leagueName, setLeagueName] = useState('FCB Under 19 Football League');
   const [season, setSeason] = useState('');
   const [pendingChange, setPendingChange] = useState(null);
@@ -265,9 +267,42 @@ export default function AppLayout() {
               My dashboard
             </Button>
           ) : null}
-          <IconButton onClick={toggle} size="small" aria-label="Toggle light/dark mode" sx={{ color: 'headerIcon', flexShrink: 0 }}>
-            {mode === 'dark' ? <LightModeRounded /> : <DarkModeRounded />}
+          <IconButton
+            onClick={(e) => setThemeAnchor(e.currentTarget)}
+            size="small"
+            aria-label="Theme settings"
+            sx={{ color: 'headerIcon', flexShrink: 0 }}
+          >
+            {choice === 'system' ? (
+              <BrightnessAutoRounded />
+            ) : choice === 'dark' ? (
+              <DarkModeRounded />
+            ) : (
+              <LightModeRounded />
+            )}
           </IconButton>
+          <Menu
+            open={Boolean(themeAnchor)}
+            anchorEl={themeAnchor}
+            onClose={() => setThemeAnchor(null)}
+          >
+            {[
+              { id: 'system', label: 'Match device' },
+              { id: 'light', label: 'Light' },
+              { id: 'dark', label: 'Dark' },
+            ].map((o) => (
+              <MenuItem
+                key={o.id}
+                selected={o.id === choice}
+                onClick={() => {
+                  setChoice(o.id);
+                  setThemeAnchor(null);
+                }}
+              >
+                {o.label}
+              </MenuItem>
+            ))}
+          </Menu>
           <NotificationBell />
           <IconButton onClick={(e) => setAnchorEl(e.currentTarget)} size="small" aria-label="Account menu" sx={{ flexShrink: 0 }}>
             <Avatar sx={{ width: 34, height: 34, bgcolor: 'primary.main', color: '#04120a', fontSize: 13, fontWeight: 800 }}>{initials}</Avatar>
