@@ -11,6 +11,7 @@ import StatusChip from '../../components/StatusChip';
 import EmptyState from '../../components/EmptyState';
 import { formatDate } from '../../utils/standings';
 import supabase from '../../lib/supabase';
+import useAutoRefresh from '../../hooks/useAutoRefresh';
 
 const EVENT_ICONS = {
   goal: '⚽',
@@ -46,6 +47,7 @@ export default function MatchDetail() {
   useEffect(() => {
     loadMatch();
   }, [loadMatch]);
+  useAutoRefresh(loadMatch, 15000);
 
   // Live updates while the match is in progress
   useEffect(() => {

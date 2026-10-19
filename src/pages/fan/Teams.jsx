@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { Link as RouterLink } from 'react-router-dom';
 import Box from '@mui/material/Box';
 import Card from '@mui/material/Card';
@@ -8,13 +8,14 @@ import PageHeader from '../../components/PageHeader';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import { computeStandings } from '../../utils/standings';
 import supabase from '../../lib/supabase';
+import useAutoRefresh from '../../hooks/useAutoRefresh';
 
 export default function Teams() {
   const [teams, setTeams] = useState([]);
   const [matches, setMatches] = useState([]);
   const [loaded, setLoaded] = useState(false);
 
-  useEffect(() => {
+  const load = useCallback(() => {
     Promise.all([supabase.from('teams').select('*').order('name'), supabase.from('matches').select('*')]).then(
       ([t, m]) => {
         setTeams(t.data || []);
@@ -23,6 +24,11 @@ export default function Teams() {
       }
     );
   }, []);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+  useAutoRefresh(load, 30000);
 
   if (!loaded) return <LoadingSpinner message="Loading teams…" />;
 

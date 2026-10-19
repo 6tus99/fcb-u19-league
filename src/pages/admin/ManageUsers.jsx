@@ -26,6 +26,7 @@ import { formatDate } from '../../utils/standings';
 import { sha256Hex } from '../../utils/crypto';
 import { useAuth } from '../../context/AuthContext';
 import supabase from '../../lib/supabase';
+import useAutoRefresh from '../../hooks/useAutoRefresh';
 
 const ROLES = ['admin', 'commissioner', 'manager', 'player', 'fan'];
 const cap = (s) => s.charAt(0).toUpperCase() + s.slice(1);
@@ -97,6 +98,7 @@ export default function ManageUsers() {
       supabase.removeChannel(channel);
     };
   }, [load]);
+  useAutoRefresh(load, 15000);
 
   const pendingChange = (u) =>
     (u.pending_role_changes || []).find(

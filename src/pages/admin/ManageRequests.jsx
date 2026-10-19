@@ -19,6 +19,7 @@ import EmptyState from '../../components/EmptyState';
 import StatusChip from '../../components/StatusChip';
 import { formatDate } from '../../utils/standings';
 import supabase from '../../lib/supabase';
+import useAutoRefresh from '../../hooks/useAutoRefresh';
 
 const SELECT =
   '*, requester:profiles!requests_requested_by_fkey (id, full_name, email), player:profiles!requests_player_profile_id_fkey (id, full_name, email), team:teams!requests_team_id_fkey (id, name, short_name), from_team:teams!requests_from_team_id_fkey (id, name, short_name)';
@@ -42,6 +43,7 @@ export default function ManageRequests() {
   useEffect(() => {
     load();
   }, [load]);
+  useAutoRefresh(load, 30000);
 
   const resolve = async (id, status) => {
     setBusyId(id);

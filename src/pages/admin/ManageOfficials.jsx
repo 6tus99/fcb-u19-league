@@ -12,6 +12,7 @@ import EmptyState from '../../components/EmptyState';
 import AddRounded from '@mui/icons-material/AddRounded';
 import DeleteRounded from '@mui/icons-material/DeleteRounded';
 import supabase from '../../lib/supabase';
+import useAutoRefresh from '../../hooks/useAutoRefresh';
 
 const EMPTY = { name: '', type: 'referee', phone: '' };
 
@@ -30,6 +31,7 @@ export default function ManageOfficials() {
   useEffect(() => {
     load();
   }, [load]);
+  useAutoRefresh(load, 30000);
 
   const handleAdd = async (e) => {
     e.preventDefault();

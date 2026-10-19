@@ -1,23 +1,29 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import PageHeader from '../../components/PageHeader';
 import GlassCard from '../../components/GlassCard';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import StandingsTable from '../../components/StandingsTable';
 import { computeStandings } from '../../utils/standings';
 import supabase from '../../lib/supabase';
+import useAutoRefresh from '../../hooks/useAutoRefresh';
 
 export default function Standings() {
   const [teams, setTeams] = useState([]);
   const [matches, setMatches] = useState([]);
   const [loaded, setLoaded] = useState(false);
 
-  useEffect(() => {
+  const load = useCallback(() => {
     Promise.all([supabase.from('teams').select('*'), supabase.from('matches').select('*')]).then(([t, m]) => {
       setTeams(t.data || []);
       setMatches(m.data || []);
       setLoaded(true);
     });
   }, []);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+  useAutoRefresh(load, 15000);
 
   if (!loaded) return <LoadingSpinner message="Calculating standings…" />;
 

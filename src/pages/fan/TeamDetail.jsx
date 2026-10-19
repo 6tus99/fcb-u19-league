@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { useParams, Link as RouterLink } from 'react-router-dom';
 import Box from '@mui/material/Box';
 import Paper from '@mui/material/Paper';
@@ -11,6 +11,7 @@ import MatchCard from '../../components/MatchCard';
 import EmptyState from '../../components/EmptyState';
 import { computeStandings, readableTextOn } from '../../utils/standings';
 import supabase from '../../lib/supabase';
+import useAutoRefresh from '../../hooks/useAutoRefresh';
 
 export default function TeamDetail() {
   const { id } = useParams();
@@ -20,7 +21,7 @@ export default function TeamDetail() {
   const [squad, setSquad] = useState([]);
   const [loaded, setLoaded] = useState(false);
 
-  useEffect(() => {
+  const load = useCallback(() => {
     Promise.all([
       supabase.from('teams').select('*').eq('id', id).maybeSingle(),
       supabase.from('teams').select('*'),
@@ -34,6 +35,11 @@ export default function TeamDetail() {
       setLoaded(true);
     });
   }, [id]);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+  useAutoRefresh(load, 15000);
 
   if (!loaded) return <LoadingSpinner message="Loading team…" />;
   if (!team) return <EmptyState message="Team not found." />;

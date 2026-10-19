@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import Box from '@mui/material/Box';
 import Chip from '@mui/material/Chip';
 import PageHeader from '../../components/PageHeader';
@@ -7,6 +7,7 @@ import LoadingSpinner from '../../components/LoadingSpinner';
 import MatchCard from '../../components/MatchCard';
 import EmptyState from '../../components/EmptyState';
 import supabase from '../../lib/supabase';
+import useAutoRefresh from '../../hooks/useAutoRefresh';
 
 const FILTERS = [
   { id: 'all', label: 'All' },
@@ -21,13 +22,18 @@ export default function Matches() {
   const [loaded, setLoaded] = useState(false);
   const [filter, setFilter] = useState('all');
 
-  useEffect(() => {
+  const load = useCallback(() => {
     Promise.all([supabase.from('teams').select('*'), supabase.from('matches').select('*')]).then(([t, m]) => {
       setTeams(t.data || []);
       setMatches(m.data || []);
       setLoaded(true);
     });
   }, []);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+  useAutoRefresh(load, 15000);
 
   if (!loaded) return <LoadingSpinner message="Loading matches…" />;
 

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { Link as RouterLink } from 'react-router-dom';
 import Box from '@mui/material/Box';
 import Card from '@mui/material/Card';
@@ -9,17 +9,23 @@ import LoadingSpinner from '../../components/LoadingSpinner';
 import EmptyState from '../../components/EmptyState';
 import { formatDate } from '../../utils/standings';
 import supabase from '../../lib/supabase';
+import useAutoRefresh from '../../hooks/useAutoRefresh';
 
 export default function News() {
   const [articles, setArticles] = useState([]);
   const [loaded, setLoaded] = useState(false);
 
-  useEffect(() => {
+  const load = useCallback(() => {
     supabase.from('news').select('*').order('created_at', { ascending: false }).then(({ data }) => {
       setArticles(data || []);
       setLoaded(true);
     });
   }, []);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+  useAutoRefresh(load, 30000);
 
   if (!loaded) return <LoadingSpinner message="Loading news…" />;
 

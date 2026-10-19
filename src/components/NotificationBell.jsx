@@ -11,6 +11,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { formatDate } from '../utils/standings';
 import supabase from '../lib/supabase';
+import useAutoRefresh from '../hooks/useAutoRefresh';
 
 export default function NotificationBell() {
   const { profile } = useAuth();
@@ -48,6 +49,7 @@ export default function NotificationBell() {
       supabase.removeChannel(channel);
     };
   }, [profile?.id, load]);
+  useAutoRefresh(load, 30000);
 
   const openMenu = async (e) => {
     setAnchorEl(e.currentTarget);

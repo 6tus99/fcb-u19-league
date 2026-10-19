@@ -12,6 +12,7 @@ import AddRounded from '@mui/icons-material/AddRounded';
 import DeleteRounded from '@mui/icons-material/DeleteRounded';
 import { formatDate } from '../../utils/standings';
 import supabase from '../../lib/supabase';
+import useAutoRefresh from '../../hooks/useAutoRefresh';
 
 export default function ManageNews() {
   const [articles, setArticles] = useState([]);
@@ -29,6 +30,7 @@ export default function ManageNews() {
   useEffect(() => {
     load();
   }, [load]);
+  useAutoRefresh(load, 30000);
 
   const handlePublish = async (e) => {
     e.preventDefault();

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { Link as RouterLink } from 'react-router-dom';
 import Box from '@mui/material/Box';
 import Grid from '@mui/material/Grid';
@@ -18,6 +18,7 @@ import { computeStandings, formatDate } from '../../utils/standings';
 import { useAuth } from '../../context/AuthContext';
 import { useThemeMode } from '../../context/ThemeContext';
 import supabase from '../../lib/supabase';
+import useAutoRefresh from '../../hooks/useAutoRefresh';
 
 export default function FanDashboard() {
   const { profile } = useAuth();
@@ -29,7 +30,7 @@ export default function FanDashboard() {
   const [leagueName, setLeagueName] = useState('FCB Under 19 Football League');
   const [loaded, setLoaded] = useState(false);
 
-  useEffect(() => {
+  const load = useCallback(() => {
     Promise.all([
       supabase.from('teams').select('*').order('name'),
       supabase.from('matches').select('*'),
@@ -46,6 +47,11 @@ export default function FanDashboard() {
       setLoaded(true);
     });
   }, []);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+  useAutoRefresh(load, 15000);
 
   if (!loaded) return <LoadingSpinner message="Loading the league…" />;
 

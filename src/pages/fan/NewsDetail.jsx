@@ -23,6 +23,7 @@ import useVoiceRecorder from '../../hooks/useVoiceRecorder';
 import { formatDate } from '../../utils/standings';
 import { useAuth } from '../../context/AuthContext';
 import supabase from '../../lib/supabase';
+import useAutoRefresh from '../../hooks/useAutoRefresh';
 
 const REACTIONS = [
   { id: 'like', emoji: '👍', label: 'Like' },
@@ -84,6 +85,7 @@ export default function NewsDetail() {
   useEffect(() => {
     loadSocial();
   }, [loadSocial]);
+  useAutoRefresh(loadSocial, 15000);
 
   if (!loaded) return <LoadingSpinner message="Loading article…" />;
   if (!article) return <EmptyState message="Article not found." />;

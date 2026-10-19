@@ -20,6 +20,7 @@ import AddRounded from '@mui/icons-material/AddRounded';
 import DeleteRounded from '@mui/icons-material/DeleteRounded';
 import { formatDate, toLocalInput, fromLocalInput } from '../../utils/standings';
 import supabase from '../../lib/supabase';
+import useAutoRefresh from '../../hooks/useAutoRefresh';
 
 const EMPTY = { home_team_id: '', away_team_id: '', week: '1', scheduled_at: '', venue: '' };
 
@@ -60,6 +61,7 @@ export default function ManageMatches() {
   useEffect(() => {
     load();
   }, [load]);
+  useAutoRefresh(load, 30000);
 
   const reset = () => {
     setForm(EMPTY);

@@ -13,6 +13,7 @@ import EditRounded from '@mui/icons-material/EditRounded';
 import DeleteRounded from '@mui/icons-material/DeleteRounded';
 import { readableTextOn } from '../../utils/standings';
 import supabase from '../../lib/supabase';
+import useAutoRefresh from '../../hooks/useAutoRefresh';
 
 const EMPTY = { name: '', short_name: '', city: '', stadium: '', primary_color: '#3b82f6', secondary_color: '#ffffff' };
 
@@ -34,6 +35,7 @@ export default function ManageTeams() {
   useEffect(() => {
     load();
   }, [load]);
+  useAutoRefresh(load, 30000);
 
   const reset = () => {
     setForm(EMPTY);

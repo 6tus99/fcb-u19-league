@@ -16,6 +16,7 @@ import AccountBalanceWalletRounded from '@mui/icons-material/AccountBalanceWalle
 import { formatDate } from '../../utils/standings';
 import { useAuth } from '../../context/AuthContext';
 import supabase from '../../lib/supabase';
+import useAutoRefresh from '../../hooks/useAutoRefresh';
 
 const PICKS = [
   { id: 'home', label: 'Home', col: 'home_odds' },
@@ -57,6 +58,7 @@ export default function Bets() {
   useEffect(() => {
     load();
   }, [load]);
+  useAutoRefresh(load, 15000);
 
   const teamName = (id) => teams.find((t) => t.id === id)?.name || 'TBD';
   const openMatches = matches.filter((m) => m.home_odds || m.draw_odds || m.away_odds);
