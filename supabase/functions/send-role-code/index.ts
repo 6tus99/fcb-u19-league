@@ -34,7 +34,7 @@ Deno.serve(async (req) => {
   const { profile_id, new_role } = body;
   if (!profile_id || !new_role)
     return json({ error: "profile_id and new_role are required" }, 400);
-  if (!["admin", "commissioner", "manager", "player", "fan"].includes(new_role))
+  if (!["admin", "commissioner", "manager", "player", "fan", "editor"].includes(new_role))
     return json({ error: "Invalid role" }, 400);
 
   const { data: target } = await service

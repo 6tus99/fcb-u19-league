@@ -28,7 +28,7 @@ import { useAuth } from '../../context/AuthContext';
 import supabase from '../../lib/supabase';
 import useAutoRefresh from '../../hooks/useAutoRefresh';
 
-const ROLES = ['admin', 'commissioner', 'manager', 'player', 'fan'];
+const ROLES = ['admin', 'commissioner', 'manager', 'player', 'fan', 'editor'];
 const cap = (s) => s.charAt(0).toUpperCase() + s.slice(1);
 
 // One identity color per role — used on the avatar, the badge and the tab pill.

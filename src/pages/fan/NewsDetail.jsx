@@ -41,6 +41,7 @@ export default function NewsDetail() {
 
   const [comments, setComments] = useState([]);
   const [reactions, setReactions] = useState([]);
+  const [votes, setVotes] = useState([]);
   const [draft, setDraft] = useState('');
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState(null);
@@ -59,19 +60,21 @@ export default function NewsDetail() {
   }, [previewUrl]);
 
   const loadSocial = useCallback(async () => {
-    const [c, r] = await Promise.all([
+    const [c, r, v] = await Promise.all([
       supabase
         .from('news_comments')
         .select('id, body, voice_url, created_at, user_id, profile:profiles!news_comments_user_id_fkey(full_name)')
         .eq('news_id', id)
         .order('created_at', { ascending: false }),
       supabase.from('news_reactions').select('id, reaction, user_id').eq('news_id', id),
+      supabase.from('news_poll_votes').select('option, user_id').eq('news_id', id),
     ]);
     if (c.error) {
       setSocialReady(false); // tables not migrated yet
     } else {
       setComments(c.data || []);
       setReactions(r.data || []);
+      setVotes(v.data || []);
     }
   }, [id]);
 
@@ -93,6 +96,19 @@ export default function NewsDetail() {
   const mine = (row) => row.user_id === me?.id;
   const countOf = (rid) => reactions.filter((r) => r.reaction === rid).length;
   const myReaction = reactions.find((r) => mine(r))?.reaction || null;
+  const myVote = votes.find((v) => v.user_id === me?.id)?.option || null;
+
+  // One vote per fan; tapping another option changes the vote,
+  // tapping your own vote removes it.
+  const castVote = async (option) => {
+    if (myVote === option) {
+      await supabase.from('news_poll_votes').delete().eq('news_id', id).eq('user_id', me.id);
+    } else {
+      if (myVote) await supabase.from('news_poll_votes').delete().eq('news_id', id).eq('user_id', me.id);
+      await supabase.from('news_poll_votes').insert({ news_id: id, user_id: me.id, option });
+    }
+    loadSocial();
+  };
 
   // ONE reaction per user: tap the same one to remove, a different one to switch.
   const toggleReaction = async (rid) => {
@@ -205,6 +221,27 @@ export default function NewsDetail() {
         <Typography variant="caption" color="text.secondary" sx={{ mb: 2, display: 'block' }}>
           {formatDate(article.created_at)}
         </Typography>
+        {article.image_url && (
+          <Box
+            component="img"
+            src={article.image_url}
+            alt={article.title}
+            sx={{
+              width: '100%',
+              maxHeight: 360,
+              objectFit: 'cover',
+              borderRadius: 2.5,
+              my: 1,
+              border: '1px solid',
+              borderColor: 'cardBorder',
+            }}
+          />
+        )}
+        {article.video_url && (
+          <Box sx={{ my: 1.5, borderRadius: 2.5, overflow: 'hidden', border: '1px solid', borderColor: 'cardBorder' }}>
+            <video controls src={article.video_url} style={{ width: '100%', maxHeight: 420, display: 'block', background: '#000' }} />
+          </Box>
+        )}
         <Typography sx={{ whiteSpace: 'pre-wrap', lineHeight: 1.8 }}>{article.body}</Typography>
 
         <Box sx={{ display: 'flex', gap: 1, mt: 3, flexWrap: 'wrap', alignItems: 'center' }}>
@@ -234,6 +271,58 @@ export default function NewsDetail() {
             Share
           </Button>
         </Box>
+
+        {/* Poll */}
+        {socialReady && article.poll_options?.length > 0 && (
+          <Box sx={{ mt: 2.5, p: 2, borderRadius: 2.5, border: '1px solid', borderColor: 'cardBorder', bgcolor: 'background.paper' }}>
+            <Typography sx={{ fontWeight: 800, mb: 1.25 }}>📊 Poll</Typography>
+            {article.poll_options.map((opt) => {
+              const count = votes.filter((v) => v.option === opt).length;
+              const total = votes.length;
+              const pct = total ? Math.round((count / total) * 100) : 0;
+              const isMine = myVote === opt;
+              return (
+                <Box key={opt} onClick={() => castVote(opt)} sx={{ position: 'relative', mb: 0.75, cursor: 'pointer' }}>
+                  <Box
+                    sx={{
+                      position: 'absolute',
+                      top: 0,
+                      bottom: 0,
+                      left: 0,
+                      width: `${pct}%`,
+                      borderRadius: 1.5,
+                      bgcolor: 'primary.main',
+                      opacity: isMine ? 0.32 : 0.14,
+                      transition: 'width .4s ease',
+                    }}
+                  />
+                  <Box
+                    sx={{
+                      position: 'relative',
+                      px: 1.25,
+                      py: 0.75,
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 1,
+                      border: '1.5px solid',
+                      borderColor: isMine ? 'primary.main' : 'divider',
+                      borderRadius: 1.5,
+                    }}
+                  >
+                    {isMine && <CheckRounded fontSize="small" color="primary" sx={{ flexShrink: 0 }} />}
+                    <Typography sx={{ flex: 1, fontWeight: isMine ? 800 : 600 }}>{opt}</Typography>
+                    <Typography variant="caption" color="text.secondary" sx={{ whiteSpace: 'nowrap' }}>
+                      {count} vote{count === 1 ? '' : 's'} · {pct}%
+                    </Typography>
+                  </Box>
+                </Box>
+              );
+            })}
+            <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
+              Tap to vote — tap again to change your mind.
+            </Typography>
+          </Box>
+        )}
       </Paper>
 
       {message && (

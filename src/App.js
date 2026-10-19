@@ -75,6 +75,14 @@ export default function App() {
           <Route path="/news" element={<News />} />
           <Route path="/news/:id" element={<NewsDetail />} />
           <Route path="/fan/betting" element={<Bets />} />
+          <Route
+            path="/editor/news"
+            element={
+              <ProtectedRoute roles={['editor', 'admin', 'commissioner']}>
+                <ManageNews />
+              </ProtectedRoute>
+            }
+          />
 
           {/* player */}
           <Route

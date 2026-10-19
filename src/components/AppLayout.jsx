@@ -67,6 +67,14 @@ const NAV = {
     { to: '/teams', label: 'Teams' },
     { to: '/news', label: 'News' },
   ],
+  editor: [
+    { to: '/fan', label: 'Home' },
+    { to: '/editor/news', label: 'News Desk' },
+    { to: '/news', label: 'News' },
+    { to: '/matches', label: 'Matches' },
+    { to: '/standings', label: 'Standings' },
+    { to: '/teams', label: 'Teams' },
+  ],
   fan: [
     { to: '/fan', label: 'Home' },
     { to: '/fan/betting', label: 'Betting' },
