@@ -102,7 +102,9 @@ export default function MatchDetail() {
             </Typography>
             {match.status === 'scheduled' && (
               <Typography variant="body2" color="text.secondary">
-                {new Date(match.scheduled_at).toLocaleString(undefined, { hour: '2-digit', minute: '2-digit' })}
+                {match.scheduled_at
+                  ? new Date(match.scheduled_at).toLocaleString(undefined, { hour: '2-digit', minute: '2-digit' })
+                  : ''}
               </Typography>
             )}
           </Box>

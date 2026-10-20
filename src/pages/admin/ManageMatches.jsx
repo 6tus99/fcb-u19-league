@@ -3,6 +3,7 @@ import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import TextField from '@mui/material/TextField';
 import MenuItem from '@mui/material/MenuItem';
+import Select from '@mui/material/Select';
 import Alert from '@mui/material/Alert';
 import Table from '@mui/material/Table';
 import TableBody from '@mui/material/TableBody';
@@ -32,16 +33,19 @@ export default function ManageMatches() {
   const [message, setMessage] = useState(null);
   const [odds, setOdds] = useState({}); // matchId -> { h, d, a }
   const [savingOdds, setSavingOdds] = useState(null);
+  const [officials, setOfficials] = useState([]);
   const [loaded, setLoaded] = useState(false);
 
   const load = useCallback(async () => {
-    const [t, m] = await Promise.all([
+    const [t, m, o] = await Promise.all([
       supabase.from('teams').select('*').order('name'),
       supabase.from('matches').select('*').order('scheduled_at'),
+      supabase.from('officials').select('*').order('name'),
     ]);
     const rows = m.data || [];
     setTeams(t.data || []);
     setMatches(rows);
+    setOfficials(o.data || []);
     setOdds((prev) => {
       const next = { ...prev };
       rows.forEach((row) => {
@@ -115,6 +119,85 @@ export default function ManageMatches() {
     if (error) setMessage({ severity: 'error', text: error.message });
     else setMessage({ severity: 'success', text: 'Match deleted.' });
     reset();
+    load();
+  };
+
+  // Creates the full season: every team vs every team, home and away.
+  // Admin then only has to set a date and venue for each game.
+  const generateFixtures = async () => {
+    if (teams.length < 4 || teams.length % 2 !== 0) {
+      setMessage({ severity: 'error', text: 'Add at least 4 teams (an even number) before generating the fixture.' });
+      return;
+    }
+    const total = teams.length * (teams.length - 1);
+    const warn =
+      matches.length > 0
+        ? `This DELETES all ${matches.length} existing matches and creates the full ${total}-match schedule. Continue?`
+        : `Create the full ${total}-match schedule? You can then set a date and venue for each game.`;
+    if (!window.confirm(warn)) return;
+
+    const arr = teams.map((t) => t.id);
+    const firstHalf = [];
+    for (let r = 0; r < arr.length - 1; r++) {
+      const round = [];
+      for (let i = 0; i < arr.length / 2; i++) {
+        const a = arr[i];
+        const b = arr[arr.length - 1 - i];
+        round.push(r % 2 === 0 ? { home: a, away: b } : { home: b, away: a });
+      }
+      firstHalf.push(round);
+      arr.splice(1, 0, arr.pop());
+    }
+    const allRounds = [...firstHalf, ...firstHalf.map((rd) => rd.map((m) => ({ home: m.away, away: m.home })))];
+
+    const rows = [];
+    allRounds.forEach((round, ri) => {
+      round.forEach(({ home, away }) =>
+        rows.push({
+          home_team_id: home,
+          away_team_id: away,
+          week: ri + 1,
+          scheduled_at: null,
+          venue: null,
+          status: 'scheduled',
+        })
+      );
+    });
+
+    const { error: delErr } = await supabase.from('matches').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+    if (delErr) {
+      setMessage({ severity: 'error', text: delErr.message });
+      return;
+    }
+    const { error } = await supabase.from('matches').insert(rows);
+    if (error) setMessage({ severity: 'error', text: error.message });
+    else
+      setMessage({
+        severity: 'success',
+        text: `Full fixture created — ${rows.length} matches, no dates. Now set a date and venue for each game.`,
+      });
+    load();
+  };
+
+  // Assign an official to a match. If the official is still booked on
+  // another match that has not ended, ask to move them (clear old first).
+  const assignReferee = async (m, refId) => {
+    if (refId) {
+      const conflict = matches.find((x) => x.id !== m.id && x.referee_id === refId && x.status !== 'finished');
+      const official = officials.find((o) => o.id === refId);
+      if (conflict) {
+        const ok = window.confirm(
+          `${official?.name || 'That official'} is already assigned to ${teamName(conflict.home_team_id)} v ${teamName(
+            conflict.away_team_id
+          )} and that match has not ended. Move them to this match instead?`
+        );
+        if (!ok) return;
+        await supabase.from('matches').update({ referee_id: null }).eq('id', conflict.id);
+      }
+    }
+    const { error } = await supabase.from('matches').update({ referee_id: refId || null }).eq('id', m.id);
+    if (error) setMessage({ severity: 'error', text: error.message });
+    else setMessage({ severity: 'success', text: refId ? 'Official assigned.' : 'Official unassigned.' });
     load();
   };
 
@@ -222,9 +305,18 @@ export default function ManageMatches() {
         </Box>
       </GlassCard>
 
+      <Box sx={{ display: 'flex', gap: 1.5, mb: 2, flexWrap: 'wrap', alignItems: 'center' }}>
+        <Button variant="outlined" onClick={generateFixtures}>
+          Generate full fixture ({teams.length * (teams.length - 1)} matches)
+        </Button>
+        <Typography variant="body2" color="text.secondary">
+          Creates every home-and-away game. You only set the date, venue and official for each one.
+        </Typography>
+      </Box>
+
       <GlassCard title={`Fixtures (${matches.length})`}>
         {matches.length === 0 ? (
-          <EmptyState message="No matches scheduled." />
+          <EmptyState message="No matches yet — generate the full fixture above." />
         ) : (
           <TableContainer sx={{ overflowX: 'auto' }}>
             <Table size="small">
@@ -234,6 +326,7 @@ export default function ManageMatches() {
                   <TableCell sx={{ fontWeight: 700 }}>Match</TableCell>
                   <TableCell sx={{ fontWeight: 700 }}>Date</TableCell>
                   <TableCell sx={{ fontWeight: 700 }}>Venue</TableCell>
+                  <TableCell sx={{ fontWeight: 700, whiteSpace: 'nowrap' }}>Official</TableCell>
                   <TableCell sx={{ fontWeight: 700 }}>Score</TableCell>
                   <TableCell sx={{ fontWeight: 700 }}>Status</TableCell>
                   <TableCell sx={{ fontWeight: 700 }}>Odds (H / D / A)</TableCell>
@@ -249,8 +342,26 @@ export default function ManageMatches() {
                     <TableCell sx={{ fontWeight: 600, whiteSpace: 'nowrap' }}>
                       {teamName(m.home_team_id)} vs {teamName(m.away_team_id)}
                     </TableCell>
-                    <TableCell sx={{ whiteSpace: 'nowrap', color: 'text.secondary' }}>{formatDate(m.scheduled_at, true)}</TableCell>
+                    <TableCell sx={{ whiteSpace: 'nowrap', color: 'text.secondary' }}>
+                      {m.scheduled_at ? formatDate(m.scheduled_at, true) : 'Date TBC'}
+                    </TableCell>
                     <TableCell sx={{ whiteSpace: 'nowrap', color: 'text.secondary' }}>{m.venue || '—'}</TableCell>
+                    <TableCell>
+                      <Select
+                        size="small"
+                        value={m.referee_id || ''}
+                        onChange={(e) => assignReferee(m, e.target.value)}
+                        displayEmpty
+                        sx={{ minWidth: 150 }}
+                      >
+                        <MenuItem value="">— none —</MenuItem>
+                        {officials.map((o) => (
+                          <MenuItem key={o.id} value={o.id}>
+                            {o.name}
+                          </MenuItem>
+                        ))}
+                      </Select>
+                    </TableCell>
                     <TableCell sx={{ fontWeight: 800 }}>
                       {m.status === 'scheduled' ? '—' : `${m.home_score}–${m.away_score}`}
                     </TableCell>

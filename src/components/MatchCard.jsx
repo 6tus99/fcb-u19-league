@@ -12,7 +12,7 @@ export default function MatchCard({ match, teams }) {
   const away = teams.find((t) => t.id === match.away_team_id);
   const isLive = match.status === 'live';
   const timeOnly = (iso) =>
-    new Date(iso).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    iso ? new Date(iso).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'TBC';
 
   return (
     <Card

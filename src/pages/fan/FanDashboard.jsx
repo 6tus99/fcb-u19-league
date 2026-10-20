@@ -57,7 +57,7 @@ export default function FanDashboard() {
 
   const scheduledMatches = matches
     .filter((m) => m.status === 'scheduled')
-    .sort((a, b) => new Date(a.scheduled_at) - new Date(b.scheduled_at));
+    .sort((a, b) => (a.scheduled_at ? new Date(a.scheduled_at) : Infinity) - (b.scheduled_at ? new Date(b.scheduled_at) : Infinity));
   const now = new Date();
   const isToday = (d) => {
     const x = new Date(d);

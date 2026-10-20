@@ -30,7 +30,9 @@ export function computeStandings(matches, teams) {
 }
 
 export function formatDate(iso, withTime = false) {
+  if (!iso) return 'Date TBC';
   const d = new Date(iso);
+  if (isNaN(d.getTime())) return 'Date TBC';
   return d.toLocaleString(undefined, {
     day: 'numeric',
     month: 'short',

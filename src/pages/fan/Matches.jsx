@@ -72,7 +72,7 @@ export default function Matches() {
             <Box sx={{ display: 'grid', gap: 1.5, gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' } }}>
               {filtered
                 .filter((m) => m.week === week)
-                .sort((a, b) => new Date(a.scheduled_at) - new Date(b.scheduled_at))
+                .sort((a, b) => (a.scheduled_at ? new Date(a.scheduled_at) : Infinity) - (b.scheduled_at ? new Date(b.scheduled_at) : Infinity))
                 .map((m) => (
                   <MatchCard key={m.id} match={m} teams={teams} />
                 ))}

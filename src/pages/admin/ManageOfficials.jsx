@@ -63,7 +63,7 @@ export default function ManageOfficials() {
 
   return (
     <div>
-      <PageHeader title="Manage Officials" subtitle="Referees and assistant referees" />
+      <PageHeader title="Manage Officials" subtitle="Referees, assistant referees and the commissioner — these are the people you assign to matches" />
 
       {message && (
         <Alert severity={message.severity} sx={{ mb: 2 }} onClose={() => setMessage(null)}>
@@ -77,6 +77,7 @@ export default function ManageOfficials() {
           <TextField label="Type" select value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })}>
             <MenuItem value="referee">Referee</MenuItem>
             <MenuItem value="assistant_referee">Assistant referee</MenuItem>
+            <MenuItem value="commissioner">Commissioner</MenuItem>
           </TextField>
           <TextField label="Phone (optional)" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
           <Button type="submit" variant="contained" startIcon={<AddRounded />}>
@@ -92,7 +93,14 @@ export default function ManageOfficials() {
           <Box sx={{ display: 'flex', flexDirection: 'column' }}>
             {officials.map((o) => (
               <Box key={o.id} sx={{ display: 'flex', alignItems: 'center', gap: 1.5, py: 1.25, borderBottom: '1px solid', borderColor: 'cardBorder' }}>
-                <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: o.type === 'referee' ? '#4ade80' : '#38bdf8' }} />
+                <Box
+                  sx={{
+                    width: 10,
+                    height: 10,
+                    borderRadius: '50%',
+                    bgcolor: o.type === 'referee' ? '#4ade80' : o.type === 'commissioner' ? '#fb923c' : '#38bdf8',
+                  }}
+                />
                 <Typography sx={{ fontWeight: 700, flex: 1 }}>{o.name}</Typography>
                 <Typography variant="body2" color="text.secondary" sx={{ textTransform: 'capitalize' }}>
                   {o.type.replace('_', ' ')}
