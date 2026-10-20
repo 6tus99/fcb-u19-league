@@ -48,32 +48,24 @@ const NAV = {
   commissioner: [
     { to: '/commissioner', label: 'Dashboard' },
     { to: '/commissioner/live', label: 'Live Match Control' },
+    { to: '/commissioner/matches', label: 'Matches' },
     { to: '/commissioner/events', label: 'Match Events' },
     { to: '/commissioner/reports', label: 'Match Reports' },
-    { to: '/matches', label: 'Matches' },
     { to: '/standings', label: 'Standings' },
   ],
   manager: [
     { to: '/manager', label: 'My Team' },
-    { to: '/matches', label: 'Matches' },
+    { to: '/manager/matches', label: 'Team Matches' },
     { to: '/standings', label: 'Standings' },
-    { to: '/teams', label: 'Teams' },
-    { to: '/news', label: 'News' },
   ],
   player: [
     { to: '/player', label: 'My Team' },
-    { to: '/matches', label: 'Matches' },
+    { to: '/player/matches', label: 'Team Matches' },
     { to: '/standings', label: 'Standings' },
-    { to: '/teams', label: 'Teams' },
-    { to: '/news', label: 'News' },
   ],
   editor: [
     { to: '/fan', label: 'Home' },
     { to: '/editor/news', label: 'News Desk' },
-    { to: '/news', label: 'News' },
-    { to: '/matches', label: 'Matches' },
-    { to: '/standings', label: 'Standings' },
-    { to: '/teams', label: 'Teams' },
   ],
   fan: [
     { to: '/fan', label: 'Home' },
@@ -90,6 +82,7 @@ const ROLE_LABEL = {
   commissioner: 'Commissioner',
   manager: 'Team Manager',
   player: 'Player',
+  editor: 'Editor',
   fan: 'Fan',
 };
 

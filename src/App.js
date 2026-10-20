@@ -31,6 +31,7 @@ import ManageTeams from './pages/admin/ManageTeams';
 import ManageMatches from './pages/admin/ManageMatches';
 import ManageNews from './pages/admin/ManageNews';
 import ManageOfficials from './pages/admin/ManageOfficials';
+import TeamMatches from './pages/team/TeamMatches';
 import LeagueSettings from './pages/admin/LeagueSettings';
 import InstallPrompt from './components/InstallPrompt';
 import NotFound from './pages/NotFound';
@@ -93,6 +94,14 @@ export default function App() {
               </ProtectedRoute>
             }
           />
+          <Route
+            path="/player/matches"
+            element={
+              <ProtectedRoute roles={['player']}>
+                <TeamMatches />
+              </ProtectedRoute>
+            }
+          />
 
           {/* manager */}
           <Route
@@ -100,6 +109,14 @@ export default function App() {
             element={
               <ProtectedRoute roles={['manager']}>
                 <ManagerDashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/manager/matches"
+            element={
+              <ProtectedRoute roles={['manager']}>
+                <TeamMatches />
               </ProtectedRoute>
             }
           />
@@ -126,6 +143,14 @@ export default function App() {
             element={
               <ProtectedRoute roles={COMMISSIONER}>
                 <LiveMatchControl />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/commissioner/matches"
+            element={
+              <ProtectedRoute roles={COMMISSIONER}>
+                <ManageMatches />
               </ProtectedRoute>
             }
           />
