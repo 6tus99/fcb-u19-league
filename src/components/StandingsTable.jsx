@@ -11,10 +11,10 @@ const MINE_EDGE = '3px solid #4ade80';
 const FIRST_BG = 'rgba(250,204,21,0.08)';
 const SECOND_BG = 'rgba(203,213,225,0.05)';
 
-// One table for every screen. On phones the columns and fonts shrink so
-// the whole league table fits the width of the device (down to ~320px,
-// e.g. iPhone SE 2) — no horizontal scrolling needed.
-export default function StandingsTable({ rows, myTeamId }) {
+// One table for every screen. Columns shrink to fit the device width
+// (down to ~320px, e.g. iPhone SE 2). Pass detailed={false} to hide the
+// GF / GA / GD columns (trimmed view).
+export default function StandingsTable({ rows, myTeamId, detailed = true }) {
   const numCell = (w) => ({
     width: w,
     px: { xs: 0.25, sm: 1 },
@@ -53,15 +53,19 @@ export default function StandingsTable({ rows, myTeamId }) {
             <TableCell align="center" sx={{ ...numCell(22), fontWeight: 800 }}>
               L
             </TableCell>
-            <TableCell align="center" sx={{ ...numCell(24), fontWeight: 800 }}>
-              GF
-            </TableCell>
-            <TableCell align="center" sx={{ ...numCell(24), fontWeight: 800 }}>
-              GA
-            </TableCell>
-            <TableCell align="center" sx={{ ...numCell(26), fontWeight: 800 }}>
-              GD
-            </TableCell>
+            {detailed && (
+              <>
+                <TableCell align="center" sx={{ ...numCell(24), fontWeight: 800 }}>
+                  GF
+                </TableCell>
+                <TableCell align="center" sx={{ ...numCell(24), fontWeight: 800 }}>
+                  GA
+                </TableCell>
+                <TableCell align="center" sx={{ ...numCell(26), fontWeight: 800 }}>
+                  GD
+                </TableCell>
+              </>
+            )}
             <TableCell align="center" sx={{ ...numCell(30), fontWeight: 800 }}>
               Pts
             </TableCell>
@@ -138,15 +142,19 @@ export default function StandingsTable({ rows, myTeamId }) {
                 <TableCell align="center" sx={numCell(22)}>
                   {r.L}
                 </TableCell>
-                <TableCell align="center" sx={numCell(24)}>
-                  {r.GF}
-                </TableCell>
-                <TableCell align="center" sx={numCell(24)}>
-                  {r.GA}
-                </TableCell>
-                <TableCell align="center" sx={numCell(26)}>
-                  {r.GD > 0 ? `+${r.GD}` : r.GD}
-                </TableCell>
+                {detailed && (
+                  <>
+                    <TableCell align="center" sx={numCell(24)}>
+                      {r.GF}
+                    </TableCell>
+                    <TableCell align="center" sx={numCell(24)}>
+                      {r.GA}
+                    </TableCell>
+                    <TableCell align="center" sx={numCell(26)}>
+                      {r.GD > 0 ? `+${r.GD}` : r.GD}
+                    </TableCell>
+                  </>
+                )}
                 <TableCell align="center" sx={{ ...numCell(30), fontWeight: 800, color: 'primary.main' }}>
                   {r.Pts}
                 </TableCell>

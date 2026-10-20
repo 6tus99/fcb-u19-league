@@ -1,4 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
+import Box from '@mui/material/Box';
+import Collapse from '@mui/material/Collapse';
+import ChevronRightRounded from '@mui/icons-material/ChevronRightRounded';
 import { useAuth } from '../../context/AuthContext';
 import PageHeader from '../../components/PageHeader';
 import GlassCard from '../../components/GlassCard';
@@ -13,6 +16,7 @@ export default function Standings() {
   const [teams, setTeams] = useState([]);
   const [matches, setMatches] = useState([]);
   const [loaded, setLoaded] = useState(false);
+  const [detailed, setDetailed] = useState(false); // trimmed by default, tap to expand
 
   const load = useCallback(() => {
     Promise.all([supabase.from('teams').select('*'), supabase.from('matches').select('*')]).then(([t, m]) => {
@@ -29,11 +33,54 @@ export default function Standings() {
 
   if (!loaded) return <LoadingSpinner message="Calculating standings…" />;
 
+  const rows = computeStandings(matches, teams);
+
   return (
     <div>
       <PageHeader title="Standings" subtitle="League table — updated automatically from finished matches" />
-      <GlassCard>
-        <StandingsTable rows={computeStandings(matches, teams)} myTeamId={profile?.team_id} />
+      <GlassCard
+        accent="green"
+        title={
+          <Box
+            onClick={() => setDetailed((d) => !d)}
+            sx={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 0.75,
+              cursor: 'pointer',
+              userSelect: 'none',
+              '&:hover': { opacity: 0.85 },
+            }}
+          >
+            <ChevronRightRounded
+              sx={{
+                fontSize: 22,
+                transform: detailed ? 'rotate(90deg)' : 'none',
+                transition: 'transform 0.2s ease',
+              }}
+            />
+            <span>Standings</span>
+            <Box
+              component="span"
+              sx={{
+                fontSize: 11,
+                fontWeight: 700,
+                color: 'text.secondary',
+                ml: 0.5,
+                textTransform: 'none',
+              }}
+            >
+              {detailed ? '· tap to trim' : '· tap for full table'}
+            </Box>
+          </Box>
+        }
+      >
+        <Collapse in={!detailed} timeout={200} unmountOnExit>
+          <StandingsTable rows={rows} myTeamId={profile?.team_id} detailed={false} />
+        </Collapse>
+        <Collapse in={detailed} timeout={200} unmountOnExit>
+          <StandingsTable rows={rows} myTeamId={profile?.team_id} detailed />
+        </Collapse>
       </GlassCard>
     </div>
   );
