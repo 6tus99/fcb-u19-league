@@ -6,7 +6,7 @@ import TableHead from '@mui/material/TableHead';
 import TableContainer from '@mui/material/TableContainer';
 import TableRow from '@mui/material/TableRow';
 
-export default function StandingsTable({ rows }) {
+export default function StandingsTable({ rows, myTeamId }) {
   const header = ['#', 'Team', 'P', 'W', 'D', 'L', 'GF', 'GA', 'GD', 'Pts'];
   return (
     <TableContainer sx={{ overflowX: 'auto' }}>
@@ -21,16 +21,20 @@ export default function StandingsTable({ rows }) {
           </TableRow>
         </TableHead>
         <TableBody>
-          {rows.map((r, i) => (
+          {rows.map((r, i) => {
+            const isMine = Boolean(myTeamId) && r.team.id === myTeamId;
+            return (
             <TableRow
               key={r.team.id}
               hover
               sx={
-                i === 0
-                  ? { bgcolor: 'rgba(250,204,21,0.08)' }
-                  : i === 1
-                    ? { bgcolor: 'rgba(203,213,225,0.05)' }
-                    : undefined
+                isMine
+                  ? { bgcolor: 'rgba(74,222,128,0.12)', borderLeft: '3px solid #4ade80' }
+                  : i === 0
+                    ? { bgcolor: 'rgba(250,204,21,0.08)' }
+                    : i === 1
+                      ? { bgcolor: 'rgba(203,213,225,0.05)' }
+                      : undefined
               }
             >
               <TableCell align="center" sx={{ fontWeight: 800, color: i === 0 ? 'secondary.main' : 'inherit' }}>
@@ -49,6 +53,19 @@ export default function StandingsTable({ rows }) {
                     }}
                   />
                   <span style={{ fontWeight: 600 }}>{r.team.name}</span>
+                  {isMine && (
+                    <span
+                      style={{
+                        fontSize: 10,
+                        fontWeight: 800,
+                        color: '#4ade80',
+                        textTransform: 'uppercase',
+                        letterSpacing: 0.5,
+                      }}
+                    >
+                      your team
+                    </span>
+                  )}
                 </span>
               </TableCell>
               <TableCell align="center">{r.P}</TableCell>
@@ -62,7 +79,8 @@ export default function StandingsTable({ rows }) {
                 {r.Pts}
               </TableCell>
             </TableRow>
-          ))}
+            );
+          })}
         </TableBody>
       </Table>
     </TableContainer>

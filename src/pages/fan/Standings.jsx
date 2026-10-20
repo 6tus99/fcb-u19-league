@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
+import { useAuth } from '../../context/AuthContext';
 import PageHeader from '../../components/PageHeader';
 import GlassCard from '../../components/GlassCard';
 import LoadingSpinner from '../../components/LoadingSpinner';
@@ -8,6 +9,7 @@ import supabase from '../../lib/supabase';
 import useAutoRefresh from '../../hooks/useAutoRefresh';
 
 export default function Standings() {
+  const { profile } = useAuth();
   const [teams, setTeams] = useState([]);
   const [matches, setMatches] = useState([]);
   const [loaded, setLoaded] = useState(false);
@@ -31,7 +33,7 @@ export default function Standings() {
     <div>
       <PageHeader title="Standings" subtitle="League table — updated automatically from finished matches" />
       <GlassCard>
-        <StandingsTable rows={computeStandings(matches, teams)} />
+        <StandingsTable rows={computeStandings(matches, teams)} myTeamId={profile?.team_id} />
       </GlassCard>
     </div>
   );

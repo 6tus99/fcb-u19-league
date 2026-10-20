@@ -175,13 +175,10 @@ export default function AppLayout() {
     setVerifyMsg({ severity: 'error', text: (data && data.error) || 'Verification failed. Try again.' });
   };
 
-  // Everyone sees the fan view (fan home + fan menu) by default. When a user
-  // enters the area they were assigned (via "My dashboard"), the menu for
-  // that area takes over.
-  const inRoleArea =
-    profile.role !== 'fan' &&
-    location.pathname.startsWith(dashboardForRole(profile.role));
-  const items = inRoleArea ? NAV[profile.role] || NAV.fan : NAV.fan;
+  // The menu follows the user's ROLE, not the page they happen to be on.
+  // A manager sees the manager menu on every page they can open (home,
+  // team matches, standings, a match detail…) — the bar never switches.
+  const items = profile.role === 'fan' ? NAV.fan : NAV[profile.role] || NAV.fan;
   const name = profile.full_name || profile.email || '?';
   const initials = name
     .split(' ')
