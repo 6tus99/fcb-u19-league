@@ -39,6 +39,7 @@ const ROLE_STYLES = {
   manager: { solid: '#16a34a', tint: 'rgba(22, 163, 74, 0.12)' },
   player: { solid: '#d97706', tint: 'rgba(217, 119, 6, 0.12)' },
   fan: { solid: '#64748b', tint: 'rgba(100, 116, 139, 0.14)' },
+  editor: { solid: '#db2777', tint: 'rgba(219, 39, 119, 0.12)' },
 };
 
 const initialsOf = (name) =>
@@ -298,6 +299,7 @@ export default function ManageUsers() {
             <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
               {['all', ...ROLES].map((r) => {
                 const active = tab === r;
+                const pillStyle = ROLE_STYLES[r] || ROLE_STYLES.fan;
                 return (
                   <Button
                     key={r}
@@ -309,7 +311,7 @@ export default function ManageUsers() {
                           width: 8,
                           height: 8,
                           borderRadius: '50%',
-                          bgcolor: active ? '#ffffff' : ROLE_STYLES[r].solid,
+                          bgcolor: active ? '#ffffff' : pillStyle.solid,
                           display: 'inline-block',
                         }}
                       />
@@ -327,10 +329,10 @@ export default function ManageUsers() {
                       lineHeight: 1.4,
                       border: '1.5px solid',
                       borderColor: active ? 'transparent' : 'divider',
-                      bgcolor: active ? ROLE_STYLES[r].solid : 'transparent',
+                      bgcolor: active ? pillStyle.solid : 'transparent',
                       color: active ? '#ffffff' : 'text.secondary',
                       transition: 'all 0.18s ease',
-                      '&:hover': { bgcolor: active ? ROLE_STYLES[r].solid : ROLE_STYLES[r].tint },
+                      '&:hover': { bgcolor: active ? pillStyle.solid : pillStyle.tint },
                     }}
                   >
                     {r === 'all' ? 'All' : cap(r)} · {counts[r]}
