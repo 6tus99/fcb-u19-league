@@ -176,17 +176,20 @@ export default function AppLayout() {
     setVerifyMsg({ severity: 'error', text: (data && data.error) || 'Verification failed. Try again.' });
   };
 
-  // The menu follows the user's ROLE, not the page they happen to be on.
-  // A manager sees the manager menu on every page they can open (home,
-  // team matches, standings, a match detail…) — the bar never switches.
-  const items = profile.role === 'fan' ? NAV.fan : NAV[profile.role] || NAV.fan;
+  // Layout mode. Everyone lands in the FAN layout after logging in; when
+  // they click "My dashboard" (or land directly inside their dashboard
+  // area), the layout switches to their ROLE layout and stays there —
+  // even while they open shared pages like Standings. The home button
+  // takes them back to the fan view.
+  const roleAreaPath = profile.role === 'editor' ? '/editor' : dashboardForRole(profile.role);
+  const inRoleAreaPath =
+    location.pathname === roleAreaPath || location.pathname.startsWith(`${roleAreaPath}/`);
+  const [view, setView] = useState(profile.role !== 'fan' && inRoleAreaPath ? 'role' : 'fan');
+  const items = view === 'role' ? NAV[profile.role] || NAV.fan : NAV.fan;
 
   // While the user is inside their own dashboard area, the back arrow in
   // the top-left becomes a HOME button that takes them to the fan view.
-  const roleAreaPath = profile.role === 'editor' ? '/editor' : dashboardForRole(profile.role);
-  const inRoleArea =
-    profile.role !== 'fan' &&
-    (location.pathname === roleAreaPath || location.pathname.startsWith(`${roleAreaPath}/`));
+  const inRoleArea = profile.role !== 'fan' && inRoleAreaPath;
   const name = profile.full_name || profile.email || '?';
   const initials = name
     .split(' ')
@@ -221,7 +224,14 @@ export default function AppLayout() {
       >
         <Toolbar sx={{ gap: 1, minHeight: 64, color: 'inherit' }}>
           <IconButton
-            onClick={inRoleArea ? () => navigate('/fan') : handleBack}
+            onClick={
+              inRoleArea
+                ? () => {
+                    setView('fan');
+                    navigate('/fan');
+                  }
+                : handleBack
+            }
             size="small"
             aria-label={inRoleArea ? 'Go to fan home' : 'Go back'}
             sx={{ color: 'headerIcon', flexShrink: 0 }}
@@ -266,7 +276,10 @@ export default function AppLayout() {
               size="small"
               variant="outlined"
               startIcon={<SpaceDashboardRounded fontSize="small" />}
-              onClick={() => navigate(dashboardForRole(profile.role))}
+              onClick={() => {
+                setView('role');
+                navigate(dashboardForRole(profile.role));
+              }}
               sx={{
                 flexShrink: 0,
                 fontWeight: 700,
