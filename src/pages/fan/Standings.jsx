@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import Box from '@mui/material/Box';
 import Collapse from '@mui/material/Collapse';
+import Typography from '@mui/material/Typography';
 import ChevronRightRounded from '@mui/icons-material/ChevronRightRounded';
 import { useAuth } from '../../context/AuthContext';
 import PageHeader from '../../components/PageHeader';
@@ -80,6 +81,9 @@ export default function Standings() {
         </Collapse>
         <Collapse in={detailed} timeout={200} unmountOnExit>
           <StandingsTable rows={rows} myTeamId={profile?.team_id} detailed />
+          <Typography variant="caption" color="text.secondary" sx={{ display: { xs: 'block', sm: 'none' }, mt: 1 }}>
+            Swipe sideways to see all stats
+          </Typography>
         </Collapse>
       </GlassCard>
     </div>

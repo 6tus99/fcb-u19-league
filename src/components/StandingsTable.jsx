@@ -11,9 +11,10 @@ const MINE_EDGE = '3px solid #4ade80';
 const FIRST_BG = 'rgba(250,204,21,0.08)';
 const SECOND_BG = 'rgba(203,213,225,0.05)';
 
-// One table for every screen. Columns shrink to fit the device width
-// (down to ~320px, e.g. iPhone SE 2). Pass detailed={false} to hide the
-// GF / GA / GD columns (trimmed view).
+// One table for every screen. The trimmed view (detailed={false}) shrinks
+// its columns to fit the device width (down to ~320px, e.g. iPhone SE 2).
+// The detailed view is Google-style: the position and team name stay
+// pinned on the left while the stats columns scroll sideways.
 export default function StandingsTable({ rows, myTeamId, detailed = true }) {
   const numCell = (w) => ({
     width: w,
@@ -22,12 +23,24 @@ export default function StandingsTable({ rows, myTeamId, detailed = true }) {
     fontSize: { xs: 10.5, sm: 13.5 },
   });
 
+  // The pinned (# and Team) cells need an opaque background that matches
+  // their row, otherwise the columns scrolling underneath would show
+  // through.
+  const pinned = (left, i, isMine) => ({
+    position: 'sticky',
+    left,
+    zIndex: 1,
+    bgcolor: isMine ? MINE_BG : i === 0 ? FIRST_BG : i === 1 ? SECOND_BG : 'tint',
+    borderRight: detailed ? '1px solid' : undefined,
+    borderColor: 'divider',
+  });
+
   return (
-    <TableContainer>
-      <Table size="small" sx={{ tableLayout: 'fixed', width: '100%' }}>
+    <TableContainer sx={{ overflowX: 'auto' }}>
+      <Table size="small" sx={{ tableLayout: 'fixed', width: '100%', ...(detailed ? { minWidth: 560 } : {}) }}>
         <TableHead>
           <TableRow>
-            <TableCell align="center" sx={{ ...numCell(26), fontWeight: 800 }}>
+            <TableCell align="center" sx={{ ...numCell(26), fontWeight: 800, ...(detailed ? { ...pinned(0, -1, false), bgcolor: 'tint', zIndex: 2 } : {}) }}>
               #
             </TableCell>
             <TableCell
@@ -37,6 +50,7 @@ export default function StandingsTable({ rows, myTeamId, detailed = true }) {
                 fontSize: { xs: 10.5, sm: 13.5 },
                 fontWeight: 800,
                 whiteSpace: 'nowrap',
+                ...(detailed ? { ...pinned(26, -1, false), bgcolor: 'tint', zIndex: 2 } : {}),
               }}
             >
               Team
@@ -88,10 +102,18 @@ export default function StandingsTable({ rows, myTeamId, detailed = true }) {
                         : undefined
                 }
               >
-                <TableCell align="center" sx={{ ...numCell(26), fontWeight: 800, color: i === 0 ? 'secondary.main' : 'inherit' }}>
+                <TableCell
+                  align="center"
+                  sx={{
+                    ...numCell(26),
+                    fontWeight: 800,
+                    color: i === 0 ? 'secondary.main' : 'inherit',
+                    ...(detailed ? pinned(0, i, isMine) : {}),
+                  }}
+                >
                   {i + 1}
                 </TableCell>
-                <TableCell sx={{ px: { xs: 0.5, sm: 1.5 }, py: { xs: 0.6, sm: 1 } }}>
+                <TableCell sx={{ px: { xs: 0.5, sm: 1.5 }, py: { xs: 0.6, sm: 1 }, ...(detailed ? pinned(26, i, isMine) : {}) }}>
                   <span style={{ display: 'inline-flex', alignItems: 'flex-start', gap: 6 }}>
                     <span
                       style={{

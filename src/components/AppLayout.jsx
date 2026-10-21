@@ -23,6 +23,7 @@ import CasinoRounded from '@mui/icons-material/CasinoRounded';
 import LeagueLogo from './LeagueLogo';
 import LogoutRounded from '@mui/icons-material/LogoutRounded';
 import ArrowBackIosRounded from '@mui/icons-material/ArrowBackIosRounded';
+import HomeRounded from '@mui/icons-material/HomeRounded';
 import LightModeRounded from '@mui/icons-material/LightModeRounded';
 import DarkModeRounded from '@mui/icons-material/DarkModeRounded';
 import BrightnessAutoRounded from '@mui/icons-material/BrightnessAutoRounded';
@@ -179,6 +180,13 @@ export default function AppLayout() {
   // A manager sees the manager menu on every page they can open (home,
   // team matches, standings, a match detail…) — the bar never switches.
   const items = profile.role === 'fan' ? NAV.fan : NAV[profile.role] || NAV.fan;
+
+  // While the user is inside their own dashboard area, the back arrow in
+  // the top-left becomes a HOME button that takes them to the fan view.
+  const roleAreaPath = profile.role === 'editor' ? '/editor' : dashboardForRole(profile.role);
+  const inRoleArea =
+    profile.role !== 'fan' &&
+    (location.pathname === roleAreaPath || location.pathname.startsWith(`${roleAreaPath}/`));
   const name = profile.full_name || profile.email || '?';
   const initials = name
     .split(' ')
@@ -212,8 +220,13 @@ export default function AppLayout() {
         }}
       >
         <Toolbar sx={{ gap: 1, minHeight: 64, color: 'inherit' }}>
-          <IconButton onClick={handleBack} size="small" aria-label="Go back" sx={{ color: 'headerIcon', flexShrink: 0 }}>
-            <ArrowBackIosRounded sx={{ fontSize: 20 }} />
+          <IconButton
+            onClick={inRoleArea ? () => navigate('/fan') : handleBack}
+            size="small"
+            aria-label={inRoleArea ? 'Go to fan home' : 'Go back'}
+            sx={{ color: 'headerIcon', flexShrink: 0 }}
+          >
+            {inRoleArea ? <HomeRounded sx={{ fontSize: 20 }} /> : <ArrowBackIosRounded sx={{ fontSize: 20 }} />}
           </IconButton>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, minWidth: 0, flexGrow: 1 }}>
             <LeagueLogo size={34} rounded={1.5} />
