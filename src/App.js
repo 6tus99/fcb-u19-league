@@ -18,6 +18,8 @@ import TeamDetail from './pages/fan/TeamDetail';
 import News from './pages/fan/News';
 import NewsDetail from './pages/fan/NewsDetail';
 import Bets from './pages/fan/Bets';
+import SocialFeed from './pages/social/SocialFeed';
+import Messages from './pages/social/Messages';
 import PlayerDashboard from './pages/player/PlayerDashboard';
 import ManagerDashboard from './pages/manager/ManagerDashboard';
 import CommissionerDashboard from './pages/commissioner/CommissionerDashboard';
@@ -76,6 +78,9 @@ export default function App() {
           <Route path="/news" element={<News />} />
           <Route path="/news/:id" element={<NewsDetail />} />
           <Route path="/fan/betting" element={<Bets />} />
+          <Route path="/social" element={<SocialFeed />} />
+          <Route path="/messages" element={<Messages />} />
+          <Route path="/messages/:userId" element={<Messages />} />
           <Route
             path="/editor/news"
             element={
