@@ -24,11 +24,12 @@ const SWAP_MS = 5000;
 
 /**
  * The league logo — used everywhere the league logo stands.
- * The tile turns continuously like a planet: one full revolution every
- * 5 seconds (keyframes in index.css), and exactly when it comes around
- * upright the image swaps with the First Capital Bank sponsor logo.
- * If the league admin sets a custom logo in Settings, that one rotates
- * with the sponsor logo instead of the crest.
+ * The logo turns in 3D like a globe: around its vertical axis with
+ * perspective (keyframes in index.css), one revolution every 5
+ * seconds, and when it faces the viewer again the image swaps with
+ * the First Capital Bank sponsor logo. If the league admin sets a
+ * custom logo in Settings, that one rotates with the sponsor logo
+ * instead of the crest.
  */
 export default function LeagueLogo({ size = 32, rounded = 2, sx = {} }) {
   const [base, setBase] = useState(crestUrl);
@@ -46,7 +47,7 @@ export default function LeagueLogo({ size = 32, rounded = 2, sx = {} }) {
 
   useEffect(() => {
     // Matches the 5s revolution period, so the swap lands exactly when
-    // the logo is upright.
+    // the globe is facing the viewer again.
     const id = setInterval(() => {
       setShowSponsor((s) => !s);
     }, SWAP_MS);
@@ -54,22 +55,23 @@ export default function LeagueLogo({ size = 32, rounded = 2, sx = {} }) {
   }, []);
 
   return (
-    <Box
-      component="img"
-      src={showSponsor ? fcbUrl : base}
-      alt="League logo"
-      draggable={false}
-      sx={{
-        width: size,
-        height: size,
-        objectFit: 'contain',
-        bgcolor: '#ffffff',
-        borderRadius: rounded,
-        display: 'block',
-        flexShrink: 0,
-        animation: 'logo-planet 5s linear infinite, logo-glow 2.5s ease-in-out infinite',
-        ...sx,
-      }}
-    />
+    <Box sx={{ perspective: 500, width: size, height: size, flexShrink: 0, ...sx }}>
+      <Box
+        component="img"
+        src={showSponsor ? fcbUrl : base}
+        alt="League logo"
+        draggable={false}
+        sx={{
+          width: '100%',
+          height: '100%',
+          objectFit: 'contain',
+          bgcolor: '#ffffff',
+          borderRadius: rounded,
+          display: 'block',
+          transformStyle: 'preserve-3d',
+          animation: 'logo-globe 5s linear infinite, logo-glow 2.5s ease-in-out infinite',
+        }}
+      />
+    </Box>
   );
 }

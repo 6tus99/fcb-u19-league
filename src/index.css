@@ -1,16 +1,17 @@
 /* ------------------------------------------------------------------
-   Logo rotator (LeagueLogo): the logo tile turns continuously like a
-   planet — one full revolution every 5 seconds, and exactly when it
-   comes around upright the image swaps to the other logo (league
-   crest / First Capital Bank). A soft green glow pulses so it catches
-   the eye.
+   Logo rotator (LeagueLogo): the logo turns in 3D like a globe —
+   around its vertical axis (rotateY) with perspective, so it reads
+   as a ball turning left to right, not a flat disc. One full
+   revolution takes 5 seconds, and exactly when it faces the viewer
+   again the image swaps to the other logo (league crest / First
+   Capital Bank). A soft green glow pulses so it catches the eye.
    ------------------------------------------------------------------ */
-@keyframes logo-planet {
+@keyframes logo-globe {
   from {
-    transform: rotate(0deg);
+    transform: rotateY(0deg);
   }
   to {
-    transform: rotate(360deg);
+    transform: rotateY(360deg);
   }
 }
 
