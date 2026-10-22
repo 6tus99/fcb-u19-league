@@ -20,11 +20,16 @@ import supabase from '../../lib/supabase';
 
 const EVENT_TYPES = [
   { id: 'goal', label: '⚽ Goal' },
-  { id: 'yellow_card', label: '🟨 Yellow card' },
-  { id: 'red_card', label: '🟥 Red card' },
+  { id: 'yellow_card', label: '🟨 Foul (yellow card)' },
+  { id: 'red_card', label: '🟥 Foul (red card)' },
   { id: 'substitution', label: '🔁 Substitution' },
+  { id: 'half_time', label: '⏸ End of first half' },
+  { id: 'second_half', label: '▶ Second half begins' },
+  { id: 'extra_time', label: '➕ Added time' },
   { id: 'note', label: '📝 Note' },
 ];
+
+const PHASE_EVENTS = ['half_time', 'second_half', 'extra_time'];
 
 const EMPTY_FORM = { type: 'goal', minute: '45', teamSide: 'home', playerName: '', description: '' };
 
@@ -107,16 +112,19 @@ export default function LiveMatchControl() {
   const addEvent = async (e) => {
     e.preventDefault();
     const isGoal = form.type === 'goal';
+    const isPhase = PHASE_EVENTS.includes(form.type);
     const description =
-      form.description || (form.playerName ? `${isGoal ? 'Goal' : form.type.replace('_', ' ')} — ${form.playerName}` : null);
+      form.description ||
+      (!isPhase && form.playerName ? `${isGoal ? 'Goal' : form.type.replace('_', ' ')} — ${form.playerName}` : null);
     const payload = {
       match_id: match.id,
       minute: form.minute ? Number(form.minute) : null,
       event_type: form.type,
-      team_id: selectedTeamId,
+      // phase events (halves, added time) belong to the match, not a team
+      team_id: isPhase ? null : selectedTeamId,
       description,
     };
-    if (form.playerName && players.some((p) => p.full_name === form.playerName)) {
+    if (!isPhase && form.playerName && players.some((p) => p.full_name === form.playerName)) {
       payload.player_id = players.find((p) => p.full_name === form.playerName).id;
     }
     const { error } = await supabase.from('match_events').insert(payload);
@@ -253,15 +261,17 @@ export default function LiveMatchControl() {
                 </MenuItem>
               ))}
             </TextField>
-            <TextField
-              label="Team"
-              select
-              value={form.teamSide}
-              onChange={(e) => setForm({ ...form, teamSide: e.target.value, playerName: '' })}
-            >
-              <MenuItem value="home">{home ? home.name : 'Home'}</MenuItem>
-              <MenuItem value="away">{away ? away.name : 'Away'}</MenuItem>
-            </TextField>
+            {!PHASE_EVENTS.includes(form.type) && (
+              <TextField
+                label="Team"
+                select
+                value={form.teamSide}
+                onChange={(e) => setForm({ ...form, teamSide: e.target.value, playerName: '' })}
+              >
+                <MenuItem value="home">{home ? home.name : 'Home'}</MenuItem>
+                <MenuItem value="away">{away ? away.name : 'Away'}</MenuItem>
+              </TextField>
+            )}
             <TextField
               label="Minute"
               type="number"

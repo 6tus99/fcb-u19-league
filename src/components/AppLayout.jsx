@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Outlet, useLocation, useNavigate, Link as RouterLink } from 'react-router-dom';
 import AppBar from '@mui/material/AppBar';
 import Toolbar from '@mui/material/Toolbar';
@@ -18,6 +18,7 @@ import DialogContent from '@mui/material/DialogContent';
 import DialogActions from '@mui/material/DialogActions';
 import Alert from '@mui/material/Alert';
 import TextField from '@mui/material/TextField';
+import Snackbar from '@mui/material/Snackbar';
 import Fab from '@mui/material/Fab';
 import CasinoRounded from '@mui/icons-material/CasinoRounded';
 import LeagueLogo from './LeagueLogo';
@@ -133,6 +134,55 @@ export default function AppLayout() {
       });
     return () => {
       active = false;
+    };
+  }, [profile?.id]);
+
+  // Live toasts: when a notification arrives while the app is open
+  // (match started, goal, foul, substitution, halves, added time,
+  // full time…), it pops up here. Realtime is the instant path, with a
+  // light poll as a fallback.
+  const [toast, setToast] = useState(null);
+  const lastNotifRef = useRef(null);
+
+  useEffect(() => {
+    if (!profile?.id) return undefined;
+    let on = true;
+    // Don't toast notifications that arrived before this session opened.
+    supabase
+      .from('notifications')
+      .select('id')
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .then(({ data }) => {
+        if (on) lastNotifRef.current = data?.[0]?.id || null;
+      });
+    const channel = supabase
+      .channel(`app-toasts-${profile.id}`)
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'notifications', filter: `user_id=eq.${profile.id}` },
+        (payload) => {
+          lastNotifRef.current = payload.new?.id;
+          setToast({ id: payload.new?.id, title: payload.new?.title, body: payload.new?.body, link: payload.new?.link });
+        }
+      )
+      .subscribe();
+    const pollId = setInterval(async () => {
+      const { data } = await supabase
+        .from('notifications')
+        .select('id, title, body, link')
+        .order('created_at', { ascending: false })
+        .limit(1);
+      const n = data?.[0];
+      if (n && n.id !== lastNotifRef.current) {
+        lastNotifRef.current = n.id;
+        setToast({ id: n.id, title: n.title, body: n.body, link: n.link });
+      }
+    }, 20000);
+    return () => {
+      on = false;
+      supabase.removeChannel(channel);
+      clearInterval(pollId);
     };
   }, [profile?.id]);
 
@@ -445,6 +495,32 @@ export default function AppLayout() {
           </Button>
         </DialogActions>
       </Dialog>
+
+      <Snackbar
+        open={Boolean(toast)}
+        autoHideDuration={6000}
+        onClose={() => setToast(null)}
+        onClick={() => {
+          if (toast?.link) navigate(toast.link);
+        }}
+        sx={{ zIndex: 2000, bottom: 96 }}
+      >
+        <Alert
+          onClose={() => setToast(null)}
+          variant="filled"
+          severity="success"
+          sx={{ width: '100%' }}
+        >
+          <Box component="span" sx={{ fontWeight: 800 }}>
+            {toast?.title}
+          </Box>
+          {toast?.body && (
+            <Box component="span" sx={{ fontSize: 13 }}>
+              {toast.body}
+            </Box>
+          )}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 }
