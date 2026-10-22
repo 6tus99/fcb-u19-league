@@ -80,7 +80,7 @@ export default function AdminDashboard() {
         </Grid>
         <Grid size={{ xs: 6, md: 3 }}>
           <StatTile
-            icon={<LeagueLogo size={28} rounded={1.5} />}
+            icon={<LeagueLogo size={38} />}
             label="Teams"
             value={counts.teams}
             tone="blue"

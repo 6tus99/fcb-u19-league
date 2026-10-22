@@ -201,7 +201,7 @@ export default function ManagerDashboard() {
         </Grid>
         <Grid size={{ xs: 6, md: 3 }}>
           <StatTile
-            icon={<LeagueLogo size={28} rounded={1.5} />}
+            icon={<LeagueLogo size={38} />}
             label="Wins"
             value={row ? row.W : 0}
             sub={row ? `${row.D} draws • ${row.L} losses` : ''}

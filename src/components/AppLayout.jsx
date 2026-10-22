@@ -289,7 +289,7 @@ export default function AppLayout() {
             {inRoleArea ? <HomeRounded sx={{ fontSize: 20 }} /> : <ArrowBackIosRounded sx={{ fontSize: 20 }} />}
           </IconButton>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, minWidth: 0, flexGrow: 1 }}>
-            <LeagueLogo size={34} rounded={1.5} />
+            <LeagueLogo size={44} />
             <Box sx={{ minWidth: 0 }}>
               <Typography variant="subtitle1" noWrap sx={{ fontWeight: 800, lineHeight: 1.15, color: 'headerText' }}>
                 {leagueName}

@@ -150,7 +150,7 @@ export default function PlayerDashboard() {
       <Grid container spacing={2} sx={{ mb: 3 }}>
         <Grid size={{ xs: 6, md: 3 }}>
           <StatTile
-            icon={<LeagueLogo size={28} rounded={1.5} />}
+            icon={<LeagueLogo size={38} />}
             label="Club"
             value={team.short_name}
             sub={team.name}
