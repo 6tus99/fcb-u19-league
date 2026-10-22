@@ -24,14 +24,15 @@ const SWAP_MS = 5000;
 
 /**
  * The league logo — used everywhere the league logo stands.
- * The logo turns in 3D like a globe: around its vertical axis with
- * perspective (keyframes in index.css), one revolution every 5
- * seconds, and when it faces the viewer again the image swaps with
- * the First Capital Bank sponsor logo. If the league admin sets a
- * custom logo in Settings, that one rotates with the sponsor logo
- * instead of the crest.
+ * It sits on a little white BALL: the surface rolls across the ball
+ * (keyframes in index.css, left to right, one pass every 5 seconds)
+ * and the logo never flips — it travels around the surface like a
+ * marking on a rolling ball. At the loop point the surface swaps to
+ * the other logo (league crest / First Capital Bank). If the league
+ * admin sets a custom logo in Settings, that one rolls with the
+ * sponsor logo instead of the crest.
  */
-export default function LeagueLogo({ size = 32, rounded = 2, sx = {} }) {
+export default function LeagueLogo({ size = 32, sx = {} }) {
   const [base, setBase] = useState(crestUrl);
   const [showSponsor, setShowSponsor] = useState(false);
 
@@ -46,30 +47,68 @@ export default function LeagueLogo({ size = 32, rounded = 2, sx = {} }) {
   }, []);
 
   useEffect(() => {
-    // Matches the 5s revolution period, so the swap lands exactly when
-    // the globe is facing the viewer again.
+    // Matches the 5s surface pass, so the swap lands exactly at the
+    // loop point (both logos are fully on the ball's face).
     const id = setInterval(() => {
       setShowSponsor((s) => !s);
     }, SWAP_MS);
     return () => clearInterval(id);
   }, []);
 
+  const src = showSponsor ? fcbUrl : base;
+
   return (
-    <Box sx={{ perspective: 500, width: size, height: size, flexShrink: 0, ...sx }}>
+    <Box
+      sx={{
+        width: size,
+        height: size,
+        borderRadius: '50%',
+        position: 'relative',
+        overflow: 'hidden',
+        flexShrink: 0,
+        // The ball itself: soft white with 3D shading
+        background: 'radial-gradient(circle at 32% 28%, #ffffff 0%, #f4f4f4 45%, #d9d9d9 80%, #b8b8b8 100%)',
+        boxShadow: 'inset -3px -4px 8px rgba(0, 0, 0, 0.30), inset 3px 4px 6px rgba(255, 255, 255, 0.9)',
+        animation: 'logo-glow 2.5s ease-in-out infinite',
+        ...sx,
+      }}
+    >
+      {/* The rolling surface: two identical tiles, looped seamlessly */}
       <Box
-        component="img"
-        src={showSponsor ? fcbUrl : base}
-        alt="League logo"
-        draggable={false}
         sx={{
-          width: '100%',
+          position: 'absolute',
+          top: 0,
+          left: 0,
           height: '100%',
-          objectFit: 'contain',
-          bgcolor: '#ffffff',
-          borderRadius: rounded,
-          display: 'block',
-          transformStyle: 'preserve-3d',
-          animation: 'logo-globe 5s linear infinite, logo-glow 2.5s ease-in-out infinite',
+          width: '200%',
+          display: 'flex',
+          animation: 'logo-surface 5s linear infinite',
+        }}
+      >
+        <Box
+          component="img"
+          src={src}
+          alt=""
+          draggable={false}
+          sx={{ width: '50%', height: '100%', objectFit: 'contain', padding: '12%', display: 'block' }}
+        />
+        <Box
+          component="img"
+          src={src}
+          alt=""
+          draggable={false}
+          sx={{ width: '50%', height: '100%', objectFit: 'contain', padding: '12%', display: 'block' }}
+        />
+      </Box>
+      {/* Light on top of the ball so it reads as 3D */}
+      <Box
+        sx={{
+          position: 'absolute',
+          inset: 0,
+          borderRadius: '50%',
+          pointerEvents: 'none',
+          background:
+            'radial-gradient(circle at 32% 26%, rgba(255, 255, 255, 0.75) 0%, rgba(255, 255, 255, 0) 42%, rgba(0, 0, 0, 0.22) 100%)',
         }}
       />
     </Box>

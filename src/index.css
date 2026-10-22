@@ -1,11 +1,23 @@
 /* ------------------------------------------------------------------
-   Logo rotator (LeagueLogo): the logo turns in 3D like a globe —
-   around its vertical axis (rotateY) with perspective, so it reads
-   as a ball turning left to right, not a flat disc. One full
-   revolution takes 5 seconds, and exactly when it faces the viewer
-   again the image swaps to the other logo (league crest / First
-   Capital Bank). A soft green glow pulses so it catches the eye.
+   Logo rotator (LeagueLogo): the logo sits on a little white BALL.
+   Its surface rolls across the ball (a two-tile scrolling strip,
+   looped seamlessly, moving left to right) — the logo never flips,
+   it travels around the surface like a marking on a rolling ball.
+   One full pass takes 5 seconds, and exactly at the loop point the
+   surface swaps to the other logo (league crest / First Capital
+   Bank). Sphere shading + a pulsing green glow sell the 3D ball.
    ------------------------------------------------------------------ */
+@keyframes logo-surface {
+  from {
+    transform: translateX(-50%);
+  }
+  to {
+    transform: translateX(0%);
+  }
+}
+
+/* Kept for later — the "coin" flip effect (full 3D rotation around
+   the vertical axis). Not applied right now. */
 @keyframes logo-globe {
   from {
     transform: rotateY(0deg);
