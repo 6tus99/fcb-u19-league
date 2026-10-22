@@ -20,21 +20,18 @@ function fetchCustomLogo() {
   return logoPromise;
 }
 
-const SWAP_MS = 5000;
-
 /**
  * The league logo — used everywhere the league logo stands.
- * It sits on a little white BALL: the surface rolls across the ball
- * (keyframes in index.css, left to right, one pass every 5 seconds)
- * and the logo never flips — it travels around the surface like a
- * marking on a rolling ball. At the loop point the surface swaps to
- * the other logo (league crest / First Capital Bank). If the league
- * admin sets a custom logo in Settings, that one rolls with the
- * sponsor logo instead of the crest.
+ * A little white BALL whose surface carries BOTH logos side by side
+ * (league crest, First Capital Bank, crest, Bank…) and rolls around
+ * it continuously (keyframes in index.css, left to right). Each logo
+ * takes 5 seconds to cross the face, so the two logos alternate
+ * naturally as the ball rolls — nothing flips, nothing swaps. If
+ * the league admin sets a custom logo in Settings, that one rolls
+ * on the surface with the sponsor logo instead of the crest.
  */
 export default function LeagueLogo({ size = 32, sx = {} }) {
   const [base, setBase] = useState(crestUrl);
-  const [showSponsor, setShowSponsor] = useState(false);
 
   useEffect(() => {
     let on = true;
@@ -45,17 +42,6 @@ export default function LeagueLogo({ size = 32, sx = {} }) {
       on = false;
     };
   }, []);
-
-  useEffect(() => {
-    // Matches the 5s surface pass, so the swap lands exactly at the
-    // loop point (both logos are fully on the ball's face).
-    const id = setInterval(() => {
-      setShowSponsor((s) => !s);
-    }, SWAP_MS);
-    return () => clearInterval(id);
-  }, []);
-
-  const src = showSponsor ? fcbUrl : base;
 
   return (
     <Box
@@ -73,32 +59,32 @@ export default function LeagueLogo({ size = 32, sx = {} }) {
         ...sx,
       }}
     >
-      {/* The rolling surface: two identical tiles, looped seamlessly */}
+      {/*
+        The rolling surface: crest + sponsor, each twice, so the loop
+        point looks identical to the start. One pass (crest → sponsor
+        → crest) takes 10s = 5s per logo.
+      */}
       <Box
         sx={{
           position: 'absolute',
           top: 0,
           left: 0,
           height: '100%',
-          width: '200%',
+          width: '400%',
           display: 'flex',
-          animation: 'logo-surface 5s linear infinite',
+          animation: 'logo-surface 10s linear infinite',
         }}
       >
-        <Box
-          component="img"
-          src={src}
-          alt=""
-          draggable={false}
-          sx={{ width: '50%', height: '100%', objectFit: 'contain', padding: '12%', display: 'block' }}
-        />
-        <Box
-          component="img"
-          src={src}
-          alt=""
-          draggable={false}
-          sx={{ width: '50%', height: '100%', objectFit: 'contain', padding: '12%', display: 'block' }}
-        />
+        {[base, fcbUrl, base, fcbUrl].map((src, i) => (
+          <Box
+            key={i}
+            component="img"
+            src={src}
+            alt={i === 0 ? 'League logo' : ''}
+            draggable={false}
+            sx={{ width: '25%', height: '100%', objectFit: 'contain', padding: '12%', display: 'block' }}
+          />
+        ))}
       </Box>
       {/* Light on top of the ball so it reads as 3D */}
       <Box

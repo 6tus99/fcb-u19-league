@@ -9,7 +9,7 @@
  *
  * Bump VERSION to purge old caches on the next visit.
  */
-const VERSION = 'fcb-u19-v18';
+const VERSION = 'fcb-u19-v19';
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
