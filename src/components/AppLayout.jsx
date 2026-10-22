@@ -31,6 +31,7 @@ import BrightnessAutoRounded from '@mui/icons-material/BrightnessAutoRounded';
 import SpaceDashboardRounded from '@mui/icons-material/SpaceDashboardRounded';
 import HourglassTopRounded from '@mui/icons-material/HourglassTopRounded';
 import { useAuth } from '../context/AuthContext';
+import { sha256Hex } from '../utils/crypto';
 import { useThemeMode } from '../context/ThemeContext';
 import { homeForRole, dashboardForRole } from './ProtectedRoute';
 import NotificationBell from './NotificationBell';
@@ -249,6 +250,80 @@ export default function AppLayout() {
   const [view, setView] = useState(profile.role !== 'fan' && inRoleAreaPath ? 'role' : 'fan');
   const items = view === 'role' ? NAV[profile.role] || NAV.fan : NAV.fan;
 
+  // Dashboard password gate: "My dashboard" asks for a 6-digit password.
+  // First time, the user creates it (stored in profiles as a SHA-256
+  // hash, never the raw digits); every time after, they enter it.
+  const [pinDialog, setPinDialog] = useState(null); // { mode: 'create' | 'verify' }
+  const [pin, setPin] = useState('');
+  const [pin2, setPin2] = useState('');
+  const [pinBusy, setPinBusy] = useState(false);
+  const [pinErr, setPinErr] = useState('');
+
+  const enterDashboard = () => {
+    setView('role');
+    navigate(dashboardForRole(profile.role));
+  };
+
+  const requestDashboardEntry = async () => {
+    if (!profile) return;
+    setPinErr('');
+    setPin('');
+    setPin2('');
+    const { data } = await supabase
+      .from('profiles')
+      .select('dashboard_pin_hash')
+      .eq('id', profile.id)
+      .maybeSingle();
+    setPinDialog(data?.dashboard_pin_hash ? { mode: 'verify' } : { mode: 'create' });
+  };
+
+  const submitPin = async () => {
+    if (!pinDialog || pinBusy || !profile) return;
+    if (pinDialog.mode === 'create') {
+      if (!/^\d{6}$/.test(pin)) {
+        setPinErr('Password must be exactly 6 digits.');
+        return;
+      }
+      if (pin !== pin2) {
+        setPinErr('The two passwords do not match.');
+        return;
+      }
+      setPinBusy(true);
+      const h = await sha256Hex(`${profile.id}:${pin}`);
+      const { error } = await supabase
+        .from('profiles')
+        .update({ dashboard_pin_hash: h })
+        .eq('id', profile.id);
+      setPinBusy(false);
+      if (error) {
+        setPinErr(error.message);
+        return;
+      }
+      setPinDialog(null);
+      enterDashboard();
+    } else {
+      if (!/^\d{6}$/.test(pin)) {
+        setPinErr('Enter your 6-digit password.');
+        return;
+      }
+      setPinBusy(true);
+      const h = await sha256Hex(`${profile.id}:${pin}`);
+      const { data } = await supabase
+        .from('profiles')
+        .select('dashboard_pin_hash')
+        .eq('id', profile.id)
+        .maybeSingle();
+      setPinBusy(false);
+      if (data?.dashboard_pin_hash === h) {
+        setPinDialog(null);
+        enterDashboard();
+      } else {
+        setPinErr('Wrong password — try again.');
+        setPin('');
+      }
+    }
+  };
+
   // While the user is inside their own dashboard area, the back arrow in
   // the top-left becomes a HOME button that takes them to the fan view.
   const inRoleArea = profile.role !== 'fan' && inRoleAreaPath;
@@ -338,10 +413,7 @@ export default function AppLayout() {
               size="small"
               variant="outlined"
               startIcon={<SpaceDashboardRounded fontSize="small" />}
-              onClick={() => {
-                setView('role');
-                navigate(dashboardForRole(profile.role));
-              }}
+              onClick={requestDashboardEntry}
               sx={{
                 flexShrink: 0,
                 fontWeight: 700,
@@ -504,6 +576,57 @@ export default function AppLayout() {
           <Button onClick={() => setVerifyOpen(false)} disabled={verifyBusy}>Cancel</Button>
           <Button onClick={submitVerify} variant="contained" disabled={verifyBusy || verifyCode.length !== 6}>
             {verifyBusy ? 'Checking…' : 'Verify'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Dashboard password gate */}
+      <Dialog open={Boolean(pinDialog)} onClose={() => !pinBusy && setPinDialog(null)} maxWidth="xs" fullWidth>
+        <DialogTitle sx={{ fontWeight: 900 }}>
+          {pinDialog?.mode === 'create' ? 'Create your dashboard password' : 'Dashboard password'}
+        </DialogTitle>
+        <DialogContent>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+            {pinDialog?.mode === 'create'
+              ? 'Enter a 6-digit password. You will need it every time you open your dashboard. Store it somewhere safe.'
+              : 'Enter your 6-digit password to open your dashboard.'}
+          </Typography>
+          {pinErr && (
+            <Alert severity="error" sx={{ mb: 2 }}>
+              {pinErr}
+            </Alert>
+          )}
+          <TextField
+            label="6-digit password"
+            type="password"
+            inputMode="numeric"
+            value={pin}
+            onChange={(e) => setPin(e.target.value.replace(/\D/g, '').slice(0, 6))}
+            sx={{ width: '100%' }}
+            autoFocus
+          />
+          {pinDialog?.mode === 'create' && (
+            <TextField
+              label="Repeat password"
+              type="password"
+              inputMode="numeric"
+              value={pin2}
+              onChange={(e) => setPin2(e.target.value.replace(/\D/g, '').slice(0, 6))}
+              sx={{ width: '100%', mt: 1.5 }}
+            />
+          )}
+          <Typography variant="caption" color="text.secondary" display="block" sx={{ mt: 1.5 }}>
+            Forgot it? The league admin can reset it for you from the Users page.
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setPinDialog(null)} disabled={pinBusy}>Cancel</Button>
+          <Button
+            variant="contained"
+            onClick={submitPin}
+            disabled={pinBusy || pin.length !== 6 || (pinDialog?.mode === 'create' && pin2.length !== 6)}
+          >
+            {pinBusy ? '…' : pinDialog?.mode === 'create' ? 'Save & open' : 'Unlock'}
           </Button>
         </DialogActions>
       </Dialog>

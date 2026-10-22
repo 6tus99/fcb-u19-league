@@ -16,6 +16,7 @@ import DialogContent from '@mui/material/DialogContent';
 import DialogActions from '@mui/material/DialogActions';
 import SearchRounded from '@mui/icons-material/SearchRounded';
 import DeleteOutlineRounded from '@mui/icons-material/DeleteOutlineRounded';
+import LockResetRounded from '@mui/icons-material/LockResetRounded';
 import ChevronRightRounded from '@mui/icons-material/ChevronRightRounded';
 import EditableCell from '../../components/EditableCell';
 import PageHeader from '../../components/PageHeader';
@@ -197,6 +198,21 @@ export default function ManageUsers() {
       setMessage({ severity: 'success', text: 'Email saved.' });
       load();
     }
+  };
+
+  // Clear a member's dashboard password so they create a new one the
+  // next time they tap "My dashboard".
+  const resetPin = async (u) => {
+    if (!window.confirm(`Reset the dashboard password for ${u.full_name || u.email}?`)) return;
+    const { error } = await supabase
+      .from('profiles')
+      .update({ dashboard_pin_hash: null })
+      .eq('id', u.id);
+    setMessage(
+      error
+        ? { severity: 'error', text: error.message }
+        : { severity: 'success', text: 'Dashboard password reset — they will set a new one next time.' }
+    );
   };
 
   const confirmDelete = async () => {
@@ -432,6 +448,16 @@ export default function ManageUsers() {
                         >
                           {u.email}
                         </Typography>
+                        <IconButton
+                          size="small"
+                          aria-label={`Reset dashboard password for ${u.full_name}`}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            resetPin(u);
+                          }}
+                        >
+                          <LockResetRounded fontSize="small" />
+                        </IconButton>
                         {u.id !== me?.id && (
                           <IconButton
                             size="small"
