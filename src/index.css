@@ -1,20 +1,16 @@
 /* ------------------------------------------------------------------
-   Logo rotator (LeagueLogo): every 5 seconds the league logo swaps
-   with the First Capital Bank sponsor logo — the incoming one spins
-   in while a soft green glow pulses, so it catches the eye.
+   Logo rotator (LeagueLogo): the logo tile turns continuously like a
+   planet — one full revolution every 5 seconds, and exactly when it
+   comes around upright the image swaps to the other logo (league
+   crest / First Capital Bank). A soft green glow pulses so it catches
+   the eye.
    ------------------------------------------------------------------ */
-@keyframes logo-spin-swap {
-  0% {
-    transform: rotate(-200deg) scale(0.5);
-    opacity: 0;
+@keyframes logo-planet {
+  from {
+    transform: rotate(0deg);
   }
-  65% {
-    transform: rotate(12deg) scale(1.06);
-    opacity: 1;
-  }
-  100% {
-    transform: rotate(0deg) scale(1);
-    opacity: 1;
+  to {
+    transform: rotate(360deg);
   }
 }
 

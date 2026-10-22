@@ -18,7 +18,11 @@ export default function LeagueSettings() {
   const [season, setSeason] = useState('');
   const [logoUrl, setLogoUrl] = useState('');
   const [logoFile, setLogoFile] = useState(null);
+  const [adUrl, setAdUrl] = useState('');
+  const [adLink, setAdLink] = useState('');
+  const [adFile, setAdFile] = useState(null);
   const [busy, setBusy] = useState(false);
+  const [busyAd, setBusyAd] = useState(false);
   const [message, setMessage] = useState(null);
   const [loaded, setLoaded] = useState(false);
 
@@ -28,6 +32,8 @@ export default function LeagueSettings() {
         if (row.key === 'league_name') setLeagueName(row.value || '');
         if (row.key === 'season') setSeason(row.value || '');
         if (row.key === 'logo_url') setLogoUrl(row.value || '');
+        if (row.key === 'ad_banner_url') setAdUrl(row.value || '');
+        if (row.key === 'ad_banner_link') setAdLink(row.value || '');
       });
       setLoaded(true);
     });
@@ -68,6 +74,67 @@ export default function LeagueSettings() {
     setLogoFile(null);
     setBusy(false);
     setMessage({ severity: 'success', text: 'Logo saved — it now shows across the whole app.' });
+  };
+
+  const saveAd = async (e) => {
+    e.preventDefault();
+    const f = adFile;
+    if (!f) return;
+    if (f.size > 1024 * 1024) {
+      setMessage({ severity: 'error', text: 'Ad banner must be 1MB or smaller.' });
+      return;
+    }
+    setBusyAd(true);
+    const ext = (f.name.split('.').pop() || 'png').toLowerCase();
+    const path = `ad_banner_${Date.now()}.${ext}`;
+    const { error: upErr } = await supabase.storage.from('app-assets').upload(path, f, { contentType: f.type });
+    if (upErr) {
+      setBusyAd(false);
+      setMessage({ severity: 'error', text: upErr.message });
+      return;
+    }
+    const { data: pub } = supabase.storage.from('app-assets').getPublicUrl(path);
+    const { error: setErr } = await supabase.from('league_settings').upsert(
+      [
+        { key: 'ad_banner_url', value: pub.publicUrl },
+        { key: 'ad_banner_link', value: adLink.trim() },
+      ],
+      { onConflict: 'key' }
+    );
+    if (setErr) {
+      setBusyAd(false);
+      setMessage({ severity: 'error', text: setErr.message });
+      return;
+    }
+    if (adUrl) {
+      const oldPath = adUrl.split('/app-assets/')[1];
+      if (oldPath) supabase.storage.from('app-assets').remove([decodeURIComponent(oldPath)]);
+    }
+    setAdUrl(pub.publicUrl);
+    setAdFile(null);
+    setBusyAd(false);
+    setMessage({ severity: 'success', text: 'Ad banner saved — it now shows at the top of the fan home.' });
+  };
+
+  const removeAd = async () => {
+    if (!window.confirm('Remove the ad banner? The empty ad slot will show again.')) return;
+    if (adUrl) {
+      const oldPath = adUrl.split('/app-assets/')[1];
+      if (oldPath) supabase.storage.from('app-assets').remove([decodeURIComponent(oldPath)]);
+    }
+    const { error } = await supabase.from('league_settings').upsert(
+      [
+        { key: 'ad_banner_url', value: '' },
+        { key: 'ad_banner_link', value: '' },
+      ],
+      { onConflict: 'key' }
+    );
+    if (error) setMessage({ severity: 'error', text: error.message });
+    else {
+      setAdUrl('');
+      setAdLink('');
+      setMessage({ severity: 'success', text: 'Ad banner removed.' });
+    }
   };
 
   const removeLogo = async () => {
@@ -170,6 +237,69 @@ export default function LeagueSettings() {
                 </Button>
               )}
             </Box>
+          </Box>
+        </Box>
+      </GlassCard>
+
+      <GlassCard title="Ad banner (fan home)" sx={{ mt: 3 }}>
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+          <Typography variant="body2" color="text.secondary">
+            A wide banner shown at the top of the fan home page. Upload an image (wide, e.g. 1200×300) and
+            optionally a link so that tapping the ad opens a website.
+          </Typography>
+
+          {adUrl ? (
+            <Box
+              component="img"
+              src={adUrl}
+              sx={{
+                width: '100%',
+                maxHeight: 140,
+                objectFit: 'contain',
+                bgcolor: '#ffffff',
+                borderRadius: 2,
+                border: '1px solid',
+                borderColor: 'cardBorder',
+              }}
+            />
+          ) : (
+            <Box
+              sx={{
+                borderRadius: 2,
+                border: '1.5px dashed',
+                borderColor: 'divider',
+                bgcolor: 'tint',
+                p: 3,
+                textAlign: 'center',
+              }}
+            >
+              <Typography color="text.secondary">No ad banner set — the fan home shows an empty ad slot.</Typography>
+            </Box>
+          )}
+
+          <InputBase
+            type="file"
+            accept="image/png,image/jpeg,image/webp"
+            onChange={(e) => setAdFile(e.target.files?.[0] || null)}
+            sx={{ fontSize: 13 }}
+          />
+          <TextField
+            label="Link (optional)"
+            placeholder="https://…"
+            value={adLink}
+            onChange={(e) => setAdLink(e.target.value)}
+            helperText="Where the ad opens when tapped. Leave blank for a plain image."
+            sx={{ maxWidth: 480 }}
+          />
+          <Box sx={{ display: 'flex', gap: 1 }}>
+            <Button variant="contained" startIcon={<SaveRounded />} disabled={!adFile || busyAd} onClick={saveAd}>
+              {busyAd ? 'Saving…' : 'Save ad banner'}
+            </Button>
+            {adUrl && (
+              <Button variant="outlined" color="error" startIcon={<DeleteRounded />} onClick={removeAd}>
+                Remove
+              </Button>
+            )}
           </Box>
         </Box>
       </GlassCard>

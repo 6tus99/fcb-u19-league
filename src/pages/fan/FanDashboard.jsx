@@ -5,20 +5,19 @@ import Grid from '@mui/material/Grid';
 import Typography from '@mui/material/Typography';
 import Link from '@mui/material/Link';
 import GlassCard from '../../components/GlassCard';
-import LeagueLogo from '../../components/LeagueLogo';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import MatchCard from '../../components/MatchCard';
 import EmptyState from '../../components/EmptyState';
 import { computeStandings, formatDate } from '../../utils/standings';
-import { useAuth } from '../../context/AuthContext';
 import supabase from '../../lib/supabase';
 import useAutoRefresh from '../../hooks/useAutoRefresh';
 
 export default function FanDashboard() {
-  const { profile } = useAuth();
   const [teams, setTeams] = useState([]);
   const [matches, setMatches] = useState([]);
   const [news, setNews] = useState([]);
+  const [adUrl, setAdUrl] = useState('');
+  const [adLink, setAdLink] = useState('');
   const [loaded, setLoaded] = useState(false);
 
   const load = useCallback(() => {
@@ -26,10 +25,15 @@ export default function FanDashboard() {
       supabase.from('teams').select('*').order('name'),
       supabase.from('matches').select('*'),
       supabase.from('news').select('*').order('created_at', { ascending: false }).limit(3),
-    ]).then(([t, m, n]) => {
+      supabase.from('league_settings').select('key, value'),
+    ]).then(([t, m, n, s]) => {
       setTeams(t.data || []);
       setMatches(m.data || []);
       setNews(n.data || []);
+      (s.data || []).forEach((row) => {
+        if (row.key === 'ad_banner_url' && row.value) setAdUrl(row.value);
+        if (row.key === 'ad_banner_link' && row.value) setAdLink(row.value);
+      });
       setLoaded(true);
     });
   }, []);
@@ -59,15 +63,45 @@ export default function FanDashboard() {
   const upcomingMatches = todaysMatches.length > 0 ? todaysMatches : scheduledMatches.slice(0, 3);
   const laterMatches = scheduledMatches.filter((m) => !upcomingMatches.includes(m));
   const top5 = computeStandings(matches, teams).slice(0, 5);
-  const firstName = (profile?.full_name || profile?.email || '').split(' ')[0];
 
   return (
     <Box>
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 3 }}>
-        <LeagueLogo size={44} rounded={2.5} />
-        <Typography variant="h5" sx={{ fontWeight: 900, lineHeight: 1.2 }}>
-          Welcome back, {firstName}!
-        </Typography>
+      {/* Ad slot — sponsor banner placed by the league admin (League Settings). */}
+      <Box sx={{ mb: 3 }}>
+        {adUrl ? (
+          <Box
+            component={adLink ? 'a' : 'div'}
+            href={adLink || undefined}
+            target={adLink ? '_blank' : undefined}
+            rel={adLink ? 'noreferrer' : undefined}
+            sx={{
+              display: 'block',
+              borderRadius: 3,
+              overflow: 'hidden',
+              border: '1px solid',
+              borderColor: 'cardBorder',
+              boxShadow: '0 2px 12px rgba(15, 23, 42, 0.1)',
+            }}
+          >
+            <Box component="img" src={adUrl} alt="Sponsor" sx={{ width: '100%', display: 'block' }} />
+          </Box>
+        ) : (
+          <Box
+            sx={{
+              borderRadius: 3,
+              border: '1.5px dashed',
+              borderColor: 'divider',
+              bgcolor: 'tint',
+              p: { xs: 3, md: 4 },
+              textAlign: 'center',
+            }}
+          >
+            <Typography sx={{ fontWeight: 800, color: 'text.secondary' }}>Your ad here</Typography>
+            <Typography variant="caption" color="text.secondary">
+              Sponsor slot — the league admin places ads in League Settings.
+            </Typography>
+          </Box>
+        )}
       </Box>
 
       <GlassCard
