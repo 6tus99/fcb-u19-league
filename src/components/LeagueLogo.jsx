@@ -61,8 +61,9 @@ export default function LeagueLogo({ size = 32, sx = {} }) {
     >
       {/*
         The rolling surface: crest + sponsor, each twice, so the loop
-        point looks identical to the start. One pass (crest → sponsor
-        → crest) takes 10s = 5s per logo.
+        point looks identical to the start. The strip is 200% of the
+        ball, each tile is half the ball — so the face always shows
+        the two logos SIDE BY SIDE. One pass takes 10s = 5s per logo.
       */}
       <Box
         sx={{
@@ -70,7 +71,7 @@ export default function LeagueLogo({ size = 32, sx = {} }) {
           top: 0,
           left: 0,
           height: '100%',
-          width: '400%',
+          width: '200%',
           display: 'flex',
           animation: 'logo-surface 10s linear infinite',
         }}
@@ -78,12 +79,22 @@ export default function LeagueLogo({ size = 32, sx = {} }) {
         {[base, fcbUrl, base, fcbUrl].map((src, i) => (
           <Box
             key={i}
-            component="img"
-            src={src}
-            alt={i === 0 ? 'League logo' : ''}
-            draggable={false}
-            sx={{ width: '25%', height: '100%', objectFit: 'contain', padding: '12%', display: 'block' }}
-          />
+            sx={{
+              width: '25%',
+              height: '100%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <Box
+              component="img"
+              src={src}
+              alt={i === 0 ? 'League logo' : ''}
+              draggable={false}
+              sx={{ width: '85%', height: '85%', objectFit: 'contain', display: 'block' }}
+            />
+          </Box>
         ))}
       </Box>
       {/* Light on top of the ball so it reads as 3D */}

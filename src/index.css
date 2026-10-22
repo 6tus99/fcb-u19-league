@@ -1,11 +1,11 @@
 /* ------------------------------------------------------------------
    Logo rotator (LeagueLogo): the logo sits on a little white BALL.
    Its surface carries BOTH logos side by side (league crest, First
-   Capital Bank, crest, Bank…) and rolls across the ball (a 4-tile
-   scrolling strip, looped seamlessly, moving left to right) — each
-   logo takes 5 seconds to cross the face, so the two alternate
-   naturally as the ball rolls. Sphere shading + a pulsing green
-   glow sell the 3D ball.
+   Capital Bank, crest, Bank…) and rolls across the ball (a scrolling
+   strip of four tiles — two per loop, each tile half the ball —
+   looped seamlessly, moving left to right). Each logo takes 5
+   seconds to cross the face, so the two alternate naturally as the
+   ball rolls. Sphere shading + a pulsing green glow sell the 3D ball.
    ------------------------------------------------------------------ */
 @keyframes logo-surface {
   from {
