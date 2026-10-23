@@ -8,7 +8,6 @@ import TextField from '@mui/material/TextField';
 import Alert from '@mui/material/Alert';
 import Divider from '@mui/material/Divider';
 import PlayArrowRounded from '@mui/icons-material/PlayArrowRounded';
-import StopRounded from '@mui/icons-material/StopRounded';
 import AddRounded from '@mui/icons-material/AddRounded';
 import PageHeader from '../../components/PageHeader';
 import GlassCard from '../../components/GlassCard';
@@ -380,32 +379,39 @@ export default function LiveMatchControl() {
               Start match
             </Button>
           )}
-          {match.status === 'live' && (
-            <Button variant="contained" color="error" size="large" startIcon={<StopRounded />} onClick={() => setMatchStatus('finished')}>
-              End match
-            </Button>
-          )}
         </Box>
 
         {/* Event recording — inside the same container */}
         {match.status === 'live' && (
           <>
             <Divider sx={{ my: 2 }} />
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap', mb: 1.5 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap' }}>
               <TextField
                 label="Minute"
                 type="number"
-                size="small"
+                size="large"
                 value={minute}
                 onChange={(e) => setMinute(e.target.value)}
                 inputProps={{ min: 0, max: 120 }}
-                sx={{ width: 92 }}
+                sx={{
+                  width: 140,
+                  '& .MuiOutlinedInput-root': {
+                    backgroundColor: 'error.main',
+                    color: '#fff',
+                    borderRadius: 1.5,
+                    '& fieldset': { borderColor: 'transparent' },
+                    '&:hover fieldset': { borderColor: 'transparent' },
+                  },
+                  '& .MuiInputLabel-root': { color: 'rgba(255,255,255,0.9)' },
+                  '& .MuiInputLabel-root.Mui-focused': { color: '#fff' },
+                }}
               />
               {PHASE_BUTTONS.map((b) => (
                 <Button
                   key={b.id}
-                  size="small"
-                  variant="outlined"
+                  variant="contained"
+                  color="error"
+                  size="large"
                   disabled={recording}
                   onClick={() => recordPhase(b.id)}
                   sx={{ textTransform: 'none', fontWeight: 700 }}
