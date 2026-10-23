@@ -6,6 +6,7 @@ import Typography from '@mui/material/Typography';
 import Button from '@mui/material/Button';
 import TextField from '@mui/material/TextField';
 import Alert from '@mui/material/Alert';
+import Divider from '@mui/material/Divider';
 import PlayArrowRounded from '@mui/icons-material/PlayArrowRounded';
 import StopRounded from '@mui/icons-material/StopRounded';
 import AddRounded from '@mui/icons-material/AddRounded';
@@ -325,9 +326,9 @@ export default function LiveMatchControl() {
         </Alert>
       )}
 
-      <Paper sx={{ p: { xs: 3, md: 4 }, borderRadius: 3, border: '1px solid', borderColor: 'cardBorder', bgcolor: 'tint', mb: 3 }}>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2, flexWrap: 'wrap', gap: 1 }}>
-          <Typography color="text.secondary">
+      <Paper sx={{ p: { xs: 2, md: 3 }, borderRadius: 3, border: '1px solid', borderColor: 'cardBorder', bgcolor: 'tint', mb: 3 }}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5, flexWrap: 'wrap', gap: 1 }}>
+          <Typography variant="body2" color="text.secondary">
             Week {match.week} • {formatDate(match.scheduled_at, true)}
             {match.venue ? ` • ${match.venue}` : ''}
           </Typography>
@@ -349,13 +350,13 @@ export default function LiveMatchControl() {
         </Box>
 
         {clock && (
-          <Box sx={{ textAlign: 'center', mt: 2.5 }}>
+          <Box sx={{ textAlign: 'center', mt: 1.5 }}>
             <Typography
-              variant="h2"
+              variant="h3"
               sx={{
                 fontWeight: 900,
                 fontVariantNumeric: 'tabular-nums',
-                letterSpacing: 1.5,
+                letterSpacing: 1,
                 lineHeight: 1.1,
                 color: clock.running ? 'primary.main' : 'text.secondary',
               }}
@@ -367,8 +368,13 @@ export default function LiveMatchControl() {
             </Typography>
           </Box>
         )}
+        {isLive && !match.live_started_at && (
+          <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', mt: 1.5 }}>
+            Clock starts with the match (run the live-clock SQL to enable it).
+          </Typography>
+        )}
 
-        <Box sx={{ display: 'flex', gap: 1.5, mt: 3, flexWrap: 'wrap' }}>
+        <Box sx={{ display: 'flex', justifyContent: 'center', gap: 1.5, mt: 2, flexWrap: 'wrap' }}>
           {match.status === 'scheduled' && (
             <Button variant="contained" size="large" startIcon={<PlayArrowRounded />} onClick={() => setMatchStatus('live')}>
               Start match
@@ -380,21 +386,21 @@ export default function LiveMatchControl() {
             </Button>
           )}
         </Box>
-      </Paper>
 
-      {match.status === 'live' && (
-        <GlassCard title="Record event" sx={{ mb: 3 }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2, flexWrap: 'wrap' }}>
-            <TextField
-              label="Minute"
-              type="number"
-              size="small"
-              value={minute}
-              onChange={(e) => setMinute(e.target.value)}
-              inputProps={{ min: 0, max: 120 }}
-              sx={{ width: 110 }}
-            />
-            <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+        {/* Event recording — inside the same container */}
+        {match.status === 'live' && (
+          <>
+            <Divider sx={{ my: 2 }} />
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap', mb: 1.5 }}>
+              <TextField
+                label="Minute"
+                type="number"
+                size="small"
+                value={minute}
+                onChange={(e) => setMinute(e.target.value)}
+                inputProps={{ min: 0, max: 120 }}
+                sx={{ width: 92 }}
+              />
               {PHASE_BUTTONS.map((b) => (
                 <Button
                   key={b.id}
@@ -408,24 +414,24 @@ export default function LiveMatchControl() {
                 </Button>
               ))}
             </Box>
-          </Box>
 
-          <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 2 }}>
-            <TeamEventPanel
-              team={teams.find((t) => t.id === match.home_team_id)}
-              players={players}
-              recording={recording}
-              onRecord={(eventType, playerName) => recordTeamEvent('home', eventType, playerName)}
-            />
-            <TeamEventPanel
-              team={teams.find((t) => t.id === match.away_team_id)}
-              players={players}
-              recording={recording}
-              onRecord={(eventType, playerName) => recordTeamEvent('away', eventType, playerName)}
-            />
-          </Box>
-        </GlassCard>
-      )}
+            <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 1.5 }}>
+              <TeamEventPanel
+                team={home}
+                players={players}
+                recording={recording}
+                onRecord={(eventType, playerName) => recordTeamEvent('home', eventType, playerName)}
+              />
+              <TeamEventPanel
+                team={away}
+                players={players}
+                recording={recording}
+                onRecord={(eventType, playerName) => recordTeamEvent('away', eventType, playerName)}
+              />
+            </Box>
+          </>
+        )}
+      </Paper>
 
       <GlassCard title={`Events (${events.length})`}>
         {events.length === 0 ? (
@@ -478,19 +484,19 @@ function TeamEventPanel({ team, players, recording, onRecord }) {
       sx={{
         border: '1px solid',
         borderColor: 'cardBorder',
-        borderRadius: 2.5,
-        p: 1.5,
+        borderRadius: 2,
+        p: 1,
         bgcolor: 'background.paper',
       }}
     >
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
         <Box sx={{ width: 12, height: 12, borderRadius: '50%', bgcolor: team?.primary_color || 'grey', flexShrink: 0 }} />
-        <Typography sx={{ fontWeight: 800 }} noWrap>
+        <Typography variant="subtitle2" sx={{ fontWeight: 800 }} noWrap>
           {team?.name || 'TBD'}
         </Typography>
       </Box>
 
-      <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(92px, 1fr))', gap: 1 }}>
+      <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(84px, 1fr))', gap: 0.75 }}>
         {TEAM_BUTTONS.map((b) => (
           <Button
             key={b.id}
@@ -501,7 +507,7 @@ function TeamEventPanel({ team, players, recording, onRecord }) {
               setOpenBtn(openBtn === b.id ? null : b.id);
               setManualName('');
             }}
-            sx={{ textTransform: 'none', fontWeight: 700, height: 40 }}
+            sx={{ textTransform: 'none', fontWeight: 700, height: 38, fontSize: 13 }}
           >
             {b.emoji} {b.label}
           </Button>
