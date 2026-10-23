@@ -5,7 +5,6 @@ import Paper from '@mui/material/Paper';
 import Typography from '@mui/material/Typography';
 import Button from '@mui/material/Button';
 import TextField from '@mui/material/TextField';
-import MenuItem from '@mui/material/MenuItem';
 import Alert from '@mui/material/Alert';
 import PlayArrowRounded from '@mui/icons-material/PlayArrowRounded';
 import StopRounded from '@mui/icons-material/StopRounded';
@@ -20,8 +19,9 @@ import supabase from '../../lib/supabase';
 
 const EVENT_TYPES = [
   { id: 'goal', label: '⚽ Goal' },
-  { id: 'yellow_card', label: '🟨 Foul (yellow card)' },
-  { id: 'red_card', label: '🟥 Foul (red card)' },
+  { id: 'foul', label: '🚩 Foul' },
+  { id: 'yellow_card', label: '🟨 Yellow card' },
+  { id: 'red_card', label: '🟥 Red card' },
   { id: 'substitution', label: '🔁 Substitution' },
   { id: 'half_time', label: '⏸ End of first half' },
   { id: 'second_half', label: '▶ Second half begins' },
@@ -29,9 +29,28 @@ const EVENT_TYPES = [
   { id: 'note', label: '📝 Note' },
 ];
 
-const PHASE_EVENTS = ['half_time', 'second_half', 'extra_time'];
+// The 5 action buttons each team gets on the live control panel
+const TEAM_BUTTONS = [
+  { id: 'goal', emoji: '⚽', label: 'Goal' },
+  { id: 'foul', emoji: '🚩', label: 'Foul' },
+  { id: 'substitution', emoji: '🔁', label: 'Substitution' },
+  { id: 'yellow_card', emoji: '🟨', label: 'Yellow card' },
+  { id: 'red_card', emoji: '🟥', label: 'Red card' },
+];
 
-const EMPTY_FORM = { type: 'goal', minute: '45', teamSide: 'home', playerName: '', description: '' };
+const PHASE_BUTTONS = [
+  { id: 'half_time', label: '⏸ End of 1st half' },
+  { id: 'second_half', label: '▶ 2nd half begins' },
+  { id: 'extra_time', label: '➕ Added time' },
+];
+
+const EVENT_LABEL = {
+  goal: 'Goal',
+  foul: 'Foul',
+  yellow_card: 'Yellow card',
+  red_card: 'Red card',
+  substitution: 'Substitution',
+};
 
 export default function LiveMatchControl() {
   const { matchId } = useParams();
@@ -40,7 +59,8 @@ export default function LiveMatchControl() {
   const [match, setMatch] = useState(null);
   const [events, setEvents] = useState([]);
   const [players, setPlayers] = useState([]);
-  const [form, setForm] = useState(EMPTY_FORM);
+  const [minute, setMinute] = useState('45');
+  const [recording, setRecording] = useState(false);
   const [message, setMessage] = useState(null);
   const [loaded, setLoaded] = useState(false);
   const [matchErr, setMatchErr] = useState('');
@@ -106,10 +126,6 @@ export default function LiveMatchControl() {
   if (!loaded) return <LoadingSpinner message="Loading live control…" />;
 
   const teamName = (teamId) => teams.find((t) => t.id === teamId)?.name || 'TBD';
-  const homeTeamId = match?.home_team_id;
-  const awayTeamId = match?.away_team_id;
-  const selectedTeamId = form.teamSide === 'home' ? homeTeamId : awayTeamId;
-  const squadOptions = players.filter((p) => p.team_id === selectedTeamId);
 
   const setMatchStatus = async (status) => {
     const { error } = await supabase.from('matches').update({ status }).eq('id', match.id);
@@ -121,39 +137,58 @@ export default function LiveMatchControl() {
     loadMatch(match.id);
   };
 
-  const addEvent = async (e) => {
-    e.preventDefault();
-    const isGoal = form.type === 'goal';
-    const isPhase = PHASE_EVENTS.includes(form.type);
-    const description =
-      form.description ||
-      (!isPhase && form.playerName ? `${isGoal ? 'Goal' : form.type.replace('_', ' ')} — ${form.playerName}` : null);
+  // Record a team event (goal / foul / substitution / yellow / red)
+  // for the given side, with the chosen player's name.
+  const recordTeamEvent = async (side, eventType, playerName) => {
+    if (!match || recording) return false;
+    setRecording(true);
+    const player = playerName ? players.find((p) => p.full_name === playerName) : null;
     const payload = {
       match_id: match.id,
-      minute: form.minute ? Number(form.minute) : null,
-      event_type: form.type,
-      // phase events (halves, added time) belong to the match, not a team
-      team_id: isPhase ? null : selectedTeamId,
-      description,
+      minute: minute ? Number(minute) : null,
+      event_type: eventType,
+      team_id: side === 'home' ? match.home_team_id : match.away_team_id,
+      description: playerName ? `${EVENT_LABEL[eventType] || eventType} — ${playerName}` : null,
     };
-    if (!isPhase && form.playerName && players.some((p) => p.full_name === form.playerName)) {
-      payload.player_id = players.find((p) => p.full_name === form.playerName).id;
-    }
+    if (player) payload.player_id = player.id;
     const { error } = await supabase.from('match_events').insert(payload);
+    setRecording(false);
     if (error) {
       setMessage({ severity: 'error', text: error.message });
-      return;
+      return false;
     }
-    if (isGoal) {
-      const col = form.teamSide === 'home' ? 'home_score' : 'away_score';
+    if (eventType === 'goal') {
+      const col = side === 'home' ? 'home_score' : 'away_score';
       const { error: scoreError } = await supabase
         .from('matches')
         .update({ [col]: match[col] + 1 })
         .eq('id', match.id);
       if (scoreError) setMessage({ severity: 'error', text: scoreError.message });
     }
-    setMessage({ severity: 'success', text: 'Event recorded.' });
-    setForm({ ...EMPTY_FORM, type: form.type, teamSide: form.teamSide });
+    setMessage({ severity: 'success', text: `${EVENT_LABEL[eventType] || eventType} recorded.` });
+    loadMatch(match.id);
+    return true;
+  };
+
+  // Record a match-level phase event (halves, added time).
+  const recordPhase = async (eventType) => {
+    if (!match || recording) return;
+    setRecording(true);
+    const { error } = await supabase
+      .from('match_events')
+      .insert({
+        match_id: match.id,
+        minute: minute ? Number(minute) : null,
+        event_type: eventType,
+        team_id: null,
+        description: null,
+      });
+    setRecording(false);
+    if (error) {
+      setMessage({ severity: 'error', text: error.message });
+      return;
+    }
+    setMessage({ severity: 'success', text: 'Recorded.' });
     loadMatch(match.id);
   };
 
@@ -223,8 +258,8 @@ export default function LiveMatchControl() {
   // with an empty match (that used to crash the page to a blank screen).
   if (!match) return <LoadingSpinner message="Loading match…" />;
 
-  const home = teams.find((t) => t.id === homeTeamId);
-  const away = teams.find((t) => t.id === awayTeamId);
+  const home = teams.find((t) => t.id === match.home_team_id);
+  const away = teams.find((t) => t.id === match.away_team_id);
 
   return (
     <div>
@@ -282,54 +317,45 @@ export default function LiveMatchControl() {
 
       {match.status === 'live' && (
         <GlassCard title="Record event" sx={{ mb: 3 }}>
-          <Box component="form" onSubmit={addEvent} sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: '1fr', md: 'repeat(4, 1fr)' }, alignItems: 'end' }}>
-            <TextField
-              label="Event"
-              select
-              value={form.type}
-              onChange={(e) => setForm({ ...form, type: e.target.value })}
-            >
-              {EVENT_TYPES.map((t) => (
-                <MenuItem key={t.id} value={t.id}>
-                  {t.label}
-                </MenuItem>
-              ))}
-            </TextField>
-            {!PHASE_EVENTS.includes(form.type) && (
-              <TextField
-                label="Team"
-                select
-                value={form.teamSide}
-                onChange={(e) => setForm({ ...form, teamSide: e.target.value, playerName: '' })}
-              >
-                <MenuItem value="home">{home ? home.name : 'Home'}</MenuItem>
-                <MenuItem value="away">{away ? away.name : 'Away'}</MenuItem>
-              </TextField>
-            )}
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2, flexWrap: 'wrap' }}>
             <TextField
               label="Minute"
               type="number"
-              value={form.minute}
-              onChange={(e) => setForm({ ...form, minute: e.target.value })}
+              size="small"
+              value={minute}
+              onChange={(e) => setMinute(e.target.value)}
               inputProps={{ min: 0, max: 120 }}
+              sx={{ width: 110 }}
             />
-            <TextField
-              label="Player (optional)"
-              value={form.playerName}
-              onChange={(e) => setForm({ ...form, playerName: e.target.value })}
-              helperText={squadOptions.length === 0 ? 'No registered players' : ''}
-            />
-            <TextField
-              label="Description (optional — auto-filled for goals with a player)"
-              value={form.description}
-              onChange={(e) => setForm({ ...form, description: e.target.value })}
-              sx={{ gridColumn: { xs: '1 / -1', md: '1 / -1' } }}
-            />
-            <Box sx={{ gridColumn: { xs: '1 / -1', md: '1 / -1' } }}>
-              <Button type="submit" variant="contained" startIcon={<AddRounded />}>
-                Record {form.type.replace('_', ' ')}
-              </Button>
+            <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+              {PHASE_BUTTONS.map((b) => (
+                <Button
+                  key={b.id}
+                  size="small"
+                  variant="outlined"
+                  disabled={recording}
+                  onClick={() => recordPhase(b.id)}
+                  sx={{ textTransform: 'none', fontWeight: 700 }}
+                >
+                  {b.label}
+                </Button>
+              ))}
             </Box>
+          </Box>
+
+          <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 2 }}>
+            <TeamEventPanel
+              team={teams.find((t) => t.id === match.home_team_id)}
+              players={players}
+              recording={recording}
+              onRecord={(eventType, playerName) => recordTeamEvent('home', eventType, playerName)}
+            />
+            <TeamEventPanel
+              team={teams.find((t) => t.id === match.away_team_id)}
+              players={players}
+              recording={recording}
+              onRecord={(eventType, playerName) => recordTeamEvent('away', eventType, playerName)}
+            />
           </Box>
         </GlassCard>
       )}
@@ -358,5 +384,110 @@ export default function LiveMatchControl() {
         )}
       </GlassCard>
     </div>
+  );
+}
+
+// One team's control panel: five action buttons. Tapping a button pops
+// out that team's registered players to pick from (or a free-text name
+// field if the team has no registered players yet).
+function TeamEventPanel({ team, players, recording, onRecord }) {
+  const [openBtn, setOpenBtn] = useState(null);
+  const [manualName, setManualName] = useState('');
+  const squad = players.filter((p) => p.team_id === team?.id);
+
+  const pick = async (eventType, playerName) => {
+    if (!playerName?.trim()) return;
+    const ok = await onRecord(eventType, playerName.trim());
+    if (ok) {
+      setOpenBtn(null);
+      setManualName('');
+    }
+  };
+
+  const active = TEAM_BUTTONS.find((b) => b.id === openBtn);
+
+  return (
+    <Box
+      sx={{
+        border: '1px solid',
+        borderColor: 'cardBorder',
+        borderRadius: 2.5,
+        p: 1.5,
+        bgcolor: 'background.paper',
+      }}
+    >
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>
+        <Box sx={{ width: 12, height: 12, borderRadius: '50%', bgcolor: team?.primary_color || 'grey', flexShrink: 0 }} />
+        <Typography sx={{ fontWeight: 800 }} noWrap>
+          {team?.name || 'TBD'}
+        </Typography>
+      </Box>
+
+      <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(92px, 1fr))', gap: 1 }}>
+        {TEAM_BUTTONS.map((b) => (
+          <Button
+            key={b.id}
+            variant={openBtn === b.id ? 'contained' : 'outlined'}
+            size="small"
+            disabled={recording}
+            onClick={() => {
+              setOpenBtn(openBtn === b.id ? null : b.id);
+              setManualName('');
+            }}
+            sx={{ textTransform: 'none', fontWeight: 700, height: 40 }}
+          >
+            {b.emoji} {b.label}
+          </Button>
+        ))}
+      </Box>
+
+      {openBtn && active && (
+        <Box sx={{ mt: 1.5, border: '1px solid', borderColor: 'divider', borderRadius: 2, p: 1 }}>
+          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>
+            {active.emoji} {active.label} — select the player
+          </Typography>
+          {squad.length > 0 ? (
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+              {squad.map((p) => (
+                <Button
+                  key={p.id}
+                  fullWidth
+                  size="small"
+                  disabled={recording}
+                  onClick={() => pick(openBtn, p.full_name)}
+                  sx={{ justifyContent: 'flex-start', textTransform: 'none' }}
+                >
+                  {p.full_name}
+                </Button>
+              ))}
+            </Box>
+          ) : (
+            <Box>
+              <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
+                No registered players for this team — type the name
+              </Typography>
+              <Box sx={{ display: 'flex', gap: 1 }}>
+                <TextField
+                  fullWidth
+                  size="small"
+                  placeholder="Player name"
+                  value={manualName}
+                  onChange={(e) => setManualName(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      pick(openBtn, manualName);
+                    }
+                  }}
+                />
+                <Button size="small" variant="contained" disabled={recording || !manualName.trim()} onClick={() => pick(openBtn, manualName)}>
+                  Record
+                </Button>
+              </Box>
+            </Box>
+          )}
+        </Box>
+      )}
+    </Box>
   );
 }
