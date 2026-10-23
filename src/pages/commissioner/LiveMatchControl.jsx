@@ -43,6 +43,7 @@ export default function LiveMatchControl() {
   const [form, setForm] = useState(EMPTY_FORM);
   const [message, setMessage] = useState(null);
   const [loaded, setLoaded] = useState(false);
+  const [matchErr, setMatchErr] = useState('');
 
   const loadOptions = useCallback(async () => {
     const [m, t] = await Promise.all([
@@ -56,11 +57,22 @@ export default function LiveMatchControl() {
 
   const loadMatch = useCallback(async (id) => {
     if (!id) return;
+    setMatchErr('');
     const [m, ev, pl] = await Promise.all([
       supabase.from('matches').select('*').eq('id', id).maybeSingle(),
       supabase.from('match_events').select('*').eq('match_id', id).order('minute', { ascending: true, nullsFirst: false }),
       supabase.from('profiles').select('id, full_name, team_id').eq('role', 'player'),
     ]);
+    if (m.error) {
+      setMatch(null);
+      setMatchErr(m.error.message);
+      return;
+    }
+    if (!m.data) {
+      setMatch(null);
+      setMatchErr('Match not found — it may have been deleted.');
+      return;
+    }
     setMatch(m.data);
     setEvents(ev.data || []);
     setPlayers(pl.data || []);
@@ -189,6 +201,28 @@ export default function LiveMatchControl() {
   }
 
   // ---------- control view ----------
+  if (matchErr) {
+    return (
+      <div>
+        <PageHeader
+          title="Live Match Control"
+          action={
+            <Button component={RouterLink} to="/commissioner/live" variant="text" startIcon={<AddRounded style={{ transform: 'rotate(180deg)' }} />}>
+              All matches
+            </Button>
+          }
+        />
+        <Alert severity="error" sx={{ mb: 2 }}>
+          {matchErr}
+        </Alert>
+      </div>
+    );
+  }
+
+  // The match data may still be loading — never render the detail card
+  // with an empty match (that used to crash the page to a blank screen).
+  if (!match) return <LoadingSpinner message="Loading match…" />;
+
   const home = teams.find((t) => t.id === homeTeamId);
   const away = teams.find((t) => t.id === awayTeamId);
 
