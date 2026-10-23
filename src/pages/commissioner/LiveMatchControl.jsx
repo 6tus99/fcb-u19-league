@@ -52,6 +52,14 @@ const EVENT_LABEL = {
   substitution: 'Substitution',
 };
 
+// Half length for the automatic match clock
+const HALF_MINUTES = 40;
+
+const fmtClock = (ms) => {
+  const s = Math.max(0, Math.floor(ms / 1000));
+  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+};
+
 export default function LiveMatchControl() {
   const { matchId } = useParams();
   const [options, setOptions] = useState([]);
@@ -64,6 +72,15 @@ export default function LiveMatchControl() {
   const [message, setMessage] = useState(null);
   const [loaded, setLoaded] = useState(false);
   const [matchErr, setMatchErr] = useState('');
+  // Live match clock — ticks once a second while the match is live.
+  const [now, setNow] = useState(Date.now());
+  const isLive = match?.status === 'live';
+
+  useEffect(() => {
+    if (!isLive) return undefined;
+    const id = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, [isLive]);
 
   const loadOptions = useCallback(async () => {
     const [m, t] = await Promise.all([
@@ -128,7 +145,10 @@ export default function LiveMatchControl() {
   const teamName = (teamId) => teams.find((t) => t.id === teamId)?.name || 'TBD';
 
   const setMatchStatus = async (status) => {
-    const { error } = await supabase.from('matches').update({ status }).eq('id', match.id);
+    // When the match goes live, record the exact start time — the match
+    // clock runs from this moment (so it survives page refreshes).
+    const patch = status === 'live' ? { status, live_started_at: new Date().toISOString() } : { status };
+    const { error } = await supabase.from('matches').update(patch).eq('id', match.id);
     if (error) {
       setMessage({ severity: 'error', text: error.message });
       return;
@@ -261,6 +281,33 @@ export default function LiveMatchControl() {
   const home = teams.find((t) => t.id === match.home_team_id);
   const away = teams.find((t) => t.id === match.away_team_id);
 
+  // Match clock: 1st half counts 0:00 -> 40:00 and AUTO-STOPS; the 2nd
+  // half restarts from 0:00 when "2nd half begins" is recorded, and once
+  // it passes 40:00 it keeps counting added time (40+0:01, 40+0:02…)
+  // automatically — no need to enter added time first.
+  let clock = null;
+  if (isLive && match.live_started_at) {
+    const HALF = HALF_MINUTES * 60 * 1000;
+    const liveStart = new Date(match.live_started_at).getTime();
+    const shEvent = events.find((e) => e.event_type === 'second_half');
+    if (!shEvent) {
+      const elapsed = now - liveStart;
+      const over = elapsed >= HALF;
+      clock = {
+        text: fmtClock(Math.min(elapsed, HALF)),
+        label: over ? `Half time — clock auto-stopped at ${HALF_MINUTES}:00` : '1st half',
+        running: !over,
+      };
+    } else {
+      const elapsed = now - new Date(shEvent.created_at).getTime();
+      if (elapsed <= HALF) {
+        clock = { text: fmtClock(elapsed), label: '2nd half', running: true };
+      } else {
+        clock = { text: `40+${fmtClock(elapsed - HALF)}`, label: 'Added time — counting automatically', running: true };
+      }
+    }
+  }
+
   return (
     <div>
       <PageHeader
@@ -300,6 +347,26 @@ export default function LiveMatchControl() {
             <Typography variant="h5">{away ? away.name : 'TBD'}</Typography>
           </Box>
         </Box>
+
+        {clock && (
+          <Box sx={{ textAlign: 'center', mt: 2.5 }}>
+            <Typography
+              variant="h2"
+              sx={{
+                fontWeight: 900,
+                fontVariantNumeric: 'tabular-nums',
+                letterSpacing: 1.5,
+                lineHeight: 1.1,
+                color: clock.running ? 'primary.main' : 'text.secondary',
+              }}
+            >
+              {clock.text}
+            </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 700 }}>
+              {clock.label}
+            </Typography>
+          </Box>
+        )}
 
         <Box sx={{ display: 'flex', gap: 1.5, mt: 3, flexWrap: 'wrap' }}>
           {match.status === 'scheduled' && (
