@@ -37,31 +37,24 @@ root.render(
   </React.StrictMode>
 );
 
-// PWA: register the service worker so the app shell is cached
-// (instant open + offline fallback). Production only.
-if ('serviceWorker' in navigator && process.env.NODE_ENV === 'production') {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker
-      .register('/sw.js')
-      .then((reg) => {
-        // Auto-update: when a new version of the service worker installs in
-        // the background, this page is still running the OLD code — reload
-        // once so the new version takes over. Without this the installed
-        // PWA can sit on an old version for days (browsers only check
-        // sw.js roughly every 24 h) or go white after a deploy.
-        reg.addEventListener('updatefound', () => {
-          const worker = reg.installing;
-          if (!worker) return;
-          worker.addEventListener('statechange', () => {
-            if (worker.state === 'installed' && navigator.serviceWorker.controller) {
-              window.location.reload();
-            }
-          });
-        });
-        // Force an immediate update check on every load (bypasses the
-        // browser's ~24 h delay).
-        if (reg.update) reg.update().catch(() => {});
-      })
-      .catch(() => {});
+// PWA v33 (DEBUG): something on user devices (phone + PC) is white.
+// The live site itself renders fine (verified headlessly), so this version
+// does NOT register a new service worker — it PURGES every existing one +
+// all its caches and reloads once, so every device starts completely fresh
+// with no old app copy in the way. If the white screen survives this, the
+// problem is on the device/network side, not the app code.
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', async () => {
+    try {
+      const regs = await navigator.serviceWorker.getRegistrations();
+      if (regs.length > 0) {
+        await Promise.all(regs.map((r) => r.unregister()));
+        const keys = await caches.keys();
+        await Promise.all(keys.map((k) => caches.delete(k)));
+        window.location.reload();
+      }
+    } catch (e) {
+      /* stay on the page — never let cleanup break the app */
+    }
   });
 }
