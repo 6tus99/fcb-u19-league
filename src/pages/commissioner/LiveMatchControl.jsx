@@ -8,6 +8,7 @@ import TextField from '@mui/material/TextField';
 import Alert from '@mui/material/Alert';
 import Divider from '@mui/material/Divider';
 import PlayArrowRounded from '@mui/icons-material/PlayArrowRounded';
+import StopRounded from '@mui/icons-material/StopRounded';
 import AddRounded from '@mui/icons-material/AddRounded';
 import PageHeader from '../../components/PageHeader';
 import GlassCard from '../../components/GlassCard';
@@ -308,6 +309,20 @@ export default function LiveMatchControl() {
     }
   }
 
+  // "End match" (big red) only appears when the match is actually over:
+  // once 2nd-half added time has started — or as a safety valve after
+  // 100+ minutes live. It is hidden while play is still on.
+  let canEnd = false;
+  if (isLive) {
+    if (!match.live_started_at) {
+      canEnd = true; // no clock data yet (SQL pending) — keep it available
+    } else if (clock && clock.label.startsWith('Added time')) {
+      canEnd = true;
+    } else if (now - new Date(match.live_started_at).getTime() > 100 * 60 * 1000) {
+      canEnd = true;
+    }
+  }
+
   return (
     <div>
       <PageHeader
@@ -377,6 +392,11 @@ export default function LiveMatchControl() {
           {match.status === 'scheduled' && (
             <Button variant="contained" size="large" startIcon={<PlayArrowRounded />} onClick={() => setMatchStatus('live')}>
               Start match
+            </Button>
+          )}
+          {isLive && canEnd && (
+            <Button variant="contained" color="error" size="large" startIcon={<StopRounded />} onClick={() => setMatchStatus('finished')}>
+              End match
             </Button>
           )}
         </Box>
