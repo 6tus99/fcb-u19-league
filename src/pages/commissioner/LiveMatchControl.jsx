@@ -8,6 +8,7 @@ import TextField from '@mui/material/TextField';
 import Alert from '@mui/material/Alert';
 import Divider from '@mui/material/Divider';
 import PlayArrowRounded from '@mui/icons-material/PlayArrowRounded';
+import PauseRounded from '@mui/icons-material/PauseRounded';
 import StopRounded from '@mui/icons-material/StopRounded';
 import AddRounded from '@mui/icons-material/AddRounded';
 import PageHeader from '../../components/PageHeader';
@@ -40,9 +41,9 @@ const TEAM_BUTTONS = [
 ];
 
 const PHASE_BUTTONS = [
-  { id: 'half_time', label: '⏸ End of 1st half' },
-  { id: 'second_half', label: '▶ 2nd half begins' },
-  { id: 'extra_time', label: '➕ Added time' },
+  { id: 'half_time', label: 'End of 1st half', color: 'info', Icon: PauseRounded },
+  { id: 'second_half', label: '2nd half begins', color: 'success', Icon: PlayArrowRounded },
+  { id: 'extra_time', label: 'Added time', color: 'warning', Icon: AddRounded },
 ];
 
 const EVENT_LABEL = {
@@ -395,7 +396,7 @@ export default function LiveMatchControl() {
             </Button>
           )}
           {isLive && canEnd && (
-            <Button variant="contained" color="error" size="large" startIcon={<StopRounded />} onClick={() => setMatchStatus('finished')}>
+            <Button variant="contained" color="secondary" size="large" startIcon={<StopRounded />} onClick={() => setMatchStatus('finished')} sx={{ fontWeight: 800 }}>
               End match
             </Button>
           )}
@@ -405,36 +406,33 @@ export default function LiveMatchControl() {
         {match.status === 'live' && (
           <>
             <Divider sx={{ my: 2 }} />
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap' }}>
+            <Box sx={{ display: 'flex', justifyContent: 'center', mb: 1.5 }}>
               <TextField
                 label="Minute"
                 type="number"
-                size="large"
+                size="medium"
+                variant="filled"
                 value={minute}
                 onChange={(e) => setMinute(e.target.value)}
-                inputProps={{ min: 0, max: 120 }}
+                inputProps={{ min: 0, max: 120, style: { textAlign: 'center' } }}
                 sx={{
-                  width: 140,
-                  '& .MuiOutlinedInput-root': {
-                    backgroundColor: 'error.main',
-                    color: '#fff',
-                    borderRadius: 1.5,
-                    '& fieldset': { borderColor: 'transparent' },
-                    '&:hover fieldset': { borderColor: 'transparent' },
-                  },
-                  '& .MuiInputLabel-root': { color: 'rgba(255,255,255,0.9)' },
-                  '& .MuiInputLabel-root.Mui-focused': { color: '#fff' },
+                  width: 110,
+                  '& .MuiFilledInput-root': { borderRadius: 2, fontWeight: 700, fontSize: 16 },
+                  '& .MuiInputLabel-root': { fontWeight: 600 },
                 }}
               />
+            </Box>
+            <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(3, 1fr)' }, gap: 1 }}>
               {PHASE_BUTTONS.map((b) => (
                 <Button
                   key={b.id}
                   variant="contained"
-                  color="error"
-                  size="large"
+                  color={b.color}
+                  size="medium"
                   disabled={recording}
+                  startIcon={<b.Icon fontSize="small" />}
                   onClick={() => recordPhase(b.id)}
-                  sx={{ textTransform: 'none', fontWeight: 700 }}
+                  sx={{ fontWeight: 700 }}
                 >
                   {b.label}
                 </Button>
@@ -522,7 +520,7 @@ function TeamEventPanel({ team, players, recording, onRecord }) {
         </Typography>
       </Box>
 
-      <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(84px, 1fr))', gap: 0.75 }}>
+      <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(96px, 1fr))', gap: 0.75 }}>
         {TEAM_BUTTONS.map((b) => (
           <Button
             key={b.id}
@@ -533,7 +531,7 @@ function TeamEventPanel({ team, players, recording, onRecord }) {
               setOpenBtn(openBtn === b.id ? null : b.id);
               setManualName('');
             }}
-            sx={{ textTransform: 'none', fontWeight: 700, height: 38, fontSize: 13 }}
+            sx={{ fontWeight: 700, height: 40, fontSize: 12.5 }}
           >
             {b.emoji} {b.label}
           </Button>
