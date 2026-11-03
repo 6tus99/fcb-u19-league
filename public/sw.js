@@ -9,14 +9,30 @@
  *
  * Bump VERSION to purge old caches on the next visit.
  */
-const VERSION = 'fcb-u19-v31';
+const VERSION = 'fcb-u19-v32';
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches
-      .open(VERSION)
-      .then((cache) => cache.addAll(['/']))
-      .then(() => self.skipWaiting())
+    (async () => {
+      const cache = await caches.open(VERSION);
+      try {
+        // Precache the WHOLE app shell (index + hashed JS/CSS), not just
+        // the index — otherwise an offline first launch after an update
+        // loads the index but can't fetch the new hashed assets = white
+        // screen on the installed PWA.
+        const res = await fetch('/');
+        if (!res.ok) throw new Error('index fetch failed');
+        await cache.put('/', res.clone());
+        const html = await res.text();
+        const urls = [];
+        const re = /(?:src|href)="(\/static\/[^"]+)"/g;
+        let m;
+        while ((m = re.exec(html))) urls.push(m[1]);
+        if (urls.length) await cache.addAll(urls);
+      } catch (e) {
+        await cache.addAll(['/']);
+      }
+    })().then(() => self.skipWaiting())
   );
 });
 
