@@ -22,12 +22,17 @@ export default function NotificationBell() {
   const [items, setItems] = useState([]);
   const [unread, setUnread] = useState(0);
   const [peek, setPeek] = useState(null);
+  // Last peeked notification, kept during the slide-back-out animation:
+  // when `peek` flips to null the card is still mounted for a moment while
+  // it animates out, and its content must not re-render against null.
+  const [lastPeek, setLastPeek] = useState(null);
   const knownIdsRef = useRef(null);
   const peekTimerRef = useRef(null);
   const bellRef = useRef(null);
 
   const showPeek = useCallback((item) => {
     setPeek(item);
+    setLastPeek(item);
     if (peekTimerRef.current) clearTimeout(peekTimerRef.current);
     peekTimerRef.current = setTimeout(() => setPeek(null), 6000);
   }, []);
@@ -236,9 +241,9 @@ export default function NotificationBell() {
             </Box>
             <Box sx={{ flex: 1, minWidth: 0 }}>
               <Typography sx={{ fontWeight: 800, fontSize: 14 }} noWrap>
-                {peek.title}
+                {lastPeek?.title}
               </Typography>
-              {peek.body && (
+              {lastPeek?.body && (
                 <Typography
                   variant="body2"
                   color="text.secondary"
@@ -250,7 +255,7 @@ export default function NotificationBell() {
                     overflow: 'hidden',
                   }}
                 >
-                  {peek.body}
+                  {lastPeek.body}
                 </Typography>
               )}
               <Typography variant="caption" color="primary.main" sx={{ fontWeight: 700, mt: 0.5, display: 'block' }}>
