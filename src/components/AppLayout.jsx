@@ -388,13 +388,20 @@ export default function AppLayout() {
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, minWidth: 0, flexGrow: 1 }}>
             <LeagueLogo size={isPhone ? 38 : 44} />
             <Box sx={{ minWidth: 0 }}>
-              {/* The full league name is hidden on phones — it was pushing
-                  every other icon into overlap. The logo carries the brand;
-                  the role chip stays. */}
+              {/* Phones: the league name stays visible but SHRINKS to a
+                  short bold line (clips gracefully) so nothing overlaps —
+                  the logo ball sits next to it as before. On wider screens
+                  the full name shows at normal size. */}
               <Typography
                 variant="subtitle1"
                 noWrap
-                sx={{ fontWeight: 800, lineHeight: 1.15, color: 'headerText', display: { xs: 'none', sm: 'block' } }}
+                sx={{
+                  fontWeight: 800,
+                  lineHeight: 1.15,
+                  color: 'headerText',
+                  fontSize: { xs: 13, sm: undefined },
+                  maxWidth: { xs: 84, sm: 'none' },
+                }}
               >
                 {leagueName}
               </Typography>
