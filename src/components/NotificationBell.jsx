@@ -26,6 +26,9 @@ export default function NotificationBell() {
   // when `peek` flips to null the card is still mounted for a moment while
   // it animates out, and its content must not re-render against null.
   const [lastPeek, setLastPeek] = useState(null);
+  // Queue of notifications still to be played back, one by one. Items are
+  // stored oldest-first so a burst (goal → card → half-time) reads in order.
+  const [queue, setQueue] = useState([]);
   const knownIdsRef = useRef(null);
   const peekTimerRef = useRef(null);
   const bellRef = useRef(null);
@@ -36,6 +39,22 @@ export default function NotificationBell() {
     if (peekTimerRef.current) clearTimeout(peekTimerRef.current);
     peekTimerRef.current = setTimeout(() => setPeek(null), 6000);
   }, []);
+
+  // Auto-advance: when the current card has finished (peek is null) and the
+  // queue still has items, wait a beat for the slide-out to finish, then pop
+  // the next one out. Repeats until the queue is drained. Pauses while the
+  // full list is open so the card never covers the menu.
+  useEffect(() => {
+    if (peek !== null) return undefined;
+    if (queue.length === 0) return undefined;
+    if (anchorEl) return undefined;
+    const t = setTimeout(() => {
+      const [next, ...rest] = queue;
+      setQueue(rest);
+      showPeek(next);
+    }, 650);
+    return () => clearTimeout(t);
+  }, [peek, queue, anchorEl, showPeek]);
 
   const load = useCallback(async () => {
     if (!profile?.id) return;
@@ -57,9 +76,11 @@ export default function NotificationBell() {
       knownIdsRef.current = new Set(data.map((n) => n.id));
     } else if (fresh.length > 0) {
       fresh.forEach((n) => knownIdsRef.current.add(n.id));
-      showPeek(fresh[0]);
+      // `fresh` is newest-first (inherited from the query order); reverse so
+      // the playback runs in the order the events actually happened.
+      setQueue((q) => [...q, ...[...fresh].reverse()]);
     }
-  }, [profile?.id, showPeek]);
+  }, [profile?.id]);
 
   useEffect(() => {
     // new login / different user → forget the old id set
@@ -103,9 +124,12 @@ export default function NotificationBell() {
   };
 
   // Tap the pop-out card: mark read + jump to it (or open the full list).
+  // Tapping means the user is taking over, so the remaining queued cards
+  // stop popping out — they're all visible in the bell list.
   const peekOpen = async () => {
     const item = peek;
     setPeek(null);
+    setQueue([]);
     if (peekTimerRef.current) clearTimeout(peekTimerRef.current);
     if (item?.id && profile?.id) {
       await supabase.from('notifications').update({ read_at: new Date().toISOString() }).eq('id', item.id);
