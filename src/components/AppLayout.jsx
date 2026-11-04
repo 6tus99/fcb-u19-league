@@ -358,7 +358,7 @@ export default function AppLayout() {
   };
 
   return (
-    <Box sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+    <Box sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', overflowX: 'clip' }}>
       <AppBar
         position="sticky"
         elevation={0}
@@ -369,7 +369,7 @@ export default function AppLayout() {
           color: 'headerText',
         }}
       >
-        <Toolbar sx={{ gap: 1, minHeight: 64, color: 'inherit' }}>
+        <Toolbar sx={{ gap: { xs: 0.75, sm: 1 }, minHeight: 64, color: 'inherit', overflowX: 'hidden' }}>
           <IconButton
             onClick={
               inRoleArea
@@ -385,12 +385,13 @@ export default function AppLayout() {
           >
             {inRoleArea ? <HomeRounded sx={{ fontSize: 20 }} /> : <ArrowBackIosRounded sx={{ fontSize: 20 }} />}
           </IconButton>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, minWidth: 0, flexGrow: 1 }}>
-            <LeagueLogo size={isPhone ? 38 : 44} />
-            <Box sx={{ minWidth: 0 }}>
-              {/* Phones: the league name stays visible but SHRINKS to a
-                  short bold line (clips gracefully) so nothing overlaps —
-                  the logo ball sits next to it as before. On wider screens
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 0.75, sm: 1 }, minWidth: 0, flexGrow: 1 }}>
+            <LeagueLogo size={isPhone ? 34 : 44} sx={{ flexShrink: 0 }} />
+            <Box sx={{ minWidth: 0, flexGrow: 1 }}>
+              {/* The league name takes whatever space is left in the header
+                  (it is the only shrinkable element), so the header can
+                  NEVER be wider than the screen — on phones it shows as
+                  many words as fit and clips with "…"; on wide screens
                   the full name shows at normal size. */}
               <Typography
                 variant="subtitle1"
@@ -400,7 +401,6 @@ export default function AppLayout() {
                   lineHeight: 1.15,
                   color: 'headerText',
                   fontSize: { xs: 13, sm: undefined },
-                  maxWidth: { xs: 84, sm: 'none' },
                 }}
               >
                 {leagueName}
@@ -415,6 +415,10 @@ export default function AppLayout() {
                   mt: 0.25,
                   bgcolor: 'rgba(255,255,255,0.16)',
                   color: '#ffffff',
+                  // On phones the chip makes no room for the league name,
+                  // so it moves out of the header — the role is still
+                  // obvious from the pages and the dashboard button.
+                  display: { xs: 'none', sm: 'inline-flex' },
                 }}
               />
             </Box>
