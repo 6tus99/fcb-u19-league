@@ -12,6 +12,7 @@ import MenuItem from '@mui/material/MenuItem';
 import Avatar from '@mui/material/Avatar';
 import Chip from '@mui/material/Chip';
 import useMediaQuery from '@mui/material/useMediaQuery';
+import Tooltip from '@mui/material/Tooltip';
 import Container from '@mui/material/Container';
 import Dialog from '@mui/material/Dialog';
 import DialogTitle from '@mui/material/DialogTitle';
@@ -268,6 +269,13 @@ export default function AppLayout() {
 
   const requestDashboardEntry = async () => {
     if (!profile) return;
+    // Already inside the role dashboard (button in its selected/labeled
+    // state) → it acts as "home": jump to the dashboard home without
+    // re-asking the password.
+    if (inRoleArea) {
+      enterDashboard();
+      return;
+    }
     setPinErr('');
     setPin('');
     setPin2('');
@@ -393,7 +401,18 @@ export default function AppLayout() {
               <Chip
                 label={ROLE_LABEL[profile.role]}
                 size="small"
-                sx={{ height: 16, fontSize: 9, fontWeight: 700, mt: 0.25, bgcolor: 'rgba(255,255,255,0.16)', color: '#ffffff' }}
+                sx={{
+                  height: 16,
+                  fontSize: 9,
+                  fontWeight: 700,
+                  mt: 0.25,
+                  bgcolor: 'rgba(255,255,255,0.16)',
+                  color: '#ffffff',
+                  // On a phone, when the "My dashboard" label is showing
+                  // (selected state) the chip steps aside to keep the
+                  // header from overflowing.
+                  display: isPhone && inRoleArea ? 'none' : 'inline-flex',
+                }}
               />
             </Box>
           </Box>
@@ -418,22 +437,34 @@ export default function AppLayout() {
               Verify role
             </Button>
           ) : profile.role !== 'fan' ? (
-            // Icon-only on purpose (user request): the "My dashboard" label
-            // was ~110px wide and caused the header overlap on phones.
-            <IconButton
-              onClick={requestDashboardEntry}
-              size="small"
-              aria-label="My dashboard"
-              title="My dashboard"
-              sx={{
-                flexShrink: 0,
-                color: '#ffffff',
-                border: '1px solid rgba(255,255,255,0.55)',
-                '&:hover': { borderColor: '#ffffff', bgcolor: 'rgba(255,255,255,0.12)' },
-              }}
-            >
-              <SpaceDashboardRounded fontSize="small" />
-            </IconButton>
+            // Icon-only by default (the full label caused header overlap on
+            // phones), but the label SHOWS when you're inside the role
+            // dashboard (selected state), and a tooltip appears on hover.
+            <Tooltip title={inRoleArea ? '' : 'My dashboard'}>
+              <Button
+                size="small"
+                variant={inRoleArea ? 'contained' : 'outlined'}
+                startIcon={<SpaceDashboardRounded fontSize="small" />}
+                onClick={requestDashboardEntry}
+                sx={{
+                  flexShrink: 0,
+                  fontWeight: 700,
+                  ...(inRoleArea
+                    ? {
+                        bgcolor: '#ffffff',
+                        color: '#12275e',
+                        '&:hover': { bgcolor: 'rgba(255,255,255,0.92)' },
+                      }
+                    : {
+                        color: '#ffffff',
+                        borderColor: 'rgba(255,255,255,0.55)',
+                        '&:hover': { borderColor: '#ffffff', bgcolor: 'rgba(255,255,255,0.12)' },
+                      }),
+                }}
+              >
+                {inRoleArea ? 'My dashboard' : null}
+              </Button>
+            </Tooltip>
           ) : null}
           <IconButton
             onClick={(e) => setThemeAnchor(e.currentTarget)}
