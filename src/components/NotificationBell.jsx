@@ -82,11 +82,6 @@ export default function NotificationBell() {
     }
   }, [profile?.id]);
 
-  useEffect(() => {
-    // new login / different user → forget the old id set
-    knownIdsRef.current = null;
-  }, [profile?.id]);
-
   useEffect(() => () => {
     if (peekTimerRef.current) clearTimeout(peekTimerRef.current);
   }, []);
