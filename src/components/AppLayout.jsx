@@ -11,6 +11,7 @@ import Menu from '@mui/material/Menu';
 import MenuItem from '@mui/material/MenuItem';
 import Avatar from '@mui/material/Avatar';
 import Chip from '@mui/material/Chip';
+import useMediaQuery from '@mui/material/useMediaQuery';
 import Container from '@mui/material/Container';
 import Dialog from '@mui/material/Dialog';
 import DialogTitle from '@mui/material/DialogTitle';
@@ -103,6 +104,7 @@ const ROLE_LABEL = {
 
 export default function AppLayout() {
   const { profile, signOut } = useAuth();
+  const isPhone = useMediaQuery('(max-width: 600px)');
   const { mode, choice, setChoice } = useThemeMode();
   const location = useLocation();
   const navigate = useNavigate();
@@ -376,9 +378,16 @@ export default function AppLayout() {
             {inRoleArea ? <HomeRounded sx={{ fontSize: 20 }} /> : <ArrowBackIosRounded sx={{ fontSize: 20 }} />}
           </IconButton>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, minWidth: 0, flexGrow: 1 }}>
-            <LeagueLogo size={44} />
+            <LeagueLogo size={isPhone ? 38 : 44} />
             <Box sx={{ minWidth: 0 }}>
-              <Typography variant="subtitle1" noWrap sx={{ fontWeight: 800, lineHeight: 1.15, color: 'headerText' }}>
+              {/* The full league name is hidden on phones — it was pushing
+                  every other icon into overlap. The logo carries the brand;
+                  the role chip stays. */}
+              <Typography
+                variant="subtitle1"
+                noWrap
+                sx={{ fontWeight: 800, lineHeight: 1.15, color: 'headerText', display: { xs: 'none', sm: 'block' } }}
+              >
                 {leagueName}
               </Typography>
               <Chip
@@ -409,21 +418,22 @@ export default function AppLayout() {
               Verify role
             </Button>
           ) : profile.role !== 'fan' ? (
-            <Button
-              size="small"
-              variant="outlined"
-              startIcon={<SpaceDashboardRounded fontSize="small" />}
+            // Icon-only on purpose (user request): the "My dashboard" label
+            // was ~110px wide and caused the header overlap on phones.
+            <IconButton
               onClick={requestDashboardEntry}
+              size="small"
+              aria-label="My dashboard"
+              title="My dashboard"
               sx={{
                 flexShrink: 0,
-                fontWeight: 700,
                 color: '#ffffff',
-                borderColor: 'rgba(255,255,255,0.55)',
+                border: '1px solid rgba(255,255,255,0.55)',
                 '&:hover': { borderColor: '#ffffff', bgcolor: 'rgba(255,255,255,0.12)' },
               }}
             >
-              My dashboard
-            </Button>
+              <SpaceDashboardRounded fontSize="small" />
+            </IconButton>
           ) : null}
           <IconButton
             onClick={(e) => setThemeAnchor(e.currentTarget)}
