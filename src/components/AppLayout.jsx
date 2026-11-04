@@ -408,10 +408,6 @@ export default function AppLayout() {
                   mt: 0.25,
                   bgcolor: 'rgba(255,255,255,0.16)',
                   color: '#ffffff',
-                  // On a phone, when the "My dashboard" label is showing
-                  // (selected state) the chip steps aside to keep the
-                  // header from overflowing.
-                  display: isPhone && inRoleArea ? 'none' : 'inline-flex',
                 }}
               />
             </Box>
@@ -437,10 +433,11 @@ export default function AppLayout() {
               Verify role
             </Button>
           ) : profile.role !== 'fan' ? (
-            // Icon-only by default (the full label caused header overlap on
-            // phones), but the label SHOWS when you're inside the role
-            // dashboard (selected state), and a tooltip appears on hover.
-            <Tooltip title={inRoleArea ? '' : 'My dashboard'}>
+            // Responsive (user request): on small screens it shrinks to the
+            // icon alone (tooltip says "My dashboard"); on a screen wide
+            // enough, it shows the icon AND the "My dashboard" word.
+            // White-filled when you're already inside the dashboard.
+            <Tooltip title={isPhone ? 'My dashboard' : ''}>
               <Button
                 size="small"
                 variant={inRoleArea ? 'contained' : 'outlined'}
@@ -462,7 +459,7 @@ export default function AppLayout() {
                       }),
                 }}
               >
-                {inRoleArea ? 'My dashboard' : null}
+                {!isPhone ? 'My dashboard' : null}
               </Button>
             </Tooltip>
           ) : null}
