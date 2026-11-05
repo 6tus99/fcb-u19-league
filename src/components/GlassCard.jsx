@@ -11,7 +11,7 @@ const ACCENTS = {
   green: (t) => t.palette.success.main, // #16a34a / #4ade80
   red: (t) => t.palette.error.main, // #dc2626 / #f87171
   yellow: (t) => t.palette.secondary.main, // #ca8a04 / #facc15
-  blue: (t) => (t.palette.mode === 'dark' ? '#60a5fa' : '#1e3a8a'),
+  blue: (t) => (t.palette.mode === 'dark' ? '#8fa3e8' : '#17276a'),
   orange: (t) => (t.palette.mode === 'dark' ? '#fb923c' : '#ea580c'),
 };
 

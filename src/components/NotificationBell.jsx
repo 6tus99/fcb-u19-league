@@ -138,7 +138,7 @@ export default function NotificationBell() {
   return (
     <>
       <IconButton ref={bellRef} onClick={openMenu} size="small" aria-label="Notifications" sx={{ color: 'headerIcon' }}>
-        <Badge badgeContent={unread} max={99} color="primary" sx={{ '& .MuiBadge-badge': { bgcolor: 'primary.main', color: '#04120a' } }}>
+        <Badge badgeContent={unread} max={99} color="primary" sx={{ '& .MuiBadge-badge': { bgcolor: 'primary.main', color: '#17276a' } }}>
           <NotificationsNoneRounded />
         </Badge>
       </IconButton>
@@ -153,7 +153,7 @@ export default function NotificationBell() {
             maxHeight: '70vh',
             overflowY: 'auto',
             border: '1px solid',
-            borderColor: (t) => (t.palette.mode === 'dark' ? '#60a5fa' : '#1e3a8a'),
+            borderColor: (t) => (t.palette.mode === 'dark' ? '#8fa3e8' : '#17276a'),
           },
         }}
       >
@@ -234,13 +234,13 @@ export default function NotificationBell() {
             elevation={10}
             sx={{
               border: '1px solid',
-              borderColor: (t) => (t.palette.mode === 'dark' ? '#60a5fa' : '#1e3a8a'),
+              borderColor: (t) => (t.palette.mode === 'dark' ? '#8fa3e8' : '#17276a'),
               borderRadius: 3,
               p: 1.5,
               display: 'flex',
               gap: 1.25,
               alignItems: 'flex-start',
-              boxShadow: (t) => (t.palette.mode === 'dark' ? '0 10px 30px rgba(2,6,23,0.7)' : '0 10px 30px rgba(30,58,138,0.25)'),
+              boxShadow: (t) => (t.palette.mode === 'dark' ? '0 10px 30px rgba(2,6,23,0.7)' : '0 10px 30px rgba(23,39,106,0.25)'),
             }}
           >
             <Box

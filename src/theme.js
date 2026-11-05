@@ -5,21 +5,21 @@ export function buildTheme(mode) {
   return createTheme({
     palette: {
       mode,
-      primary: { main: dark ? '#4ade80' : '#16a34a' },
+      primary: { main: dark ? '#a3d15e' : '#76a52e' },
       secondary: { main: dark ? '#facc15' : '#ca8a04' },
       error: { main: dark ? '#f87171' : '#dc2626' },
-      success: { main: dark ? '#4ade80' : '#16a34a' },
+      success: { main: dark ? '#a3d15e' : '#76a52e' },
       warning: { main: dark ? '#fbbf24' : '#d97706' },
-      info: { main: dark ? '#60a5fa' : '#2563eb' },
+      info: { main: dark ? '#8fa3e8' : '#17276a' },
       // borders — dark mode needs real presence, not a whisper of white
       divider: dark ? 'rgba(148, 163, 184, 0.30)' : 'rgba(15,23,42,0.14)',
       // card borders — brand-aware: navy edge on light, glowing steel-blue
       // on dark, so every card is clearly visible against its background
-      cardBorder: dark ? 'rgba(129, 158, 224, 0.5)' : 'rgba(30, 64, 175, 0.25)',
+      cardBorder: dark ? 'rgba(143, 194, 68, 0.35)' : 'rgba(23, 39, 106, 0.25)',
       // three distinct navy layers: deep body → mid header → light cards
       background: dark
-        ? { default: '#070d1f', paper: '#111e42' }
-        : { default: '#f2f5fb', paper: '#ffffff' },
+        ? { default: '#0a1029', paper: '#141f4a' }
+        : { default: '#f4f6fb', paper: '#ffffff' },
       // NOTE: only set `text` for dark mode. Passing `text: undefined` for
       // light mode wipes MUI's default light text colors (MUI does not
       // fall back) — which blanked the whole app on first render.
@@ -34,9 +34,9 @@ export function buildTheme(mode) {
         : {}),
       // bank brand: blue header + green accents + white body (light mode),
       // layered navy throughout (dark mode)
-      appbar: dark ? '#0c1735' : '#1e3a8a',
-      tint: dark ? 'rgba(148, 163, 184, 0.08)' : 'rgba(30,58,138,0.045)',
-      tintHover: dark ? 'rgba(148, 163, 184, 0.15)' : 'rgba(30,58,138,0.08)',
+      appbar: '#17276a',
+      tint: dark ? 'rgba(148, 163, 184, 0.08)' : 'rgba(23,39,106,0.05)',
+      tintHover: dark ? 'rgba(148, 163, 184, 0.15)' : 'rgba(23,39,106,0.09)',
       headerText: '#ffffff',
       headerIcon: 'rgba(255,255,255,0.85)',
     },
@@ -57,7 +57,7 @@ export function buildTheme(mode) {
               : '1px solid rgba(255,255,255,0.25)',
             boxShadow: dark
               ? '0 4px 20px rgba(2, 6, 23, 0.5)'
-              : '0 2px 12px rgba(30, 58, 138, 0.2)',
+              : '0 2px 12px rgba(23, 39, 106, 0.25)',
           },
         },
       },

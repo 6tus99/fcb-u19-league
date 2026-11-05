@@ -186,7 +186,7 @@ export default function InstallPrompt() {
                     screen, and works even with weak data.
                   </Typography>
                 </Box>
-                <Box sx={{ mt: 0.5, p: 1.25, borderRadius: 2, bgcolor: 'rgba(30,58,138,0.08)' }}>
+                <Box sx={{ mt: 0.5, p: 1.25, borderRadius: 2, bgcolor: 'rgba(23,39,106,0.08)' }}>
                   <Typography variant="body2" color="text.secondary">
                     No “Install app” in the menu? Make sure you're using <b>Chrome</b> (updated from
                     the Play Store) and that the phone has a few GB of free storage — both are

@@ -460,7 +460,7 @@ export default function AppLayout() {
                   ...(inRoleArea
                     ? {
                         bgcolor: '#ffffff',
-                        color: '#12275e',
+                        color: '#17276a',
                         '&:hover': { bgcolor: 'rgba(255,255,255,0.92)' },
                       }
                     : {
@@ -512,7 +512,7 @@ export default function AppLayout() {
           </Menu>
           <NotificationBell />
           <IconButton onClick={(e) => setAnchorEl(e.currentTarget)} size="small" aria-label="Account menu" sx={{ flexShrink: 0 }}>
-            <Avatar sx={{ width: 34, height: 34, bgcolor: 'primary.main', color: '#04120a', fontSize: 13, fontWeight: 800 }}>{initials}</Avatar>
+            <Avatar sx={{ width: 34, height: 34, bgcolor: 'primary.main', color: '#17276a', fontSize: 13, fontWeight: 800 }}>{initials}</Avatar>
           </IconButton>
         </Toolbar>
         <Toolbar sx={{ gap: 0.5, px: 2, minHeight: 48, overflowX: 'auto', color: 'inherit' }}>

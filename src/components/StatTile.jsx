@@ -5,8 +5,8 @@ import Typography from '@mui/material/Typography';
 import { alpha, useTheme } from '@mui/material/styles';
 
 const TONES = {
-  green: { light: '#16a34a', dark: '#4ade80' },
-  blue: { light: '#2563eb', dark: '#93c5fd' },
+  green: { light: '#76a52e', dark: '#a3d15e' },
+  blue: { light: '#17276a', dark: '#8fa3e8' },
   amber: { light: '#ca8a04', dark: '#facc15' },
   red: { light: '#dc2626', dark: '#f87171' },
   slate: { light: '#475569', dark: '#94a3b8' },
