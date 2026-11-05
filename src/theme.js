@@ -35,8 +35,8 @@ export function buildTheme(mode) {
       // bank brand: blue header + green accents + white body (light mode),
       // layered navy throughout (dark mode)
       appbar: '#17276a',
-      tint: dark ? 'rgba(148, 163, 184, 0.08)' : 'rgba(23,39,106,0.05)',
-      tintHover: dark ? 'rgba(148, 163, 184, 0.15)' : 'rgba(23,39,106,0.09)',
+      tint: dark ? 'rgba(148, 163, 184, 0.08)' : 'rgba(255, 255, 255, 0.90)',
+      tintHover: dark ? 'rgba(148, 163, 184, 0.15)' : 'rgba(255, 255, 255, 0.96)',
       headerText: '#ffffff',
       headerIcon: 'rgba(255,255,255,0.85)',
     },
