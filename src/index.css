@@ -36,3 +36,13 @@
     box-shadow: 0 0 16px 2px rgba(74, 222, 128, 0.65);
   }
 }
+
+/* FCB brand overscroll fallback (page background is the app's navy gradient) */
+html {
+  background-color: #17276a;
+}
+@media (prefers-color-scheme: dark) {
+  html {
+    background-color: #0a1128;
+  }
+}

@@ -358,7 +358,21 @@ export default function AppLayout() {
   };
 
   return (
-    <Box sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', overflowX: 'clip' }}>
+    <Box
+      sx={{
+        minHeight: '100vh',
+        display: 'flex',
+        flexDirection: 'column',
+        overflowX: 'clip',
+        // FCB brand look: navy -> steel-blue gradient, like the First
+        // Capital Bank app (header sits on the same navy and blends in)
+        backgroundColor: mode === 'dark' ? '#0a1128' : '#17276a',
+        backgroundImage: mode === 'dark'
+            ? 'linear-gradient(180deg, #0a1128 0%, #12264a 55%, #1f3f63 100%)'
+            : 'linear-gradient(180deg, #17276a 0%, #2c4f7e 55%, #4d80a2 100%)',
+        backgroundAttachment: 'fixed',
+      }}
+    >
       <AppBar
         position="sticky"
         elevation={0}

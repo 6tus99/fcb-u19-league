@@ -13,9 +13,15 @@ import { useAuth } from '../../context/AuthContext';
 import { homeForRole } from '../../components/ProtectedRoute';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import ThemeToggleFloat from '../../components/ThemeToggleFloat';
+import { useThemeMode } from '../../context/ThemeContext';
+// FCB brand gradients (navy -> steel blue), like the First Capital Bank app
+const G_LIGHT_FIXED = 'linear-gradient(180deg, #17276a 0%, #2c4f7e 55%, #4d80a2 100%) fixed';
+const G_DARK_FIXED = 'linear-gradient(180deg, #0a1128 0%, #12264a 55%, #1f3f63 100%) fixed';
+
 
 export default function Register() {
   const { user, profile, register } = useAuth();
+  const { mode } = useThemeMode();
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -53,7 +59,7 @@ export default function Register() {
         alignItems: 'center',
         justifyContent: 'center',
         p: 2,
-        background: 'radial-gradient(circle at 20% 10%, rgba(34,197,94,0.12), transparent 45%), radial-gradient(circle at 85% 90%, rgba(59,130,246,0.10), transparent 45%)',
+        background: mode === 'dark' ? G_DARK_FIXED : G_LIGHT_FIXED,
       }}
     >
       <ThemeToggleFloat />
@@ -108,7 +114,19 @@ export default function Register() {
             helperText="Optional for now — security codes are sent by email. SMS will use this number later."
             autoComplete="tel"
           />
-          <Button type="submit" variant="contained" size="large" disabled={busy}>
+          <Button
+            type="submit"
+            variant="contained"
+            size="large"
+            disabled={busy}
+            sx={{
+              bgcolor: '#ffffff',
+              color: '#17276a',
+              fontWeight: 800,
+              '&:hover': { bgcolor: 'rgba(255,255,255,0.92)' },
+              boxShadow: '0 2px 12px rgba(10, 17, 40, 0.3)',
+            }}
+          >
             {busy ? 'Creating account…' : 'Create account'}
           </Button>
         </Box>
