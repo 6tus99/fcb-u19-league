@@ -1,5 +1,5 @@
 import React from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate, useParams } from 'react-router-dom';
 import { isConfigured } from './lib/supabase';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import SetupScreen from './components/SetupScreen';
@@ -23,9 +23,7 @@ import Messages from './pages/social/Messages';
 import PlayerDashboard from './pages/player/PlayerDashboard';
 import ManagerDashboard from './pages/manager/ManagerDashboard';
 import CommissionerDashboard from './pages/commissioner/CommissionerDashboard';
-import LiveMatchControl from './pages/commissioner/LiveMatchControl';
-import MatchEvents from './pages/commissioner/MatchEvents';
-import MatchReports from './pages/commissioner/MatchReports';
+import MatchCenter from './pages/commissioner/MatchCenter';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import ManageUsers from './pages/admin/ManageUsers';
 import ManageRequests from './pages/admin/ManageRequests';
@@ -42,6 +40,12 @@ function RoleHome() {
   const { profile, loading } = useAuth();
   if (loading || !profile) return <LoadingSpinner message="Loading…" />;
   return <Navigate to={homeForRole(profile.role)} replace />;
+}
+
+// Old commissioner URLs keep working — they all live in Match Center now.
+function OldLiveRedirect() {
+  const { matchId } = useParams();
+  return <Navigate to={`/commissioner/match-center/live${matchId ? `/${matchId}` : ''}`} replace />;
 }
 
 function AuthedLayout() {
@@ -135,46 +139,53 @@ export default function App() {
               </ProtectedRoute>
             }
           />
+          {/* Match Center — fixtures, live control and reports in one place */}
           <Route
-            path="/commissioner/live"
+            path="/commissioner/match-center"
             element={
               <ProtectedRoute roles={COMMISSIONER}>
-                <LiveMatchControl />
+                <MatchCenter />
               </ProtectedRoute>
             }
           />
           <Route
-            path="/commissioner/live/:matchId"
+            path="/commissioner/match-center/matches"
             element={
               <ProtectedRoute roles={COMMISSIONER}>
-                <LiveMatchControl />
+                <MatchCenter />
               </ProtectedRoute>
             }
           />
           <Route
-            path="/commissioner/matches"
+            path="/commissioner/match-center/live"
             element={
               <ProtectedRoute roles={COMMISSIONER}>
-                <ManageMatches />
+                <MatchCenter />
               </ProtectedRoute>
             }
           />
           <Route
-            path="/commissioner/events"
+            path="/commissioner/match-center/live/:matchId"
             element={
               <ProtectedRoute roles={COMMISSIONER}>
-                <MatchEvents />
+                <MatchCenter />
               </ProtectedRoute>
             }
           />
           <Route
-            path="/commissioner/reports"
+            path="/commissioner/match-center/reports"
             element={
               <ProtectedRoute roles={COMMISSIONER}>
-                <MatchReports />
+                <MatchCenter />
               </ProtectedRoute>
             }
           />
+          {/* Legacy URLs redirect into Match Center */}
+          <Route path="/commissioner/live" element={<OldLiveRedirect />} />
+          <Route path="/commissioner/live/:matchId" element={<OldLiveRedirect />} />
+          <Route path="/commissioner/matches" element={<Navigate to="/commissioner/match-center/matches" replace />} />
+          <Route path="/commissioner/events" element={<Navigate to="/commissioner/match-center/reports" replace />} />
+          <Route path="/commissioner/reports" element={<Navigate to="/commissioner/match-center/reports" replace />} />
 
           {/* admin */}
           <Route

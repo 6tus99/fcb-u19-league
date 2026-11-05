@@ -4,6 +4,9 @@ import Box from '@mui/material/Box';
 import Paper from '@mui/material/Paper';
 import Typography from '@mui/material/Typography';
 import Link from '@mui/material/Link';
+import Button from '@mui/material/Button';
+import ExpandMoreRounded from '@mui/icons-material/ExpandMoreRounded';
+import ExpandLessRounded from '@mui/icons-material/ExpandLessRounded';
 import PageHeader from '../../components/PageHeader';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import EmptyState from '../../components/EmptyState';
@@ -14,7 +17,12 @@ export default function MatchReports() {
   const [matches, setMatches] = useState([]);
   const [teams, setTeams] = useState([]);
   const [eventsByMatch, setEventsByMatch] = useState({});
+  const [openEvents, setOpenEvents] = useState({}); // matchId -> bool
   const [loaded, setLoaded] = useState(false);
+
+  const toggleEvents = (id) => setOpenEvents((o) => ({ ...o, [id]: !o[id] }));
+  const byMinute = (list) =>
+    [...list].sort((a, b) => (a.minute ?? 9999) - (b.minute ?? 9999));
 
   useEffect(() => {
     Promise.all([
@@ -92,6 +100,40 @@ export default function MatchReports() {
                   Cards: <span style={{ color: '#facc15' }}>{yellows} yellow</span> •{' '}
                   <span style={{ color: '#f87171' }}>{reds} red</span>
                 </Typography>
+
+                {/* The match's full event timeline lives right here in its
+                    report (Match Events is no longer a separate page). */}
+                <Button
+                  size="small"
+                  onClick={() => toggleEvents(m.id)}
+                  endIcon={openEvents[m.id] ? <ExpandLessRounded /> : <ExpandMoreRounded />}
+                  sx={{ fontWeight: 700, mt: 1 }}
+                >
+                  {openEvents[m.id] ? 'Hide all events' : `All events (${evs.length})`}
+                </Button>
+                {openEvents[m.id] &&
+                  (evs.length === 0 ? (
+                    <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+                      No events recorded for this match.
+                    </Typography>
+                  ) : (
+                    <Box sx={{ mt: 1, pt: 1, borderTop: '1px solid', borderColor: 'cardBorder' }}>
+                      {byMinute(evs).map((ev) => (
+                        <Box key={ev.id} sx={{ display: 'flex', alignItems: 'center', gap: 1.5, py: 0.75, borderBottom: '1px solid', borderColor: 'cardBorder', '&:last-child': { borderBottom: 'none' } }}>
+                          <Typography sx={{ width: 40, fontWeight: 800, color: 'text.secondary' }}>
+                            {ev.minute != null ? `${ev.minute}'` : '—'}
+                          </Typography>
+                          <Typography sx={{ textTransform: 'capitalize', fontWeight: 600, width: 110 }}>
+                            {ev.event_type.replace('_', ' ')}
+                          </Typography>
+                          {ev.team_id && (
+                            <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: teamColor(ev.team_id) }} />
+                          )}
+                          <Typography sx={{ flex: 1 }}>{ev.description}</Typography>
+                        </Box>
+                      ))}
+                    </Box>
+                  ))}
               </Paper>
             );
           })}

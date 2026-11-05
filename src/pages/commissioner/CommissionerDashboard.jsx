@@ -42,7 +42,7 @@ export default function CommissionerDashboard() {
         title="Commissioner Dashboard"
         subtitle="Control live matches, review events and reports"
         action={
-          <Button component={RouterLink} to="/commissioner/live" variant="contained" startIcon={<PlayArrowRounded />}>
+          <Button component={RouterLink} to="/commissioner/match-center/live" variant="contained" startIcon={<PlayArrowRounded />}>
             Live Match Control
           </Button>
         }

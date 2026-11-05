@@ -243,7 +243,7 @@ export default function LiveMatchControl() {
                   <StatusChip status={m.status} />
                   <Button
                     component={RouterLink}
-                    to={`/commissioner/live/${m.id}`}
+                    to={`/commissioner/match-center/live/${m.id}`}
                     variant={m.status === 'live' ? 'contained' : 'outlined'}
                     color={m.status === 'live' ? 'error' : 'primary'}
                   >
@@ -264,7 +264,7 @@ export default function LiveMatchControl() {
         <PageHeader
           title="Live Match Control"
           action={
-            <Button component={RouterLink} to="/commissioner/live" variant="text" startIcon={<AddRounded style={{ transform: 'rotate(180deg)' }} />}>
+            <Button component={RouterLink} to="/commissioner/match-center/live" variant="text" startIcon={<AddRounded style={{ transform: 'rotate(180deg)' }} />}>
               All matches
             </Button>
           }
@@ -329,7 +329,7 @@ export default function LiveMatchControl() {
       <PageHeader
         title="Live Match Control"
         action={
-          <Button component={RouterLink} to="/commissioner/live" variant="text" startIcon={<AddRounded style={{ transform: 'rotate(180deg)' }}/>}>
+          <Button component={RouterLink} to="/commissioner/match-center/live" variant="text" startIcon={<AddRounded style={{ transform: 'rotate(180deg)' }}/>}>
             All matches
           </Button>
         }

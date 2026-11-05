@@ -32,7 +32,6 @@ import DarkModeRounded from '@mui/icons-material/DarkModeRounded';
 import BrightnessAutoRounded from '@mui/icons-material/BrightnessAutoRounded';
 import SpaceDashboardRounded from '@mui/icons-material/SpaceDashboardRounded';
 import HourglassTopRounded from '@mui/icons-material/HourglassTopRounded';
-import ExpandMoreRounded from '@mui/icons-material/ExpandMoreRounded';
 import { useAuth } from '../context/AuthContext';
 import { sha256Hex } from '../utils/crypto';
 import { useThemeMode } from '../context/ThemeContext';
@@ -55,15 +54,7 @@ const NAV = {
   ],
   commissioner: [
     { to: '/commissioner', label: 'Dashboard' },
-    {
-      group: 'Match Center',
-      items: [
-        { to: '/commissioner/live', label: 'Live Match Control' },
-        { to: '/commissioner/matches', label: 'Matches' },
-        { to: '/commissioner/events', label: 'Match Events' },
-        { to: '/commissioner/reports', label: 'Match Reports' },
-      ],
-    },
+    { to: '/commissioner/match-center', label: 'Match Center' },
     { to: '/standings', label: 'Standings' },
     { to: '/social', label: 'Social' },
     { to: '/messages', label: 'Messages' },
@@ -117,7 +108,6 @@ export default function AppLayout() {
   const navigate = useNavigate();
   const [anchorEl, setAnchorEl] = useState(null);
   const [themeAnchor, setThemeAnchor] = useState(null);
-  const [matchMenuAnchor, setMatchMenuAnchor] = useState(null);
   const [leagueName, setLeagueName] = useState('FCB Under 19 Football League');
   const [season, setSeason] = useState('');
   const [pendingChange, setPendingChange] = useState(null);
@@ -538,55 +528,6 @@ export default function AppLayout() {
         </Toolbar>
         <Toolbar sx={{ gap: 0.5, px: 2, minHeight: 48, overflowX: 'auto', color: 'inherit' }}>
           {items.map((item) => {
-            // Grouped entity (e.g. Match Center): one pill in the nav that
-            // opens a dropdown with the related pages underneath it.
-            if (item.group) {
-              const groupActive = item.items.some((i) => location.pathname === i.to);
-              return (
-                <React.Fragment key={item.group}>
-                  <ButtonBase
-                    onClick={(e) => setMatchMenuAnchor(e.currentTarget)}
-                    aria-haspopup="menu"
-                    aria-label={`${item.group} menu`}
-                    sx={{
-                      px: 1.5,
-                      py: 0.5,
-                      borderRadius: 2,
-                      fontSize: 14,
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 0.5,
-                      fontWeight: groupActive ? 700 : 500,
-                      color: groupActive ? '#ffffff' : 'rgba(255,255,255,0.72)',
-                      bgcolor: groupActive ? 'rgba(74,222,128,0.22)' : 'transparent',
-                      whiteSpace: 'nowrap',
-                      '&:hover': { bgcolor: 'rgba(255,255,255,0.12)' },
-                    }}
-                  >
-                    {item.group}
-                    <ExpandMoreRounded sx={{ fontSize: 16 }} />
-                  </ButtonBase>
-                  <Menu
-                    open={Boolean(matchMenuAnchor)}
-                    anchorEl={matchMenuAnchor}
-                    onClose={() => setMatchMenuAnchor(null)}
-                  >
-                    {item.items.map((i) => (
-                      <MenuItem
-                        key={i.to}
-                        selected={location.pathname === i.to}
-                        onClick={() => {
-                          navigate(i.to);
-                          setMatchMenuAnchor(null);
-                        }}
-                      >
-                        {i.label}
-                      </MenuItem>
-                    ))}
-                  </Menu>
-                </React.Fragment>
-              );
-            }
             const active =
               location.pathname === item.to || location.pathname.startsWith(`${item.to}/`);
             return (
