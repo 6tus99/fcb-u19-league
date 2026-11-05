@@ -124,7 +124,7 @@ export default function MatchReports() {
                             {ev.minute != null ? `${ev.minute}'` : '—'}
                           </Typography>
                           <Typography sx={{ textTransform: 'capitalize', fontWeight: 600, width: 110 }}>
-                            {ev.event_type.replace('_', ' ')}
+                            {(ev.event_type || 'event').replace('_', ' ')}
                           </Typography>
                           {ev.team_id && (
                             <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: teamColor(ev.team_id) }} />
