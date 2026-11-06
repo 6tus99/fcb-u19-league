@@ -18,6 +18,7 @@ import StatusChip from '../../components/StatusChip';
 import EmptyState from '../../components/EmptyState';
 import { formatDate } from '../../utils/standings';
 import supabase from '../../lib/supabase';
+import { useAuth } from '../../context/AuthContext';
 
 const EVENT_TYPES = [
   { id: 'goal', label: '⚽ Goal' },
@@ -64,6 +65,7 @@ const fmtClock = (ms) => {
 
 export default function LiveMatchControl() {
   const { matchId } = useParams();
+  const { profile } = useAuth();
   const [options, setOptions] = useState([]);
   const [teams, setTeams] = useState([]);
   const [match, setMatch] = useState(null);
@@ -74,6 +76,7 @@ export default function LiveMatchControl() {
   const [message, setMessage] = useState(null);
   const [loaded, setLoaded] = useState(false);
   const [matchErr, setMatchErr] = useState('');
+  const [commissioners, setCommissioners] = useState([]);
   // Live match clock — ticks once a second while the match is live.
   const [now, setNow] = useState(Date.now());
   const isLive = match?.status === 'live';
@@ -85,12 +88,14 @@ export default function LiveMatchControl() {
   }, [isLive]);
 
   const loadOptions = useCallback(async () => {
-    const [m, t] = await Promise.all([
+    const [m, t, c] = await Promise.all([
       supabase.from('matches').select('*').in('status', ['scheduled', 'live']),
       supabase.from('teams').select('*'),
+      supabase.from('profiles').select('id, full_name').eq('role', 'commissioner'),
     ]);
     setOptions(m.data || []);
     setTeams(t.data || []);
+    setCommissioners(c.data || []);
     setLoaded(true);
   }, []);
 
@@ -145,6 +150,7 @@ export default function LiveMatchControl() {
   if (!loaded) return <LoadingSpinner message="Loading live control…" />;
 
   const teamName = (teamId) => teams.find((t) => t.id === teamId)?.name || 'TBD';
+  const commName = (id) => commissioners.find((c) => c.id === id)?.full_name || 'Another commissioner';
 
   const setMatchStatus = async (status) => {
     // When the match goes live, record the exact start time — the match
@@ -241,14 +247,34 @@ export default function LiveMatchControl() {
                     </Typography>
                   </Box>
                   <StatusChip status={m.status} />
-                  <Button
-                    component={RouterLink}
-                    to={`/commissioner/match-center/live/${m.id}`}
-                    variant={m.status === 'live' ? 'contained' : 'outlined'}
-                    color={m.status === 'live' ? 'error' : 'primary'}
-                  >
-                    {m.status === 'live' ? 'Continue' : 'Open'}
-                  </Button>
+                  {m.commissioner_id && m.commissioner_id !== profile?.id ? (
+                    <Box sx={{ textAlign: 'right' }}>
+                      <Typography variant="caption" color="text.secondary">
+                        Officiating: {commName(m.commissioner_id)}
+                      </Typography>
+                      <Button disabled variant="outlined" size="small">
+                        Locked
+                      </Button>
+                    </Box>
+                  ) : m.commissioner_id === profile?.id ? (
+                    <Button
+                      component={RouterLink}
+                      to={`/commissioner/match-center/live/${m.id}`}
+                      variant={m.status === 'live' ? 'contained' : 'outlined'}
+                      color={m.status === 'live' ? 'error' : 'primary'}
+                    >
+                      {m.status === 'live' ? 'Continue' : 'Open'}
+                    </Button>
+                  ) : (
+                    <Box sx={{ textAlign: 'right' }}>
+                      <Typography variant="caption" color="text.secondary">
+                        No commissioner assigned
+                      </Typography>
+                      <Button component={RouterLink} to="/commissioner/match-center/matches" variant="outlined" size="small">
+                        Assign
+                      </Button>
+                    </Box>
+                  )}
                 </Paper>
               ))}
           </Box>
@@ -279,6 +305,25 @@ export default function LiveMatchControl() {
   // The match data may still be loading — never render the detail card
   // with an empty match (that used to crash the page to a blank screen).
   if (!match) return <LoadingSpinner message="Loading match…" />;
+
+  // Only the assigned commissioner may officiate a match.
+  if (match.commissioner_id && match.commissioner_id !== profile?.id) {
+    return (
+      <div>
+        <PageHeader
+          title="Live Match Control"
+          action={
+            <Button component={RouterLink} to="/commissioner/match-center/live" variant="text" startIcon={<AddRounded style={{ transform: 'rotate(180deg)' }} />}>
+              All matches
+            </Button>
+          }
+        />
+        <Alert severity="warning" sx={{ mb: 2 }}>
+          You are not assigned to officiate this match. {commName(match.commissioner_id)} is the assigned commissioner.
+        </Alert>
+      </div>
+    );
+  }
 
   const home = teams.find((t) => t.id === match.home_team_id);
   const away = teams.find((t) => t.id === match.away_team_id);

@@ -34,18 +34,21 @@ export default function ManageMatches() {
   const [odds, setOdds] = useState({}); // matchId -> { h, d, a }
   const [savingOdds, setSavingOdds] = useState(null);
   const [officials, setOfficials] = useState([]);
+  const [commissioners, setCommissioners] = useState([]);
   const [loaded, setLoaded] = useState(false);
 
   const load = useCallback(async () => {
-    const [t, m, o] = await Promise.all([
+    const [t, m, o, c] = await Promise.all([
       supabase.from('teams').select('*').order('name'),
       supabase.from('matches').select('*').order('scheduled_at'),
       supabase.from('officials').select('*').order('name'),
+      supabase.from('profiles').select('id, full_name').eq('role', 'commissioner'),
     ]);
     const rows = m.data || [];
     setTeams(t.data || []);
     setMatches(rows);
     setOfficials(o.data || []);
+    setCommissioners(c.data || []);
     setOdds((prev) => {
       const next = { ...prev };
       rows.forEach((row) => {
@@ -201,6 +204,29 @@ export default function ManageMatches() {
     load();
   };
 
+  // Assign a commissioner to officiate a match. Same one-at-a-time rule as
+  // officials: a commissioner can hold many matches across the season, but
+  // only one that has not ended at a time — assigning moves them.
+  const assignCommissioner = async (m, cid) => {
+    if (cid) {
+      const conflict = matches.find((x) => x.id !== m.id && x.commissioner_id === cid && x.status !== 'finished');
+      const comm = commissioners.find((c) => c.id === cid);
+      if (conflict) {
+        const ok = window.confirm(
+          `${comm?.full_name || 'That commissioner'} is already assigned to ${teamName(conflict.home_team_id)} v ${teamName(
+            conflict.away_team_id
+          )} and that match has not ended. Move them to this match instead?`
+        );
+        if (!ok) return;
+        await supabase.from('matches').update({ commissioner_id: null }).eq('id', conflict.id);
+      }
+    }
+    const { error } = await supabase.from('matches').update({ commissioner_id: cid || null }).eq('id', m.id);
+    if (error) setMessage({ severity: 'error', text: error.message });
+    else setMessage({ severity: 'success', text: cid ? 'Commissioner assigned to officiate.' : 'Commissioner unassigned.' });
+    load();
+  };
+
   const numOrNull = (v) => (v === '' ? null : Number(v));
 
   const saveOdds = async (m) => {
@@ -327,6 +353,7 @@ export default function ManageMatches() {
                   <TableCell sx={{ fontWeight: 700 }}>Date</TableCell>
                   <TableCell sx={{ fontWeight: 700 }}>Venue</TableCell>
                   <TableCell sx={{ fontWeight: 700, whiteSpace: 'nowrap' }}>Official</TableCell>
+                  <TableCell sx={{ fontWeight: 700, whiteSpace: 'nowrap' }}>Commissioner</TableCell>
                   <TableCell sx={{ fontWeight: 700 }}>Score</TableCell>
                   <TableCell sx={{ fontWeight: 700 }}>Status</TableCell>
                   <TableCell sx={{ fontWeight: 700 }}>Odds (H / D / A)</TableCell>
@@ -358,6 +385,22 @@ export default function ManageMatches() {
                         {officials.map((o) => (
                           <MenuItem key={o.id} value={o.id}>
                             {o.name}
+                          </MenuItem>
+                        ))}
+                      </Select>
+                    </TableCell>
+                    <TableCell>
+                      <Select
+                        size="small"
+                        value={m.commissioner_id || ''}
+                        onChange={(e) => assignCommissioner(m, e.target.value)}
+                        displayEmpty
+                        sx={{ minWidth: 150 }}
+                      >
+                        <MenuItem value="">— none —</MenuItem>
+                        {commissioners.map((c) => (
+                          <MenuItem key={c.id} value={c.id}>
+                            {c.full_name}
                           </MenuItem>
                         ))}
                       </Select>
