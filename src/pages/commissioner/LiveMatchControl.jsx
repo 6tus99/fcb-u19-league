@@ -66,6 +66,7 @@ const fmtClock = (ms) => {
 export default function LiveMatchControl() {
   const { matchId } = useParams();
   const { profile } = useAuth();
+  const isAdmin = profile?.role === 'admin';
   const [options, setOptions] = useState([]);
   const [teams, setTeams] = useState([]);
   const [match, setMatch] = useState(null);
@@ -222,16 +223,21 @@ export default function LiveMatchControl() {
 
   // ---------- picker view ----------
   if (!matchId) {
+    // A commissioner only sees the matches they are assigned to officiate;
+    // the league admin sees everything (and can always take over control).
+    const list = isAdmin ? options : options.filter((m) => m.commissioner_id === profile?.id);
     return (
       <div>
         <PageHeader title="Live Match Control" subtitle="Pick a match to control" />
-        {options.length === 0 ? (
+        {list.length === 0 ? (
           <GlassCard>
-            <EmptyState message="No scheduled or live matches found." />
+            <EmptyState
+              message={isAdmin ? 'No scheduled or live matches found.' : "The league admin hasn't assigned you to any matches yet."}
+            />
           </GlassCard>
         ) : (
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-            {options
+            {list
               .sort((a, b) => (a.status === b.status ? new Date(a.scheduled_at) - new Date(b.scheduled_at) : a.status === 'live' ? -1 : 1))
               .map((m) => (
                 <Paper
@@ -247,16 +253,12 @@ export default function LiveMatchControl() {
                     </Typography>
                   </Box>
                   <StatusChip status={m.status} />
-                  {m.commissioner_id && m.commissioner_id !== profile?.id ? (
-                    <Box sx={{ textAlign: 'right' }}>
+                  <Box sx={{ textAlign: 'right' }}>
+                    {isAdmin && m.commissioner_id && (
                       <Typography variant="caption" color="text.secondary">
                         Officiating: {commName(m.commissioner_id)}
                       </Typography>
-                      <Button disabled variant="outlined" size="small">
-                        Locked
-                      </Button>
-                    </Box>
-                  ) : m.commissioner_id === profile?.id ? (
+                    )}
                     <Button
                       component={RouterLink}
                       to={`/commissioner/match-center/live/${m.id}`}
@@ -265,18 +267,7 @@ export default function LiveMatchControl() {
                     >
                       {m.status === 'live' ? 'Continue' : 'Open'}
                     </Button>
-                  ) : (
-                    <Box sx={{ textAlign: 'right' }}>
-                      <Typography variant="caption" color="text.secondary">
-                        No commissioner assigned
-                      </Typography>
-                      {profile?.role === 'admin' && (
-                        <Button component={RouterLink} to="/commissioner/match-center/matches" variant="outlined" size="small">
-                          Assign
-                        </Button>
-                      )}
-                    </Box>
-                  )}
+                  </Box>
                 </Paper>
               ))}
           </Box>
@@ -309,7 +300,7 @@ export default function LiveMatchControl() {
   if (!match) return <LoadingSpinner message="Loading match…" />;
 
   // Only the assigned commissioner may officiate a match.
-  if (match.commissioner_id && match.commissioner_id !== profile?.id) {
+  if (!isAdmin && match.commissioner_id && match.commissioner_id !== profile?.id) {
     return (
       <div>
         <PageHeader

@@ -28,6 +28,7 @@ const EMPTY = { home_team_id: '', away_team_id: '', week: '1', scheduled_at: '',
 
 export default function ManageMatches() {
   const { profile } = useAuth();
+  const isAdmin = profile?.role === 'admin';
   const [teams, setTeams] = useState([]);
   const [matches, setMatches] = useState([]);
   const [form, setForm] = useState(EMPTY);
@@ -265,10 +266,16 @@ export default function ManageMatches() {
   const teamName = (id) => teams.find((t) => t.id === id)?.name || 'TBD';
 
   if (!loaded) return <LoadingSpinner message="Loading matches…" />;
+  // Commissioners get a read-only view of the matches they are
+  // assigned to; all fixture controls belong to the league admin.
+  const visibleMatches = isAdmin ? matches : matches.filter((m) => m.commissioner_id === profile?.id);
 
   return (
     <div>
-      <PageHeader title="Manage Matches" subtitle="Schedule, edit or remove fixtures" />
+      <PageHeader
+        title={isAdmin ? 'Manage Matches' : 'My Matches'}
+        subtitle={isAdmin ? 'Schedule, edit or remove fixtures' : 'Matches the league admin has assigned to you'}
+      />
 
       {message && (
         <Alert severity={message.severity} sx={{ mb: 2 }} onClose={() => setMessage(null)}>
@@ -276,6 +283,8 @@ export default function ManageMatches() {
         </Alert>
       )}
 
+      {isAdmin && (
+      <>
       <GlassCard title={editingId ? 'Edit match' : 'Schedule match'} sx={{ mb: 3 }}>
         <Box component="form" onSubmit={handleSubmit} sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: '1fr', md: 'repeat(5, 1fr) auto' }, alignItems: 'center' }}>
           <TextField
@@ -341,9 +350,12 @@ export default function ManageMatches() {
           Creates every home-and-away game. You only set the date, venue and official for each one.
         </Typography>
       </Box>
+      </>
+      )}
 
-      <GlassCard title={`Fixtures (${matches.length})`}>
-        {matches.length === 0 ? (
+      <GlassCard title={isAdmin ? `Fixtures (${matches.length})` : `My matches (${visibleMatches.length})`}>
+        {isAdmin ? (
+          matches.length === 0 ? (
           <EmptyState message="No matches yet — generate the full fixture above." />
         ) : (
           <TableContainer sx={{ overflowX: 'auto' }}>
@@ -461,6 +473,48 @@ export default function ManageMatches() {
                       <Button size="small" color="error" startIcon={<DeleteRounded />} onClick={() => remove(m)}>
                         Delete
                       </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
+          )
+        ) : visibleMatches.length === 0 ? (
+          <EmptyState message="The league admin hasn't assigned you to any matches yet." />
+        ) : (
+          <TableContainer sx={{ overflowX: 'auto' }}>
+            <Table size="small">
+              <TableHead>
+                <TableRow>
+                  <TableCell sx={{ fontWeight: 700 }}>Week</TableCell>
+                  <TableCell sx={{ fontWeight: 700 }}>Match</TableCell>
+                  <TableCell sx={{ fontWeight: 700 }}>Date &amp; time</TableCell>
+                  <TableCell sx={{ fontWeight: 700 }}>Venue</TableCell>
+                  <TableCell sx={{ fontWeight: 700 }}>Official</TableCell>
+                  <TableCell sx={{ fontWeight: 700 }}>Score</TableCell>
+                  <TableCell sx={{ fontWeight: 700 }}>Status</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {visibleMatches.map((m) => (
+                  <TableRow key={m.id} hover>
+                    <TableCell>{m.week}</TableCell>
+                    <TableCell sx={{ fontWeight: 600, whiteSpace: 'nowrap' }}>
+                      {teamName(m.home_team_id)} vs {teamName(m.away_team_id)}
+                    </TableCell>
+                    <TableCell sx={{ whiteSpace: 'nowrap', color: 'text.secondary' }}>
+                      {m.scheduled_at ? formatDate(m.scheduled_at, true) : 'Date TBC'}
+                    </TableCell>
+                    <TableCell sx={{ whiteSpace: 'nowrap', color: 'text.secondary' }}>{m.venue || '—'}</TableCell>
+                    <TableCell sx={{ whiteSpace: 'nowrap' }}>
+                      {officials.find((o) => o.id === m.referee_id)?.name || '—'}
+                    </TableCell>
+                    <TableCell sx={{ fontWeight: 800 }}>
+                      {m.status === 'scheduled' ? '—' : `${m.home_score}–${m.away_score}`}
+                    </TableCell>
+                    <TableCell>
+                      <StatusChip status={m.status} />
                     </TableCell>
                   </TableRow>
                 ))}
