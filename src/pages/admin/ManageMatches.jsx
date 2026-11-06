@@ -21,11 +21,13 @@ import AddRounded from '@mui/icons-material/AddRounded';
 import DeleteRounded from '@mui/icons-material/DeleteRounded';
 import { formatDate, toLocalInput, fromLocalInput } from '../../utils/standings';
 import supabase from '../../lib/supabase';
+import { useAuth } from '../../context/AuthContext';
 import useAutoRefresh from '../../hooks/useAutoRefresh';
 
 const EMPTY = { home_team_id: '', away_team_id: '', week: '1', scheduled_at: '', venue: '' };
 
 export default function ManageMatches() {
+  const { profile } = useAuth();
   const [teams, setTeams] = useState([]);
   const [matches, setMatches] = useState([]);
   const [form, setForm] = useState(EMPTY);
@@ -390,20 +392,26 @@ export default function ManageMatches() {
                       </Select>
                     </TableCell>
                     <TableCell>
-                      <Select
-                        size="small"
-                        value={m.commissioner_id || ''}
-                        onChange={(e) => assignCommissioner(m, e.target.value)}
-                        displayEmpty
-                        sx={{ minWidth: 150 }}
-                      >
-                        <MenuItem value="">— none —</MenuItem>
-                        {commissioners.map((c) => (
-                          <MenuItem key={c.id} value={c.id}>
-                            {c.full_name}
-                          </MenuItem>
-                        ))}
-                      </Select>
+                      {profile?.role === 'admin' ? (
+                        <Select
+                          size="small"
+                          value={m.commissioner_id || ''}
+                          onChange={(e) => assignCommissioner(m, e.target.value)}
+                          displayEmpty
+                          sx={{ minWidth: 150 }}
+                        >
+                          <MenuItem value="">— none —</MenuItem>
+                          {commissioners.map((c) => (
+                            <MenuItem key={c.id} value={c.id}>
+                              {c.full_name}
+                            </MenuItem>
+                          ))}
+                        </Select>
+                      ) : (
+                        <Typography variant="body2" sx={{ whiteSpace: 'nowrap' }}>
+                          {commissioners.find((c) => c.id === m.commissioner_id)?.full_name || '—'}
+                        </Typography>
+                      )}
                     </TableCell>
                     <TableCell sx={{ fontWeight: 800 }}>
                       {m.status === 'scheduled' ? '—' : `${m.home_score}–${m.away_score}`}

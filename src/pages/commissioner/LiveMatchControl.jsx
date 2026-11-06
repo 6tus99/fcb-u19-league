@@ -270,9 +270,11 @@ export default function LiveMatchControl() {
                       <Typography variant="caption" color="text.secondary">
                         No commissioner assigned
                       </Typography>
-                      <Button component={RouterLink} to="/commissioner/match-center/matches" variant="outlined" size="small">
-                        Assign
-                      </Button>
+                      {profile?.role === 'admin' && (
+                        <Button component={RouterLink} to="/commissioner/match-center/matches" variant="outlined" size="small">
+                          Assign
+                        </Button>
+                      )}
                     </Box>
                   )}
                 </Paper>
