@@ -892,9 +892,9 @@ function PostCard({
         </DialogTitle>
         <DialogContent>
           {rxPending?.kind === 'video' ? (
-            <Box component="video" src={rxPending.url} controls playsInline sx={{ width: '100%', maxHeight: 300, borderRadius: 2 }} />
+            <Box component="video" src={rxPending?.url || ''} controls playsInline sx={{ width: '100%', maxHeight: 300, borderRadius: 2 }} />
           ) : (
-            <Box component="img" src={rxPending.url} alt="reaction preview" sx={{ width: '100%', maxHeight: 300, objectFit: 'contain', borderRadius: 2 }} />
+            <Box component="img" src={rxPending?.url || ''} alt="reaction preview" sx={{ width: '100%', maxHeight: 300, objectFit: 'contain', borderRadius: 2 }} />
           )}
           <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
             You can change or remove your reaction any time.
@@ -918,9 +918,9 @@ function PostCard({
         </DialogTitle>
         <DialogContent>
           {rxView?.kind === 'video' ? (
-            <Box component="video" src={rxView.media_url} controls playsInline sx={{ width: '100%', maxHeight: 320, borderRadius: 2 }} />
+            <Box component="video" src={rxView?.media_url || ''} controls playsInline sx={{ width: '100%', maxHeight: 320, borderRadius: 2 }} />
           ) : (
-            <Box component="img" src={rxView.media_url} alt="reaction" sx={{ width: '100%', maxHeight: 320, objectFit: 'contain', borderRadius: 2 }} />
+            <Box component="img" src={rxView?.media_url || ''} alt="reaction" sx={{ width: '100%', maxHeight: 320, objectFit: 'contain', borderRadius: 2 }} />
           )}
         </DialogContent>
         <DialogActions>
