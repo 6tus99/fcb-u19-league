@@ -683,6 +683,8 @@ export default function AppLayout() {
         </DialogActions>
       </Dialog>
 
+      <UpdateBar />
+
       <Snackbar
         open={Boolean(toast)}
         autoHideDuration={6000}
@@ -708,6 +710,65 @@ export default function AppLayout() {
           )}
         </Alert>
       </Snackbar>
+    </Box>
+  );
+}
+
+
+function UpdateBar() {
+  const [newer, setNewer] = useState(null);
+  useEffect(() => {
+    const mine = document.querySelector('script[src*="main."]')?.src.split('main.')[1]?.split('.js')[0];
+    if (!mine) return undefined;
+    let stop = false;
+    const check = async () => {
+      try {
+        const res = await fetch('/', { cache: 'no-store' });
+        const html = await res.text();
+        const m = html.match(/static\/js\/main\.[a-z0-9]+\.js/);
+        const live = m && m[0].split('main.')[1].split('.js')[0];
+        if (!stop && live && live !== mine) setNewer(live);
+      } catch {
+        /* offline — ignore */
+      }
+    };
+    const t = setTimeout(check, 5000);
+    const id = setInterval(check, 60000);
+    return () => {
+      stop = true;
+      clearTimeout(t);
+      clearInterval(id);
+    };
+  }, []);
+  if (!newer) return null;
+  return (
+    <Box
+      sx={{
+        position: 'fixed',
+        bottom: 0,
+        left: 0,
+        right: 0,
+        zIndex: 2100,
+        bgcolor: '#17276a',
+        borderTop: '2px solid #8fc244',
+        px: 2,
+        py: 0.75,
+        display: 'flex',
+        alignItems: 'center',
+        gap: 1,
+      }}
+    >
+      <Typography variant="caption" sx={{ flex: 1, color: '#fff', fontWeight: 700 }}>
+        A new version of the app is ready.
+      </Typography>
+      <Button
+        size="small"
+        variant="contained"
+        onClick={() => window.location.reload()}
+        sx={{ fontWeight: 800, bgcolor: '#8fc244', color: '#17276a', '&:hover': { bgcolor: '#a5d15f' } }}
+      >
+        Update now
+      </Button>
     </Box>
   );
 }
