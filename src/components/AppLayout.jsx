@@ -29,7 +29,6 @@ import ArrowBackIosRounded from '@mui/icons-material/ArrowBackIosRounded';
 import HomeRounded from '@mui/icons-material/HomeRounded';
 import LightModeRounded from '@mui/icons-material/LightModeRounded';
 import DarkModeRounded from '@mui/icons-material/DarkModeRounded';
-import BrightnessAutoRounded from '@mui/icons-material/BrightnessAutoRounded';
 import SpaceDashboardRounded from '@mui/icons-material/SpaceDashboardRounded';
 import HourglassTopRounded from '@mui/icons-material/HourglassTopRounded';
 import { useAuth } from '../context/AuthContext';
@@ -103,7 +102,7 @@ const ROLE_LABEL = {
 export default function AppLayout() {
   const { profile, signOut } = useAuth();
   const isPhone = useMediaQuery('(max-width: 600px)');
-  const { mode, choice, setChoice } = useThemeMode();
+  const { mode, setChoice } = useThemeMode();
   const location = useLocation();
   const navigate = useNavigate();
   const [anchorEl, setAnchorEl] = useState(null);
@@ -491,13 +490,7 @@ export default function AppLayout() {
             aria-label="Theme settings"
             sx={{ color: 'headerIcon', flexShrink: 0 }}
           >
-            {choice === 'system' ? (
-              <BrightnessAutoRounded />
-            ) : choice === 'dark' ? (
-              <DarkModeRounded />
-            ) : (
-              <LightModeRounded />
-            )}
+            {mode === 'dark' ? <DarkModeRounded /> : <LightModeRounded />}
           </IconButton>
           <Menu
             open={Boolean(themeAnchor)}
@@ -505,13 +498,12 @@ export default function AppLayout() {
             onClose={() => setThemeAnchor(null)}
           >
             {[
-              { id: 'system', label: 'Match device' },
               { id: 'light', label: 'Light' },
               { id: 'dark', label: 'Dark' },
             ].map((o) => (
               <MenuItem
                 key={o.id}
-                selected={o.id === choice}
+                selected={o.id === mode}
                 onClick={() => {
                   setChoice(o.id);
                   setThemeAnchor(null);
