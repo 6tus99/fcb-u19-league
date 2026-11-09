@@ -10,6 +10,8 @@ import ArrowBackIosRounded from '@mui/icons-material/ArrowBackIosRounded';
 import PhotoCameraRounded from '@mui/icons-material/PhotoCameraRounded';
 import SendRounded from '@mui/icons-material/SendRounded';
 import PeopleRounded from '@mui/icons-material/PeopleRounded';
+import PersonAddRounded from '@mui/icons-material/PersonAddRounded';
+import CheckRounded from '@mui/icons-material/CheckRounded';
 import supabase from '../../lib/supabase';
 import { useAuth } from '../../context/AuthContext';
 import { useNavigate, useParams } from 'react-router-dom';
@@ -35,9 +37,11 @@ export default function Messages() {
   const [text, setText] = useState('');
   const [busy, setBusy] = useState(false);
   const [loadingThread, setLoadingThread] = useState(false);
-  const [search, setSearch] = useState('');
-  const [results, setResults] = useState([]);
-  const [picking, setPicking] = useState(false);
+  const [tab, setTab] = useState('chats');
+  const [people, setPeople] = useState([]);
+  const [supporterIds, setSupporterIds] = useState({});
+  const [peopleQuery, setPeopleQuery] = useState('');
+  const [loadingPeople, setLoadingPeople] = useState(false);
   const fileRef = useRef(null);
   const bottomRef = useRef(null);
 
@@ -104,9 +108,30 @@ export default function Messages() {
     [me, loadConvos]
   );
 
+  const loadPeople = useCallback(async () => {
+    if (!me) return;
+    setLoadingPeople(true);
+    const { data } = await supabase
+      .from('profiles')
+      .select('id, full_name, email, role')
+      .ne('id', me)
+      .order('full_name')
+      .limit(500);
+    setPeople(data || []);
+    const { data: sups } = await supabase.from('supporters').select('added_id').eq('user_id', me);
+    const map = {};
+    (sups || []).forEach((x) => {
+      map[x.added_id] = true;
+    });
+    setSupporterIds(map);
+    setLoadingPeople(false);
+  }, [me]);
+
+
   useEffect(() => {
     if (!me) return undefined;
     loadConvos();
+    loadPeople();
     const channel = supabase
       .channel('messages-app')
       .on(
@@ -135,7 +160,7 @@ export default function Messages() {
       clearInterval(id);
       supabase.removeChannel(channel);
     };
-  }, [me, loadConvos, userId, loadThread]);
+  }, [me, loadConvos, loadPeople, userId, loadThread]);
 
   useEffect(() => {
     if (userId) loadThread(userId);
@@ -147,20 +172,23 @@ export default function Messages() {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
   }, [thread.length]);
 
-  const doSearch = async () => {
+  const toggleSupporter = async (addedId) => {
     if (!me) return;
-    const q = search.trim();
-    if (!q) {
-      setResults([]);
+    if (supporterIds[addedId]) {
+      await supabase.from('supporters').delete().eq('user_id', me).eq('added_id', addedId);
+      setSupporterIds((m) => {
+        const next = { ...m };
+        delete next[addedId];
+        return next;
+      });
       return;
     }
-    const { data } = await supabase
-      .from('profiles')
-      .select('id, full_name, email, role')
-      .ne('id', me)
-      .or(`full_name.ilike.%${q}%,email.ilike.%${q}%`)
-      .limit(10);
-    setResults(data || []);
+    const { error: e } = await supabase.from('supporters').insert({ user_id: me, added_id: addedId });
+    if (e) {
+      alert(e.message);
+      return;
+    }
+    setSupporterIds((m) => ({ ...m, [addedId]: true }));
   };
 
   const send = async () => {
@@ -208,6 +236,12 @@ export default function Messages() {
   if (!profile) return null;
   const activeC = convos.find((c) => c.user === userId);
 
+  const peopleQ = peopleQuery.trim().toLowerCase();
+  const filteredPeople = people.filter(
+    (x) => !peopleQ || (x.full_name || '').toLowerCase().includes(peopleQ) || (x.email || '').toLowerCase().includes(peopleQ),
+  );
+  const supporterCount = Object.keys(supporterIds).length;
+
   const ConversationList = (
     <Box
       sx={{
@@ -220,116 +254,160 @@ export default function Messages() {
         display: { xs: userId ? 'none' : 'flex', sm: 'flex' },
       }}
     >
-      <Box sx={{ p: 1.5, display: 'flex', gap: 1, alignItems: 'center' }}>
+      <Box sx={{ p: 1.5, pb: 1, display: 'flex', gap: 0.5, alignItems: 'center' }}>
         <Typography variant="h6" sx={{ fontWeight: 900, flex: 1 }}>
           Messages
         </Typography>
-        <IconButton size="small" onClick={() => setPicking((p) => !p)} aria-label="New message">
-          <PeopleRounded />
-        </IconButton>
+        <Button
+          size="small"
+          variant={tab === 'chats' ? 'contained' : 'text'}
+          onClick={() => setTab('chats')}
+          sx={{ textTransform: 'none', fontWeight: 800, py: 0.4 }}
+        >
+          Chats
+        </Button>
+        <Button
+          size="small"
+          variant={tab === 'people' ? 'contained' : 'text'}
+          onClick={() => {
+            setTab('people');
+            loadPeople();
+          }}
+          startIcon={<PeopleRounded />}
+          sx={{ textTransform: 'none', fontWeight: 800, py: 0.4 }}
+        >
+          People
+        </Button>
       </Box>
-      {picking && (
-        <Box sx={{ px: 1.5, pb: 1, borderBottom: 1, borderColor: 'divider' }}>
-          <TextField
-            fullWidth
-            size="small"
-            placeholder="Search a member by name…"
-            value={search}
-            onChange={(e) => {
-              setSearch(e.target.value);
-              doSearch();
-            }}
-          />
-          {results.map((r) => (
-            <Box
-              key={r.id}
-              onClick={() => {
-                setPicking(false);
-                setSearch('');
-                setResults([]);
-                navigate(`/messages/${r.id}`);
-              }}
-              sx={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 1,
-                px: 1,
-                py: 0.75,
-                borderRadius: 2,
-                cursor: 'pointer',
-                '&:hover': { bgcolor: 'action.hover' },
-              }}
-            >
-              <Avatar sx={{ width: 32, height: 32, bgcolor: 'primary.main', fontSize: 14, fontWeight: 800 }}>
-                {(r.full_name || r.email || '?').slice(0, 1).toUpperCase()}
-              </Avatar>
-              <Box sx={{ minWidth: 0 }}>
-                <Typography variant="body2" sx={{ fontWeight: 700 }} noWrap>
-                  {r.full_name || r.email}
-                </Typography>
-                <Typography variant="caption" color="text.secondary">
-                  {ROLE_LABEL[r.role] || r.role}
-                </Typography>
+
+      {tab === 'chats' ? (
+        <Box sx={{ flex: 1, overflowY: 'auto' }}>
+          {!convos.length ? (
+            <Typography color="text.secondary" sx={{ px: 2, py: 4, textAlign: 'center' }}>
+              No conversations yet.
+              <br />
+              Tap <b>People</b> to find a member.
+            </Typography>
+          ) : (
+            convos.map((c) => (
+              <Box
+                key={c.user}
+                onClick={() => navigate(`/messages/${c.user}`)}
+                sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 1.2,
+                  px: 1.5,
+                  py: 1.2,
+                  cursor: 'pointer',
+                  borderLeft: userId === c.user ? 4 : 'none',
+                  borderLeftColor: 'primary.main',
+                  bgcolor: userId === c.user ? 'action.selected' : 'transparent',
+                  '&:hover': { bgcolor: 'action.hover' },
+                }}
+              >
+                <Avatar sx={{ width: 42, height: 42, bgcolor: 'primary.main', fontWeight: 800 }}>
+                  {c.name.slice(0, 1).toUpperCase()}
+                </Avatar>
+                <Box sx={{ flex: 1, minWidth: 0 }}>
+                  <Typography variant="subtitle2" sx={{ fontWeight: 800 }} noWrap>
+                    {c.name}
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary" noWrap display="block">
+                    {c.last.media_url ? (c.last.media_type === 'video' ? '🎬 Video' : '📷 Photo') : c.last.body || ''}
+                  </Typography>
+                </Box>
+                <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 0.5 }}>
+                  <Typography variant="caption" color="text.secondary">
+                    {timeAgo(c.last.created_at)}
+                  </Typography>
+                  {c.unread > 0 && (
+                    <Chip
+                      label={c.unread}
+                      size="small"
+                      color="primary"
+                      sx={{ height: 20, minWidth: 20, fontWeight: 800 }}
+                    />
+                  )}
+                </Box>
               </Box>
-            </Box>
-          ))}
+            ))
+          )}
         </Box>
+      ) : (
+        <>
+          <Box sx={{ px: 1.5, pb: 1, borderBottom: 1, borderColor: 'divider' }}>
+            <TextField
+              fullWidth
+              size="small"
+              placeholder="Search members…"
+              value={peopleQuery}
+              onChange={(e) => setPeopleQuery(e.target.value)}
+            />
+            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
+              {supporterCount} fellow supporter{supporterCount === 1 ? '' : 's'}
+            </Typography>
+          </Box>
+          <Box sx={{ flex: 1, overflowY: 'auto' }}>
+            {loadingPeople && !people.length ? (
+              <Typography color="text.secondary" sx={{ px: 2, py: 4, textAlign: 'center' }}>
+                Loading members…
+              </Typography>
+            ) : !filteredPeople.length ? (
+              <Typography color="text.secondary" sx={{ px: 2, py: 4, textAlign: 'center' }}>
+                No members match.
+              </Typography>
+            ) : (
+              filteredPeople.map((x) => {
+                const added = Boolean(supporterIds[x.id]);
+                return (
+                  <Box
+                    key={x.id}
+                    sx={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 1,
+                      px: 1.5,
+                      py: 0.8,
+                      '&:hover': { bgcolor: 'action.hover' },
+                    }}
+                  >
+                    <Box
+                      onClick={() => navigate(`/messages/${x.id}`)}
+                      sx={{ display: 'flex', alignItems: 'center', gap: 1.2, flex: 1, minWidth: 0, cursor: 'pointer' }}
+                    >
+                      <Avatar sx={{ width: 40, height: 40, bgcolor: 'primary.main', fontWeight: 800 }}>
+                        {(x.full_name || x.email || '?').slice(0, 1).toUpperCase()}
+                      </Avatar>
+                      <Box sx={{ minWidth: 0 }}>
+                        <Typography variant="subtitle2" sx={{ fontWeight: 800 }} noWrap>
+                          {x.full_name || x.email}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          {ROLE_LABEL[x.role] || x.role}
+                        </Typography>
+                      </Box>
+                    </Box>
+                    <Button
+                      size="small"
+                      variant={added ? 'outlined' : 'contained'}
+                      color={added ? 'success' : 'primary'}
+                      startIcon={added ? <CheckRounded /> : <PersonAddRounded />}
+                      onClick={() => toggleSupporter(x.id)}
+                      sx={{ textTransform: 'none', fontWeight: 800, whiteSpace: 'nowrap', px: 1.25 }}
+                    >
+                      {added ? 'Added' : 'Add'}
+                    </Button>
+                  </Box>
+                );
+              })
+            )}
+          </Box>
+        </>
       )}
-      <Box sx={{ flex: 1, overflowY: 'auto' }}>
-        {!convos.length ? (
-          <Typography color="text.secondary" sx={{ px: 2, py: 4, textAlign: 'center' }}>
-            No conversations yet.
-            <br />
-            Tap the people icon to start one.
-          </Typography>
-        ) : (
-          convos.map((c) => (
-            <Box
-              key={c.user}
-              onClick={() => navigate(`/messages/${c.user}`)}
-              sx={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 1.2,
-                px: 1.5,
-                py: 1.2,
-                cursor: 'pointer',
-                borderLeft: userId === c.user ? 4 : 'none',
-                borderLeftColor: 'primary.main',
-                bgcolor: userId === c.user ? 'action.selected' : 'transparent',
-                '&:hover': { bgcolor: 'action.hover' },
-              }}
-            >
-              <Avatar sx={{ width: 42, height: 42, bgcolor: 'primary.main', fontWeight: 800 }}>
-                {c.name.slice(0, 1).toUpperCase()}
-              </Avatar>
-              <Box sx={{ flex: 1, minWidth: 0 }}>
-                <Typography variant="subtitle2" sx={{ fontWeight: 800 }} noWrap>
-                  {c.name}
-                </Typography>
-                <Typography variant="caption" color="text.secondary" noWrap display="block">
-                  {c.last.media_url ? (c.last.media_type === 'video' ? '🎬 Video' : '📷 Photo') : c.last.body || ''}
-                </Typography>
-              </Box>
-              <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 0.5 }}>
-                <Typography variant="caption" color="text.secondary">
-                  {timeAgo(c.last.created_at)}
-                </Typography>
-                {c.unread > 0 && (
-                  <Chip
-                    label={c.unread}
-                    size="small"
-                    color="primary"
-                    sx={{ height: 20, minWidth: 20, fontWeight: 800 }}
-                  />
-                )}
-              </Box>
-            </Box>
-          ))
-        )}
-      </Box>
     </Box>
   );
+
 
   const ThreadView = (
     <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, height: '100%' }}>
