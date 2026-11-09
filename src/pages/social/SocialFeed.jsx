@@ -270,6 +270,60 @@ export default function SocialFeed() {
         onChange={onFile}
       />
 
+      {error && (
+        <Alert severity="error" sx={{ mb: 2 }}>
+          Could not load the feed: {error}
+        </Alert>
+      )}
+
+      {/* ---------------- feed ---------------- */}
+      {loading ? (
+        <Typography color="text.secondary" align="center" sx={{ py: 4 }}>
+          Loading…
+        </Typography>
+      ) : !posts.length ? (
+        <Box
+          sx={{
+            textAlign: 'center',
+            py: 6,
+            border: 2,
+            borderStyle: 'dashed',
+            borderColor: 'divider',
+            borderRadius: 3,
+          }}
+        >
+          <Typography variant="h6" sx={{ fontWeight: 800 }}>
+            Be the first to post
+          </Typography>
+          <Typography color="text.secondary" sx={{ mt: 1 }}>
+            Share a message, a photo or a video with the whole league.
+          </Typography>
+        </Box>
+      ) : (
+        posts.map((p) => (
+          <PostCard
+            key={p.id}
+            post={p}
+            meId={me}
+            liked={Boolean(myLikes[p.id])}
+            likeCount={likeCounts[p.id] || 0}
+            comments={commentsByPost[p.id] || []}
+            commentsOpen={openComments === p.id}
+            onToggleComments={() => setOpenComments(openComments === p.id ? null : p.id)}
+            onLike={() => toggleLike(p.id)}
+            onComment={(t) => addComment(p.id, t)}
+            onGift={() => {
+              setGiftTarget(p);
+              setGiftType('ball');
+              setGiftMsg('');
+            }}
+            onDelete={() => deletePost(p.id)}
+            draft={drafts[p.id] || ''}
+            setDraft={(v) => setDrafts((d) => ({ ...d, [p.id]: v }))}
+          />
+        ))
+      )}
+
       {/* ---------------- composer ---------------- */}
       <Box
         sx={{
@@ -278,6 +332,7 @@ export default function SocialFeed() {
           borderRadius: 3,
           p: 1.5,
           bgcolor: 'background.paper',
+          mt: 2,
           mb: 2,
         }}
       >
@@ -342,60 +397,6 @@ export default function SocialFeed() {
           </Box>
         </Box>
       </Box>
-
-      {error && (
-        <Alert severity="error" sx={{ mb: 2 }}>
-          Could not load the feed: {error}
-        </Alert>
-      )}
-
-      {/* ---------------- feed ---------------- */}
-      {loading ? (
-        <Typography color="text.secondary" align="center" sx={{ py: 4 }}>
-          Loading…
-        </Typography>
-      ) : !posts.length ? (
-        <Box
-          sx={{
-            textAlign: 'center',
-            py: 6,
-            border: 2,
-            borderStyle: 'dashed',
-            borderColor: 'divider',
-            borderRadius: 3,
-          }}
-        >
-          <Typography variant="h6" sx={{ fontWeight: 800 }}>
-            Be the first to post
-          </Typography>
-          <Typography color="text.secondary" sx={{ mt: 1 }}>
-            Share a message, a photo or a video with the whole league.
-          </Typography>
-        </Box>
-      ) : (
-        posts.map((p) => (
-          <PostCard
-            key={p.id}
-            post={p}
-            meId={me}
-            liked={Boolean(myLikes[p.id])}
-            likeCount={likeCounts[p.id] || 0}
-            comments={commentsByPost[p.id] || []}
-            commentsOpen={openComments === p.id}
-            onToggleComments={() => setOpenComments(openComments === p.id ? null : p.id)}
-            onLike={() => toggleLike(p.id)}
-            onComment={(t) => addComment(p.id, t)}
-            onGift={() => {
-              setGiftTarget(p);
-              setGiftType('ball');
-              setGiftMsg('');
-            }}
-            onDelete={() => deletePost(p.id)}
-            draft={drafts[p.id] || ''}
-            setDraft={(v) => setDrafts((d) => ({ ...d, [p.id]: v }))}
-          />
-        ))
-      )}
 
       {/* ---------------- gift dialog ---------------- */}
       <Dialog open={Boolean(giftTarget)} onClose={() => setGiftTarget(null)} maxWidth="xs" fullWidth>
