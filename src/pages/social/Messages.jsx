@@ -114,7 +114,7 @@ export default function Messages() {
     const { data } = await supabase
       .from('profiles')
       .select('id, full_name, email, role')
-      .ne('id', me)
+      .neq('id', me)
       .order('full_name')
       .limit(500);
     setPeople(data || []);
