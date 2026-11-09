@@ -155,9 +155,16 @@ export default function Messages() {
         }
       )
       .subscribe();
-    const id = setInterval(loadConvos, 30000);
+    const id = setInterval(loadConvos, 15000);
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') loadConvos();
+    };
+    document.addEventListener('visibilitychange', onVisible);
+    window.addEventListener('focus', onVisible);
     return () => {
       clearInterval(id);
+      document.removeEventListener('visibilitychange', onVisible);
+      window.removeEventListener('focus', onVisible);
       supabase.removeChannel(channel);
     };
   }, [me, loadConvos, loadPeople, userId, loadThread]);

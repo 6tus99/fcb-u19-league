@@ -113,11 +113,22 @@ export default function SocialFeed() {
       .from('post_likes')
       .select('post_id, user_id')
       .in('post_id', ids);
-    const { data: comments } = await supabase
+    let comments = null;
+    let commentsErr = null;
+    ({ data: comments, error: commentsErr } = await supabase
       .from('post_comments')
       .select('id, post_id, body, created_at, media_url, media_type, profiles!post_comments_user_id_fkey(full_name)')
       .in('post_id', ids)
-      .order('created_at', { ascending: true });
+      .order('created_at', { ascending: true }));
+    if (commentsErr) {
+      // voice columns not created yet — fall back to text-only comments
+      const { data: oldC } = await supabase
+        .from('post_comments')
+        .select('id, post_id, body, created_at, profiles!post_comments_user_id_fkey(full_name)')
+        .in('post_id', ids)
+        .order('created_at', { ascending: true });
+      comments = oldC;
+    }
     const { data: reactions } = await supabase
       .from('post_reactions')
       .select('id, post_id, user_id, kind, media_url, created_at, profiles!post_reactions_user_id_fkey(full_name)')
@@ -157,7 +168,7 @@ export default function SocialFeed() {
       .eq('id', me)
       .maybeSingle()
       .then(({ data }) => setPoints(data?.points ?? 0));
-    const id = setInterval(load, 30000);
+    const id = setInterval(load, 15000);
     const channel = supabase
       .channel('social-feed')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'posts' }, () => load())
@@ -168,12 +179,24 @@ export default function SocialFeed() {
       )
       .on(
         'postgres_changes',
+        { event: '*', schema: 'public', table: 'post_likes' },
+        () => load()
+      )
+      .on(
+        'postgres_changes',
         { event: '*', schema: 'public', table: 'post_reactions' },
         () => load()
       )
       .subscribe();
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') load();
+    };
+    document.addEventListener('visibilitychange', onVisible);
+    window.addEventListener('focus', onVisible);
     return () => {
       clearInterval(id);
+      document.removeEventListener('visibilitychange', onVisible);
+      window.removeEventListener('focus', onVisible);
       supabase.removeChannel(channel);
     };
   }, [load, me]);
@@ -241,7 +264,7 @@ export default function SocialFeed() {
   };
 
   const addComment = async (postId, text, voiceUrl) => {
-    const { error: cErr } = await supabase
+    let { error: cErr } = await supabase
       .from('post_comments')
       .insert({
         post_id: postId,
@@ -250,6 +273,12 @@ export default function SocialFeed() {
         media_url: voiceUrl || null,
         media_type: voiceUrl ? 'audio' : null,
       });
+    if (cErr && !voiceUrl) {
+      // voice columns not created yet — retry as a plain text comment
+      ({ error: cErr } = await supabase
+        .from('post_comments')
+        .insert({ post_id: postId, user_id: me, body: text.trim() }));
+    }
     if (cErr) setSnack({ severity: 'error', text: cErr.message });
     else load();
   };
