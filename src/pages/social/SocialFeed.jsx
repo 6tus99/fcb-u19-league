@@ -21,6 +21,12 @@ import CardGiftcardRounded from '@mui/icons-material/CardGiftcardRounded';
 import PhotoCameraRounded from '@mui/icons-material/PhotoCameraRounded';
 import VideocamRounded from '@mui/icons-material/VideocamRounded';
 import SendRounded from '@mui/icons-material/SendRounded';
+import Menu from '@mui/material/Menu';
+import MenuItem from '@mui/material/MenuItem';
+import InsertEmoticonRounded from '@mui/icons-material/InsertEmoticonRounded';
+import MicRounded from '@mui/icons-material/MicRounded';
+import FiberManualRecordRounded from '@mui/icons-material/FiberManualRecordRounded';
+import CancelRounded from '@mui/icons-material/CancelRounded';
 import supabase from '../../lib/supabase';
 import { useAuth } from '../../context/AuthContext';
 import timeAgo from '../../utils/timeAgo';
@@ -43,6 +49,13 @@ const GIFTS = [
 
 const MAX_BYTES = 40 * 1024 * 1024; // 40 MB
 
+const RX_KINDS = [
+  { kind: 'sticker', label: 'Sticker', emoji: '🎭', accept: 'image/*', max: 4 * 1024 * 1024 },
+  { kind: 'meme', label: 'Meme', emoji: '😂', accept: 'image/*', max: 8 * 1024 * 1024 },
+  { kind: 'photo', label: 'Photo', emoji: '📷', accept: 'image/*', max: 8 * 1024 * 1024 },
+  { kind: 'video', label: 'Short video', emoji: '🎬', accept: 'video/*', max: 20 * 1024 * 1024 },
+];
+
 export default function SocialFeed() {
   const { profile } = useAuth();
   const me = profile?.id;
@@ -55,6 +68,7 @@ export default function SocialFeed() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [points, setPoints] = useState(null);
+  const [reactionsByPost, setReactionsByPost] = useState({});
 
   // composer
   const [body, setBody] = useState('');
@@ -91,6 +105,7 @@ export default function SocialFeed() {
       setLikeCounts({});
       setMyLikes({});
       setCommentsByPost({});
+      setReactionsByPost({});
       return;
     }
     const ids = list.map((p) => p.id);
@@ -100,7 +115,12 @@ export default function SocialFeed() {
       .in('post_id', ids);
     const { data: comments } = await supabase
       .from('post_comments')
-      .select('id, post_id, body, created_at, profiles!post_comments_user_id_fkey(full_name)')
+      .select('id, post_id, body, created_at, media_url, media_type, profiles!post_comments_user_id_fkey(full_name)')
+      .in('post_id', ids)
+      .order('created_at', { ascending: true });
+    const { data: reactions } = await supabase
+      .from('post_reactions')
+      .select('id, post_id, user_id, kind, media_url, created_at, profiles!post_reactions_user_id_fkey(full_name)')
       .in('post_id', ids)
       .order('created_at', { ascending: true });
 
@@ -119,6 +139,13 @@ export default function SocialFeed() {
       byPost[c.post_id].push(c);
     });
     setCommentsByPost(byPost);
+
+    const rxByPost = {};
+    (reactions || []).forEach((r) => {
+      if (!rxByPost[r.post_id]) rxByPost[r.post_id] = [];
+      rxByPost[r.post_id].push(r);
+    });
+    setReactionsByPost(rxByPost);
   }, [me]);
 
   useEffect(() => {
@@ -137,6 +164,11 @@ export default function SocialFeed() {
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'post_comments' },
+        () => load()
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'post_reactions' },
         () => load()
       )
       .subscribe();
@@ -208,11 +240,31 @@ export default function SocialFeed() {
     }
   };
 
-  const addComment = async (postId, text) => {
+  const addComment = async (postId, text, voiceUrl) => {
     const { error: cErr } = await supabase
       .from('post_comments')
-      .insert({ post_id: postId, user_id: me, body: text.trim() });
-    if (!cErr) load();
+      .insert({
+        post_id: postId,
+        user_id: me,
+        body: text ? text.trim() : null,
+        media_url: voiceUrl || null,
+        media_type: voiceUrl ? 'audio' : null,
+      });
+    if (cErr) setSnack({ severity: 'error', text: cErr.message });
+    else load();
+  };
+
+  const addReaction = async (postId, kind, url) => {
+    const { error: rErr } = await supabase
+      .from('post_reactions')
+      .upsert({ post_id: postId, user_id: me, kind, media_url: url }, { onConflict: 'post_id,user_id' });
+    if (rErr) setSnack({ severity: 'error', text: rErr.message });
+    else load();
+  };
+
+  const removeReaction = async (postId, userId) => {
+    await supabase.from('post_reactions').delete().eq('post_id', postId).eq('user_id', userId);
+    load();
   };
 
   const deletePost = async (postId) => {
@@ -311,7 +363,11 @@ export default function SocialFeed() {
             commentsOpen={openComments === p.id}
             onToggleComments={() => setOpenComments(openComments === p.id ? null : p.id)}
             onLike={() => toggleLike(p.id)}
-            onComment={(t) => addComment(p.id, t)}
+            reactions={reactionsByPost[p.id] || []}
+            onReact={(kind, url) => addReaction(p.id, kind, url)}
+            onRemoveReaction={(uid) => removeReaction(p.id, uid)}
+            onComment={(t, v) => addComment(p.id, t, v)}
+            notify={setSnack}
             onGift={() => {
               setGiftTarget(p);
               setGiftType('ball');
@@ -466,24 +522,161 @@ function PostCard({
   liked,
   likeCount,
   comments,
+  reactions,
   commentsOpen,
   onToggleComments,
   onLike,
+  onReact,
+  onRemoveReaction,
   onComment,
   onGift,
   onDelete,
   draft,
   setDraft,
+  notify,
 }) {
   const name = post.profiles?.full_name || 'Member';
   const isMine = post.user_id === meId;
   const [sending, setSending] = useState(false);
 
+  // ---------- reactions: sticker / meme / photo / short video ----------
+  const [rxAnchor, setRxAnchor] = useState(null);
+  const [rxKind, setRxKind] = useState('sticker');
+  const [rxPending, setRxPending] = useState(null); // { url, kind, label }
+  const [rxView, setRxView] = useState(null); // existing reaction lightbox
+  const [rxBusy, setRxBusy] = useState(false);
+  const rxRef = useRef(null);
+  const myReaction = reactions.find((r) => r.user_id === meId);
+
+  const pickReaction = (kind) => {
+    setRxKind(kind);
+    setRxAnchor(null);
+    const spec = RX_KINDS.find((x) => x.kind === kind);
+    if (rxRef.current) rxRef.current.accept = spec.accept;
+    rxRef.current?.click();
+  };
+
+  const onRxFile = async (e) => {
+    const f = e.target.files?.[0];
+    e.target.value = '';
+    if (!f) return;
+    const spec = RX_KINDS.find((x) => x.kind === rxKind);
+    if (f.size > spec.max) {
+      notify({ severity: 'error', text: `Too big — max ${Math.round(spec.max / 1024 / 1024)} MB for a ${spec.label.toLowerCase()}.` });
+      return;
+    }
+    setRxBusy(true);
+    const ext = (f.name.split('.').pop() || (spec.kind === 'video' ? 'mp4' : 'jpg')).toLowerCase();
+    const path = `${meId}/rx-${Date.now()}.${ext}`;
+    const { error: upErr } = await supabase.storage
+      .from('social-media')
+      .upload(path, f);
+    setRxBusy(false);
+    if (upErr) {
+      notify({ severity: 'error', text: upErr.message });
+      return;
+    }
+    const { data } = supabase.storage.from('social-media').getPublicUrl(path);
+    setRxPending({ url: data.publicUrl, kind: spec.kind, label: spec.label });
+  };
+
+  const sendReaction = async () => {
+    if (!rxPending || rxBusy) return;
+    setRxBusy(true);
+    await onReact(rxPending.kind, rxPending.url);
+    setRxBusy(false);
+    setRxPending(null);
+  };
+
+  const rxThumb = (url, kind, size) =>
+    kind === 'video' ? (
+      <Box
+        component="video"
+        src={url}
+        muted
+        playsInline
+        preload="metadata"
+        sx={{ width: size, height: size, objectFit: 'cover', display: 'block' }}
+      />
+    ) : (
+      <Box component="img" src={url} alt="reaction" sx={{ width: size, height: size, objectFit: 'cover', display: 'block' }} />
+    );
+
+  // ---------- voice comments ----------
+  const [recState, setRecState] = useState('idle'); // idle | recording
+  const [recSec, setRecSec] = useState(0);
+  const [pendingVoice, setPendingVoice] = useState(null); // uploaded url
+  const [recErr, setRecErr] = useState('');
+  const recRef = useRef(null);
+  const chunksRef = useRef([]);
+
+  useEffect(() => {
+    if (recState !== 'recording') return undefined;
+    const t = setInterval(() => setRecSec((x) => x + 1), 1000);
+    return () => clearInterval(t);
+  }, [recState]);
+
+  const toggleRec = async () => {
+    if (recState === 'recording') {
+      recRef.current?.stop();
+      return;
+    }
+    setRecErr('');
+    if (!navigator.mediaDevices?.getUserMedia || typeof MediaRecorder === 'undefined') {
+      setRecErr('Voice recording is not supported in this browser — keep your browser up to date.');
+      return;
+    }
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mime =
+        ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4;codecs=mp4a.40.2', 'audio/mp4', 'audio/ogg;codecs=opus'].find(
+          (m) => MediaRecorder.isTypeSupported(m),
+        ) || '';
+      const rec = mime ? new MediaRecorder(stream, { mimeType: mime }) : new MediaRecorder(stream);
+      chunksRef.current = [];
+      rec.ondataavailable = (e) => {
+        if (e.data && e.data.size) chunksRef.current.push(e.data);
+      };
+      rec.onstop = async () => {
+        stream.getTracks().forEach((t) => t.stop());
+        setRecState('idle');
+        setRecSec(0);
+        const blob = new Blob(chunksRef.current, { type: rec.mimeType || 'audio/webm' });
+        if (blob.size < 1000) {
+          setRecErr('That was very short — record again.');
+          return;
+        }
+        const ext = ((rec.mimeType || 'audio/webm').split('/')[1] || 'webm').split(';')[0];
+        const file = new File([blob], `vc-${Date.now()}.${ext}`, { type: blob.type });
+        const path = `${meId}/vc-${Date.now()}.${ext}`;
+        const { error: upErr } = await supabase.storage
+          .from('social-media')
+          .upload(path, file);
+        if (upErr) {
+          setRecErr('Could not upload the voice note. Try again.');
+          return;
+        }
+        const { data } = supabase.storage.from('social-media').getPublicUrl(path);
+        setPendingVoice(data.publicUrl);
+      };
+      recRef.current = rec;
+      rec.start();
+      setPendingVoice(null);
+      setRecSec(0);
+      setRecState('recording');
+    } catch {
+      setRecErr('Microphone access was blocked — allow the microphone in your browser settings.');
+    }
+  };
+
+  const fmtSec = (x) => `${Math.floor(x / 60)}:${String(x % 60).padStart(2, '0')}`;
+
   const submit = async () => {
-    if (!draft.trim()) return;
+    if ((!draft.trim() && !pendingVoice) || sending || recState === 'recording') return;
     setSending(true);
-    await onComment(draft);
+    await onComment(draft.trim() || null, pendingVoice);
     setDraft('');
+    setPendingVoice(null);
     setSending(false);
   };
 
@@ -530,7 +723,7 @@ function PostCard({
 
       <Divider sx={{ my: 1 }} />
 
-      <Box sx={{ display: 'flex', gap: 0.5 }}>
+      <Box sx={{ display: 'flex', gap: 0.5, alignItems: 'center' }}>
         <Button
           size="small"
           color={liked ? 'error' : 'inherit'}
@@ -540,6 +733,34 @@ function PostCard({
         >
           {likeCount > 0 ? likeCount : 'Like'}
         </Button>
+        <Button
+          size="small"
+          color={myReaction ? 'primary' : 'inherit'}
+          startIcon={<InsertEmoticonRounded />}
+          onClick={(e) => setRxAnchor(e.currentTarget)}
+          sx={{ textTransform: 'none', fontWeight: 700 }}
+          aria-label="React"
+        >
+          {reactions.length > 0 ? reactions.length : 'React'}
+        </Button>
+        <Menu anchorEl={rxAnchor} open={Boolean(rxAnchor)} onClose={() => setRxAnchor(null)}>
+          {RX_KINDS.map((k) => (
+            <MenuItem key={k.kind} dense onClick={() => pickReaction(k.kind)} sx={{ fontSize: 14, fontWeight: 700 }}>
+              <Box component="span" sx={{ mr: 1.25, fontSize: 18 }}>
+                {k.emoji}
+              </Box>
+              {k.label}
+            </MenuItem>
+          ))}
+        </Menu>
+        <input
+          ref={rxRef}
+          type="file"
+          accept="image/*"
+          style={{ display: 'none' }}
+          onChange={onRxFile}
+          aria-label="Reaction file"
+        />
         <Button
           size="small"
           startIcon={<CommentRounded />}
@@ -554,6 +775,31 @@ function PostCard({
         </Button>
       </Box>
 
+      {reactions.length > 0 && (
+        <Box sx={{ display: 'flex', gap: 0.75, flexWrap: 'wrap', mt: 1, alignItems: 'center' }}>
+          {reactions.map((r) => (
+            <Box
+              key={r.id}
+              onClick={() => setRxView({ ...r, author: r.profiles?.full_name || 'Member' })}
+              title={r.profiles?.full_name || 'Member'}
+              sx={{
+                position: 'relative',
+                borderRadius: 2,
+                overflow: 'hidden',
+                cursor: 'pointer',
+                border: r.user_id === meId ? 2 : 1,
+                borderColor: r.user_id === meId ? 'primary.main' : 'divider',
+              }}
+            >
+              {rxThumb(r.media_url, r.kind, 44)}
+            </Box>
+          ))}
+          <Typography variant="caption" color="text.secondary">
+            {reactions.length === 1 ? '1 reaction' : `${reactions.length} reactions`}
+          </Typography>
+        </Box>
+      )}
+
       {commentsOpen && (
         <Box sx={{ mt: 1 }}>
           {comments.map((c) => (
@@ -565,20 +811,26 @@ function PostCard({
                 <Typography variant="caption" sx={{ fontWeight: 800 }}>
                   {c.profiles?.full_name || 'Member'}
                 </Typography>
-                <Typography variant="body2" sx={{ wordBreak: 'break-word', display: 'inline' }}>
-                  {' '}{c.body}
-                </Typography>
+                {c.media_url && c.media_type === 'audio' && (
+                  <Box component="audio" src={c.media_url} controls sx={{ width: '100%', maxWidth: 320, my: 0.5, display: 'block' }} />
+                )}
+                {c.body && (
+                  <Typography variant="body2" sx={{ wordBreak: 'break-word', display: 'inline' }}>
+                    {' '}
+                    {c.body}
+                  </Typography>
+                )}
                 <Typography variant="caption" color="text.secondary" display="block">
                   {timeAgo(c.created_at)}
                 </Typography>
               </Box>
             </Box>
           ))}
-          <Box sx={{ display: 'flex', gap: 1, mt: 1 }}>
+          <Box sx={{ display: 'flex', gap: 1, mt: 1, alignItems: 'center' }}>
             <TextField
               fullWidth
               size="small"
-              placeholder="Write a comment…"
+              placeholder={recState === 'recording' ? 'Recording…' : 'Write a comment or use the mic…'}
               value={draft}
               onChange={(e) => setDraft(e.target.value.slice(0, 500))}
               onKeyDown={(e) => {
@@ -588,12 +840,105 @@ function PostCard({
                 }
               }}
             />
-            <Button variant="contained" size="small" onClick={submit} disabled={!draft.trim() || sending}>
+            <IconButton
+              aria-label={recState === 'recording' ? 'Stop recording' : 'Record a voice comment'}
+              onClick={toggleRec}
+              sx={{
+                bgcolor: recState === 'recording' ? 'error.main' : 'action.hover',
+                color: recState === 'recording' ? '#fff' : 'primary.main',
+                border: 1,
+                borderColor: recState === 'recording' ? 'error.main' : 'primary.main',
+                '&:hover': { bgcolor: recState === 'recording' ? 'error.dark' : 'action.hover' },
+              }}
+            >
+              {recState === 'recording' ? <FiberManualRecordRounded /> : <MicRounded />}
+            </IconButton>
+            <Button
+              variant="contained"
+              size="small"
+              onClick={submit}
+              disabled={sending || recState === 'recording' || (!draft.trim() && !pendingVoice)}
+            >
               Post
             </Button>
           </Box>
+          {recState === 'recording' && (
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5 }}>
+              <FiberManualRecordRounded sx={{ color: 'error.main', fontSize: 14 }} />
+              <Typography variant="caption" sx={{ fontWeight: 800 }}>
+                {fmtSec(recSec)}
+              </Typography>
+              <Button size="small" color="error" onClick={toggleRec}>
+                Stop
+              </Button>
+            </Box>
+          )}
+          {pendingVoice && (
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mt: 0.5 }}>
+              <Box component="audio" src={pendingVoice} controls sx={{ flex: 1, maxWidth: 300, display: 'block' }} />
+              <IconButton size="small" aria-label="Discard voice note" onClick={() => setPendingVoice(null)}>
+                <CancelRounded fontSize="small" />
+              </IconButton>
+            </Box>
+          )}
+          {recErr && <Typography variant="caption" color="error" sx={{ mt: 0.5 }}>{recErr}</Typography>}
         </Box>
       )}
+
+      {/* reaction picked — confirm */}
+      <Dialog open={Boolean(rxPending)} onClose={() => setRxPending(null)} maxWidth="xs" fullWidth>
+        <DialogTitle sx={{ fontWeight: 900 }}>
+          React with this {rxPending?.label.toLowerCase()}?
+        </DialogTitle>
+        <DialogContent>
+          {rxPending?.kind === 'video' ? (
+            <Box component="video" src={rxPending.url} controls playsInline sx={{ width: '100%', maxHeight: 300, borderRadius: 2 }} />
+          ) : (
+            <Box component="img" src={rxPending.url} alt="reaction preview" sx={{ width: '100%', maxHeight: 300, objectFit: 'contain', borderRadius: 2 }} />
+          )}
+          <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
+            You can change or remove your reaction any time.
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setRxPending(null)}>Cancel</Button>
+          <Button variant="contained" onClick={sendReaction} disabled={rxBusy}>
+            {rxBusy ? 'Posting…' : 'React'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* reaction lightbox */}
+      <Dialog open={Boolean(rxView)} onClose={() => setRxView(null)} maxWidth="xs" fullWidth>
+        <DialogTitle sx={{ fontWeight: 900, display: 'flex', alignItems: 'center', gap: 1 }}>
+          <Avatar sx={{ width: 28, height: 28, bgcolor: 'primary.main', fontSize: 14, fontWeight: 800 }}>
+            {(rxView?.author || '?').slice(0, 1).toUpperCase()}
+          </Avatar>
+          {rxView?.author}
+        </DialogTitle>
+        <DialogContent>
+          {rxView?.kind === 'video' ? (
+            <Box component="video" src={rxView.media_url} controls playsInline sx={{ width: '100%', maxHeight: 320, borderRadius: 2 }} />
+          ) : (
+            <Box component="img" src={rxView.media_url} alt="reaction" sx={{ width: '100%', maxHeight: 320, objectFit: 'contain', borderRadius: 2 }} />
+          )}
+        </DialogContent>
+        <DialogActions>
+          {rxView && rxView.user_id === meId && (
+            <Button
+              color="error"
+              onClick={() => {
+                onRemoveReaction(rxView.user_id);
+                setRxView(null);
+              }}
+            >
+              Remove my reaction
+            </Button>
+          )}
+          <Box sx={{ flex: 1 }} />
+          <Button onClick={() => setRxView(null)}>Close</Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }
