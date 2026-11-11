@@ -677,8 +677,8 @@ export default function AppLayout() {
                     max={99}
                     sx={{
                       '& .MuiBadge-badge': {
-                        bgcolor: '#dc2626',
-                        color: '#ffffff',
+                        bgcolor: 'primary.main',
+                        color: '#17276a',
                         fontWeight: 800,
                         fontSize: 11,
                         minWidth: 18,

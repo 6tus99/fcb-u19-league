@@ -1510,8 +1510,7 @@ begin
   select full_name into v_from from public.profiles where id = new.sender_id;
   perform public.notify_users(array[new.recipient_id],
     'New message from ' || coalesce(v_from, 'Someone'),
-    case when new.body is not null then left(new.body, 80)
-         else 'They sent you a photo.' end,
+    null,
     '/messages/' || new.sender_id);
   return new;
 end
