@@ -31,6 +31,7 @@ import CancelRounded from '@mui/icons-material/CancelRounded';
 import supabase from '../../lib/supabase';
 import { useAuth } from '../../context/AuthContext';
 import timeAgo from '../../utils/timeAgo';
+import { useMemberInfo, memberName, memberAvatar } from '../../utils/members';
 
 const ROLE_LABEL = {
   admin: 'League Admin',
@@ -70,6 +71,14 @@ export default function SocialFeed() {
   const [error, setError] = useState('');
   const [points, setPoints] = useState(null);
   const [reactionsByPost, setReactionsByPost] = useState({});
+
+  // nicknames (display_name) + profile photos (avatar_url) for everyone shown
+  const memberInfo = useMemberInfo([
+    me,
+    ...posts.map((p) => p.user_id),
+    ...Object.values(commentsByPost).flat().map((c) => c.user_id),
+    ...Object.values(reactionsByPost).flat().map((r) => r.user_id),
+  ]);
 
   // composer
   const [body, setBody] = useState('');
@@ -342,7 +351,7 @@ export default function SocialFeed() {
       return;
     }
     setPoints((p) => Math.max(0, (p ?? 0) - g.cost));
-    setSnack({ severity: 'success', text: `Gift sent to ${giftTarget.profiles?.full_name || 'them'}!` });
+    setSnack({ severity: 'success', text: `Gift sent to ${memberName(memberInfo, giftTarget?.user_id, giftTarget?.profiles?.full_name || 'them')}!` });
     setGiftTarget(null);
     setGiftMsg('');
   };
@@ -409,6 +418,7 @@ export default function SocialFeed() {
             key={p.id}
             post={p}
             meId={me}
+            memberInfo={memberInfo}
             liked={Boolean(myLikes[p.id])}
             likeCount={likeCounts[p.id] || 0}
             comments={commentsByPost[p.id] || []}
@@ -447,7 +457,7 @@ export default function SocialFeed() {
         }}
       >
         <Box sx={{ display: 'flex', gap: 1.5 }}>
-          <Avatar sx={{ width: 40, height: 40, bgcolor: 'primary.main', fontWeight: 800 }}>
+          <Avatar src={profile.avatar_url || undefined} sx={{ width: 40, height: 40, bgcolor: 'primary.main', fontWeight: 800 }}>
             {(profile.full_name || profile.email || '?').slice(0, 1).toUpperCase()}
           </Avatar>
           <Box sx={{ flex: 1 }}>
@@ -511,7 +521,7 @@ export default function SocialFeed() {
       {/* ---------------- gift dialog ---------------- */}
       <Dialog open={Boolean(giftTarget)} onClose={() => setGiftTarget(null)} maxWidth="xs" fullWidth>
         <DialogTitle sx={{ fontWeight: 900 }}>
-          Send a gift to {giftTarget?.profiles?.full_name || '…'}
+          Send a gift to {memberName(memberInfo, giftTarget?.user_id, giftTarget?.profiles?.full_name || '…')}
         </DialogTitle>
         <DialogContent>
           <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
@@ -573,6 +583,7 @@ export default function SocialFeed() {
 function PostCard({
   post,
   meId,
+  memberInfo,
   liked,
   likeCount,
   comments,
@@ -591,7 +602,7 @@ function PostCard({
   setDraft,
   notify,
 }) {
-  const name = post.profiles?.full_name || 'Member';
+  const name = memberName(memberInfo, post.user_id, post.profiles?.full_name || 'Member');
   const isMine = post.user_id === meId;
   const [sending, setSending] = useState(false);
 
@@ -803,7 +814,7 @@ function PostCard({
       }}
     >
       <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center' }}>
-        <Avatar sx={{ width: 40, height: 40, bgcolor: 'primary.main', fontWeight: 800 }}>
+        <Avatar src={memberAvatar(memberInfo, post.user_id) || undefined} sx={{ width: 40, height: 40, bgcolor: 'primary.main', fontWeight: 800 }}>
           {name.slice(0, 1).toUpperCase()}
         </Avatar>
         <Box sx={{ flex: 1, minWidth: 0 }}>
@@ -896,8 +907,8 @@ function PostCard({
           {reactions.map((r) => (
             <Box
               key={r.id}
-              onClick={() => setRxView({ ...r, author: r.profiles?.full_name || 'Member' })}
-              title={r.profiles?.full_name || 'Member'}
+              onClick={() => setRxView({ ...r, author: memberName(memberInfo, r.user_id, r.profiles?.full_name || 'Member') })}
+              title={memberName(memberInfo, r.user_id, r.profiles?.full_name || 'Member')}
               sx={{
                 position: 'relative',
                 borderRadius: 2,
@@ -920,12 +931,12 @@ function PostCard({
         <Box sx={{ mt: 1 }}>
           {comments.map((c) => (
             <Box key={c.id} sx={{ display: 'flex', gap: 1, alignItems: 'flex-start', py: 0.5 }}>
-              <Avatar sx={{ width: 26, height: 26, bgcolor: 'secondary.main', fontSize: 12, fontWeight: 800 }}>
+              <Avatar src={memberAvatar(memberInfo, c.user_id) || undefined} sx={{ width: 26, height: 26, bgcolor: 'secondary.main', fontSize: 12, fontWeight: 800 }}>
                 {(c.profiles?.full_name || '?').slice(0, 1).toUpperCase()}
               </Avatar>
               <Box sx={{ flex: 1, minWidth: 0 }}>
                 <Typography variant="caption" sx={{ fontWeight: 800 }}>
-                  {c.profiles?.full_name || 'Member'}
+                  {memberName(memberInfo, c.user_id, c.profiles?.full_name || 'Member')}
                 </Typography>
                 {c.media_url && c.media_type === 'audio' && (
                   <Box component="audio" src={c.media_url} controls sx={{ width: '100%', maxWidth: 320, my: 0.5, display: 'block' }} />
@@ -1076,7 +1087,7 @@ function PostCard({
       {/* reaction lightbox */}
       <Dialog open={Boolean(rxView)} onClose={() => setRxView(null)} maxWidth="xs" fullWidth>
         <DialogTitle sx={{ fontWeight: 900, display: 'flex', alignItems: 'center', gap: 1 }}>
-          <Avatar sx={{ width: 28, height: 28, bgcolor: 'primary.main', fontSize: 14, fontWeight: 800 }}>
+          <Avatar src={memberAvatar(memberInfo, rxView?.user_id) || undefined} sx={{ width: 28, height: 28, bgcolor: 'primary.main', fontSize: 14, fontWeight: 800 }}>
             {(rxView?.author || '?').slice(0, 1).toUpperCase()}
           </Avatar>
           {rxView?.author}

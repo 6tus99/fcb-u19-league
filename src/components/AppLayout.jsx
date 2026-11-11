@@ -31,6 +31,8 @@ import LightModeRounded from '@mui/icons-material/LightModeRounded';
 import DarkModeRounded from '@mui/icons-material/DarkModeRounded';
 import SpaceDashboardRounded from '@mui/icons-material/SpaceDashboardRounded';
 import HourglassTopRounded from '@mui/icons-material/HourglassTopRounded';
+import PersonRounded from '@mui/icons-material/PersonRounded';
+import AddPhotoAlternateRounded from '@mui/icons-material/AddPhotoAlternateRounded';
 import { useAuth } from '../context/AuthContext';
 import { sha256Hex } from '../utils/crypto';
 import { useThemeMode } from '../context/ThemeContext';
@@ -100,7 +102,7 @@ const ROLE_LABEL = {
 };
 
 export default function AppLayout() {
-  const { profile, signOut } = useAuth();
+  const { profile, signOut, refreshProfile } = useAuth();
 
   // heartbeat: keep my "last seen" fresh for the Messages screen
   const lastPing = useRef(0);
@@ -362,7 +364,7 @@ export default function AppLayout() {
   // While the user is inside their own dashboard area, the back arrow in
   // the top-left becomes a HOME button that takes them to the fan view.
   const inRoleArea = profile.role !== 'fan' && inRoleAreaPath;
-  const name = profile.full_name || profile.email || '?';
+  const name = profile.display_name || profile.full_name || profile.email || '?';
   const initials = name
     .split(' ')
     .filter(Boolean)
@@ -370,6 +372,67 @@ export default function AppLayout() {
     .slice(0, 2)
     .join('')
     .toUpperCase();
+
+  // ---------- my profile: photo + nickname ----------
+  const [profileOpen, setProfileOpen] = useState(false);
+  const [nick, setNick] = useState('');
+  // undefined = unchanged, null = removed, string = new photo URL
+  const [avatarNext, setAvatarNext] = useState(undefined);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const [profileBusy, setProfileBusy] = useState(false);
+  const [profileMsg, setProfileMsg] = useState(null);
+  const profilePhoto = avatarNext === undefined ? profile.avatar_url || null : avatarNext;
+
+  const openProfile = () => {
+    setAnchorEl(null);
+    setNick(profile.display_name || '');
+    setAvatarNext(undefined);
+    setProfileMsg(null);
+    setProfileOpen(true);
+  };
+
+  const onPhotoFile = async (e) => {
+    const f = e.target.files && e.target.files[0];
+    e.target.value = '';
+    if (!f) return;
+    if (f.size > 4 * 1024 * 1024) {
+      setProfileMsg({ severity: 'error', text: 'Photo is too big — max 4 MB.' });
+      return;
+    }
+    const ext = (f.name.split('.').pop() || 'jpg').toLowerCase();
+    setUploadingPhoto(true);
+    setProfileMsg(null);
+    const path = `avatars/${profile.id}/${Date.now()}.${ext}`;
+    const { error: upErr } = await supabase.storage
+      .from('social-media')
+      .upload(path, f);
+    setUploadingPhoto(false);
+    if (upErr) {
+      setProfileMsg({ severity: 'error', text: upErr.message });
+      return;
+    }
+    const { data } = supabase.storage.from('social-media').getPublicUrl(path);
+    setAvatarNext(data.publicUrl);
+  };
+
+  const saveProfile = async () => {
+    setProfileBusy(true);
+    setProfileMsg(null);
+    try {
+      const payload = { display_name: nick.trim() || null };
+      if (avatarNext !== undefined) payload.avatar_url = avatarNext || null;
+      const { error } = await supabase
+        .from('profiles')
+        .update(payload)
+        .eq('id', profile.id);
+      if (error) throw new Error(error.message);
+      refreshProfile();
+      setProfileOpen(false);
+    } catch (err) {
+      setProfileMsg({ severity: 'error', text: err.message });
+    }
+    setProfileBusy(false);
+  };
 
   const handleSignOut = async () => {
     setAnchorEl(null);
@@ -544,7 +607,11 @@ export default function AppLayout() {
           </Menu>
           <NotificationBell />
           <IconButton onClick={(e) => setAnchorEl(e.currentTarget)} size="small" aria-label="Account menu" sx={{ flexShrink: 0 }}>
-            <Avatar sx={{ width: 34, height: 34, bgcolor: 'primary.main', color: '#17276a', fontSize: 13, fontWeight: 800 }}>{initials}</Avatar>
+            {profile.avatar_url ? (
+              <Avatar src={profile.avatar_url} sx={{ width: 34, height: 34 }} />
+            ) : (
+              <Avatar sx={{ width: 34, height: 34, bgcolor: 'primary.main', color: '#17276a', fontSize: 13, fontWeight: 800 }}>{initials}</Avatar>
+            )}
           </IconButton>
         </Toolbar>
         <Toolbar sx={{ gap: 0.5, px: 2, minHeight: 48, overflowX: 'auto', color: 'inherit' }}>
@@ -620,16 +687,78 @@ export default function AppLayout() {
       </Box>
 
       <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={() => setAnchorEl(null)}>
-        <Box sx={{ px: 2, py: 1, minWidth: 220 }}>
+        <Box sx={{ px: 2, py: 1, minWidth: 220, cursor: 'pointer' }} onClick={openProfile}>
           <Typography variant="subtitle2">{name}</Typography>
           <Typography variant="body2" color="text.secondary">
             {profile.email}
           </Typography>
         </Box>
+        <MenuItem onClick={openProfile}>
+          <PersonRounded sx={{ mr: 1, fontSize: 18 }} /> Edit my profile
+        </MenuItem>
         <MenuItem onClick={handleSignOut}>
           <LogoutRounded sx={{ mr: 1, fontSize: 18 }} /> Sign out
         </MenuItem>
       </Menu>
+
+      {/* my profile: profile photo + display name (nickname) */}
+      <Dialog open={profileOpen} onClose={() => !profileBusy && setProfileOpen(false)} maxWidth="xs" fullWidth>
+        <DialogTitle sx={{ fontWeight: 900 }}>My profile</DialogTitle>
+        <DialogContent>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+            {profilePhoto ? (
+              <Avatar src={profilePhoto} sx={{ width: 72, height: 72 }} />
+            ) : (
+              <Avatar sx={{ width: 72, height: 72, bgcolor: 'primary.main', fontSize: 26, fontWeight: 800 }}>
+                {initials}
+              </Avatar>
+            )}
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+              <Button
+                size="small"
+                variant="outlined"
+                component="label"
+                startIcon={<AddPhotoAlternateRounded />}
+                disabled={profileBusy || uploadingPhoto}
+              >
+                {profilePhoto ? 'Change photo' : 'Add photo'}
+                <input hidden type="file" accept="image/*" onChange={onPhotoFile} />
+              </Button>
+              {profilePhoto && (
+                <Button size="small" color="error" disabled={profileBusy} onClick={() => setAvatarNext(null)}>
+                  Remove photo
+                </Button>
+              )}
+            </Box>
+          </Box>
+          <TextField
+            label="Display name (nickname)"
+            value={nick}
+            onChange={(e) => setNick(e.target.value.slice(0, 40))}
+            helperText={`This is the name other members see. Your real name (${profile.full_name || '—'}) stays as it is.`}
+            sx={{ mt: 2.5, width: '100%' }}
+            disabled={profileBusy}
+          />
+          {uploadingPhoto && (
+            <Typography variant="caption" color="text.secondary" display="block" sx={{ mt: 1 }}>
+              Uploading photo…
+            </Typography>
+          )}
+          {profileMsg && (
+            <Alert severity={profileMsg.severity} sx={{ mt: 2 }}>
+              {profileMsg.text}
+            </Alert>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setProfileOpen(false)} disabled={profileBusy}>
+            Cancel
+          </Button>
+          <Button variant="contained" onClick={saveProfile} disabled={profileBusy || uploadingPhoto}>
+            {profileBusy ? 'Saving…' : 'Save'}
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       <Dialog open={verifyOpen} onClose={() => !verifyBusy && setVerifyOpen(false)} maxWidth="xs" fullWidth>
         <DialogTitle>Verify your new role</DialogTitle>

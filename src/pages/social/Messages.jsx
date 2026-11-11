@@ -16,6 +16,7 @@ import supabase from '../../lib/supabase';
 import { useAuth } from '../../context/AuthContext';
 import { useNavigate, useParams } from 'react-router-dom';
 import timeAgo from '../../utils/timeAgo';
+import { useMemberInfo, memberName, memberAvatar } from '../../utils/members';
 
 const ROLE_LABEL = {
   admin: 'League Admin',
@@ -249,6 +250,9 @@ export default function Messages() {
     if (!insErr) loadThread(userId);
   };
 
+  const convosInfo = useMemberInfo(convos.map((c) => c.user));
+  const peopleInfo = useMemberInfo(people.map((x) => x.id));
+
   if (!profile) return null;
   const activeC = convos.find((c) => c.user === userId);
   const seenTs = activeC?.lastSeen ? new Date(activeC.lastSeen).getTime() : null;
@@ -324,12 +328,12 @@ export default function Messages() {
                   '&:hover': { bgcolor: 'action.hover' },
                 }}
               >
-                <Avatar sx={{ width: 42, height: 42, bgcolor: 'primary.main', fontWeight: 800 }}>
+                <Avatar src={memberAvatar(convosInfo, c.user) || undefined} sx={{ width: 42, height: 42, bgcolor: 'primary.main', fontWeight: 800 }}>
                   {c.name.slice(0, 1).toUpperCase()}
                 </Avatar>
                 <Box sx={{ flex: 1, minWidth: 0 }}>
                   <Typography variant="subtitle2" sx={{ fontWeight: 800 }} noWrap>
-                    {c.name}
+                    {memberName(convosInfo, c.user, c.name)}
                   </Typography>
                   <Typography variant="caption" color="text.secondary" noWrap display="block">
                     {c.last.media_url ? (c.last.media_type === 'video' ? '🎬 Video' : '📷 Photo') : c.last.body || ''}
@@ -394,12 +398,12 @@ export default function Messages() {
                       onClick={() => navigate(`/messages/${x.id}`)}
                       sx={{ display: 'flex', alignItems: 'center', gap: 1.2, flex: 1, minWidth: 0, cursor: 'pointer' }}
                     >
-                      <Avatar sx={{ width: 40, height: 40, bgcolor: 'primary.main', fontWeight: 800 }}>
+                      <Avatar src={memberAvatar(peopleInfo, x.id) || undefined} sx={{ width: 40, height: 40, bgcolor: 'primary.main', fontWeight: 800 }}>
                         {(x.full_name || x.email || '?').slice(0, 1).toUpperCase()}
                       </Avatar>
                       <Box sx={{ minWidth: 0 }}>
                         <Typography variant="subtitle2" sx={{ fontWeight: 800 }} noWrap>
-                          {x.full_name || x.email}
+                          {memberName(peopleInfo, x.id, x.full_name || x.email)}
                         </Typography>
                         <Typography variant="caption" color="text.secondary">
                           {ROLE_LABEL[x.role] || x.role}
@@ -442,7 +446,7 @@ export default function Messages() {
               <ArrowBackIosRounded fontSize="small" />
             </IconButton>
             <Box sx={{ position: 'relative' }}>
-              <Avatar sx={{ width: 36, height: 36, bgcolor: 'primary.main', fontWeight: 800 }}>
+              <Avatar src={memberAvatar(convosInfo, activeC?.user) || undefined} sx={{ width: 36, height: 36, bgcolor: 'primary.main', fontWeight: 800 }}>
                 {(activeC?.name || '?').slice(0, 1).toUpperCase()}
               </Avatar>
               {seenActive && (
@@ -463,7 +467,7 @@ export default function Messages() {
             </Box>
             <Box sx={{ minWidth: 0 }}>
               <Typography variant="subtitle1" sx={{ fontWeight: 800 }} noWrap>
-                {activeC?.name || 'Conversation'}
+                {memberName(convosInfo, activeC?.user, activeC?.name || 'Conversation')}
               </Typography>
               {activeC?.lastSeen && (
                 <Typography
