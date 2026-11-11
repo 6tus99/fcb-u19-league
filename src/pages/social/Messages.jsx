@@ -105,7 +105,7 @@ export default function Messages() {
         .from('messages')
         .select('id, sender_id, recipient_id, body, media_url, media_type, created_at')
         .or(
-          `(sender_id.eq.${me}.and.recipient_id.eq.${other}),(sender_id.eq.${other}.and.recipient_id.eq.${me})`
+          `(sender_id.eq.${me},recipient_id.eq.${other}),(sender_id.eq.${other},recipient_id.eq.${me})`
         )
         .order('created_at', { ascending: true })
         .limit(200);
@@ -247,7 +247,7 @@ export default function Messages() {
     const { data: existing } = await supabase
       .from('supporters')
       .select('id, user_id, status')
-      .or(`(user_id.eq.${me}.and.added_id.eq.${otherId}),(user_id.eq.${otherId}.and.added_id.eq.${me})`)
+      .or(`(user_id.eq.${me},added_id.eq.${otherId}),(user_id.eq.${otherId},added_id.eq.${me})`)
       .limit(2);
     if (existing && existing.length) {
       const mine = existing.find((r) => r.user_id === me);
@@ -299,7 +299,7 @@ export default function Messages() {
       .from('supporters')
       .delete()
       .eq('status', 'accepted')
-      .or(`(user_id.eq.${me}.and.added_id.eq.${otherId}),(user_id.eq.${otherId}.and.added_id.eq.${me})`);
+      .or(`(user_id.eq.${me},added_id.eq.${otherId}),(user_id.eq.${otherId},added_id.eq.${me})`);
     loadFriends();
   };
 
