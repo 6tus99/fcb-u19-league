@@ -11,6 +11,7 @@ import DownloadRounded from '@mui/icons-material/DownloadRounded';
 import CloseRounded from '@mui/icons-material/CloseRounded';
 import ShareRounded from '@mui/icons-material/ShareRounded';
 import MoreVertRounded from '@mui/icons-material/MoreVertRounded';
+import { useLocation } from 'react-router-dom';
 
 const isIOSDevice = () =>
   typeof navigator !== 'undefined' && /iphone|ipad|ipod/i.test(navigator.userAgent);
@@ -31,6 +32,9 @@ const isStandalone = () =>
  * installed, and can be dismissed forever.
  */
 export default function InstallPrompt() {
+  const location = useLocation();
+  // Never cover an open chat: the composer + Send button live at the bottom.
+  const inChat = /^\/messages\/.+/.test(location.pathname);
   const [deferred, setDeferred] = useState(null);
   const deferredRef = useRef(null);
   const [narrow, setNarrow] = useState(false);
@@ -74,7 +78,7 @@ export default function InstallPrompt() {
     setDismissed(true);
   };
 
-  if (dismissed || !narrow || isStandalone()) return null;
+  if (dismissed || !narrow || isStandalone() || inChat) return null;
   if (!deferred && !fallback) return null;
 
   const onInstall = () => {

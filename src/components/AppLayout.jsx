@@ -647,8 +647,11 @@ export default function AppLayout() {
         <Outlet />
       </Container>
 
-      {/* Floating betting button — follows you down the page */}
-      {!location.pathname.startsWith('/fan/betting') && (
+      {/* Floating betting button — follows you down the page.
+          Hidden inside an open chat: on phones it sits exactly over the
+          chat's Send button and eats the tap. */}
+      {!location.pathname.startsWith('/fan/betting') &&
+        !/^\/messages\/.+/.test(location.pathname) && (
         <Fab
           component={RouterLink}
           to="/fan/betting"
