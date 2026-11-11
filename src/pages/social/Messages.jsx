@@ -351,6 +351,12 @@ export default function Messages() {
 
   if (!profile) return null;
   const activeC = convos.find((c) => c.user === userId);
+  const peopleById = {};
+  (people || []).forEach((x) => {
+    peopleById[x.id] = x;
+  });
+  // name for the chat header, even before any message has been exchanged
+  const headerName = activeC?.name || peopleById[userId]?.full_name || peopleById[userId]?.email || 'Conversation';
   const seenTs = activeC?.lastSeen ? new Date(activeC.lastSeen).getTime() : null;
   const seenActive = Boolean(seenTs && Date.now() - seenTs < 2 * 60 * 1000);
 
@@ -673,8 +679,8 @@ export default function Messages() {
               <ArrowBackIosRounded fontSize="small" />
             </IconButton>
             <Box sx={{ position: 'relative' }}>
-              <Avatar src={memberAvatar(convosInfo, activeC?.user) || undefined} sx={{ width: 36, height: 36, bgcolor: 'primary.main', fontWeight: 800 }}>
-                {(activeC?.name || '?').slice(0, 1).toUpperCase()}
+              <Avatar src={memberAvatar(convosInfo, userId) || undefined} sx={{ width: 36, height: 36, bgcolor: 'primary.main', fontWeight: 800 }}>
+                {(headerName || '?').slice(0, 1).toUpperCase()}
               </Avatar>
               {seenActive && (
                 <Box
@@ -694,7 +700,7 @@ export default function Messages() {
             </Box>
             <Box sx={{ minWidth: 0 }}>
               <Typography variant="subtitle1" sx={{ fontWeight: 800 }} noWrap>
-                {memberName(convosInfo, activeC?.user, activeC?.name || 'Conversation')}
+                {memberName(convosInfo, userId, headerName)}
               </Typography>
               {activeC?.lastSeen && (
                 <Typography
