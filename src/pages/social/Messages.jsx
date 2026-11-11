@@ -12,6 +12,8 @@ import SendRounded from '@mui/icons-material/SendRounded';
 import PeopleRounded from '@mui/icons-material/PeopleRounded';
 import PersonAddRounded from '@mui/icons-material/PersonAddRounded';
 import CheckRounded from '@mui/icons-material/CheckRounded';
+import GroupRounded from '@mui/icons-material/GroupRounded';
+import PersonRemoveRounded from '@mui/icons-material/PersonRemoveRounded';
 import supabase from '../../lib/supabase';
 import { useAuth } from '../../context/AuthContext';
 import { useNavigate, useParams } from 'react-router-dom';
@@ -43,6 +45,8 @@ export default function Messages() {
   const [supporterIds, setSupporterIds] = useState({});
   const [peopleQuery, setPeopleQuery] = useState('');
   const [loadingPeople, setLoadingPeople] = useState(false);
+  const [friends, setFriends] = useState([]);
+  const [loadingFriends, setLoadingFriends] = useState(false);
   const fileRef = useRef(null);
   const bottomRef = useRef(null);
 
@@ -137,11 +141,34 @@ export default function Messages() {
     setLoadingPeople(false);
   }, [me]);
 
+  // friends = the members I have added as fellow supporters
+  const loadFriends = useCallback(async () => {
+    if (!me) return;
+    setLoadingFriends(true);
+    const { data: sups } = await supabase
+      .from('supporters')
+      .select('added_id')
+      .eq('user_id', me);
+    const ids = [...new Set((sups || []).map((x) => x.added_id))];
+    let list = [];
+    if (ids.length) {
+      const { data } = await supabase
+        .from('profiles')
+        .select('id, full_name, email, role')
+        .in('id', ids)
+        .order('full_name');
+      list = data || [];
+    }
+    setFriends(list);
+    setLoadingFriends(false);
+  }, [me]);
+
 
   useEffect(() => {
     if (!me) return undefined;
     loadConvos();
     loadPeople();
+    loadFriends();
     const channel = supabase
       .channel('messages-app')
       .on(
@@ -177,7 +204,7 @@ export default function Messages() {
       window.removeEventListener('focus', onVisible);
       supabase.removeChannel(channel);
     };
-  }, [me, loadConvos, loadPeople, userId, loadThread]);
+  }, [me, loadConvos, loadPeople, loadFriends, userId, loadThread]);
 
   useEffect(() => {
     if (userId) loadThread(userId);
@@ -198,6 +225,7 @@ export default function Messages() {
         delete next[addedId];
         return next;
       });
+      loadFriends();
       return;
     }
     const { error: e } = await supabase.from('supporters').insert({ user_id: me, added_id: addedId });
@@ -206,6 +234,7 @@ export default function Messages() {
       return;
     }
     setSupporterIds((m) => ({ ...m, [addedId]: true }));
+    loadFriends();
   };
 
   const send = async () => {
@@ -252,6 +281,7 @@ export default function Messages() {
 
   const convosInfo = useMemberInfo(convos.map((c) => c.user));
   const peopleInfo = useMemberInfo(people.map((x) => x.id));
+  const friendsInfo = useMemberInfo(friends.map((f) => f.id));
 
   if (!profile) return null;
   const activeC = convos.find((c) => c.user === userId);
@@ -262,8 +292,6 @@ export default function Messages() {
   const filteredPeople = people.filter(
     (x) => !peopleQ || (x.full_name || '').toLowerCase().includes(peopleQ) || (x.email || '').toLowerCase().includes(peopleQ),
   );
-  const supporterCount = Object.keys(supporterIds).length;
-
   const ConversationList = (
     <Box
       sx={{
@@ -287,6 +315,18 @@ export default function Messages() {
           sx={{ textTransform: 'none', fontWeight: 800, py: 0.4 }}
         >
           Chats
+        </Button>
+        <Button
+          size="small"
+          variant={tab === 'friends' ? 'contained' : 'text'}
+          onClick={() => {
+            setTab('friends');
+            loadFriends();
+          }}
+          startIcon={<GroupRounded />}
+          sx={{ textTransform: 'none', fontWeight: 800, py: 0.4 }}
+        >
+          Friends
         </Button>
         <Button
           size="small"
@@ -356,19 +396,77 @@ export default function Messages() {
             ))
           )}
         </Box>
+      ) : tab === 'friends' ? (
+        <>
+          <Box sx={{ px: 1.5, pb: 1, borderBottom: 1, borderColor: 'divider' }}>
+            <Typography variant="caption" color="text.secondary" display="block">
+              {friends.length} friend{friends.length === 1 ? '' : 's'} — the members you have added
+            </Typography>
+          </Box>
+          <Box sx={{ flex: 1, overflowY: 'auto' }}>
+            {loadingFriends && !friends.length ? (
+              <Typography color="text.secondary" sx={{ px: 2, py: 4, textAlign: 'center' }}>
+                Loading friends…
+              </Typography>
+            ) : !friends.length ? (
+              <Typography color="text.secondary" sx={{ px: 2, py: 4, textAlign: 'center' }}>
+                No friends yet.
+                <br />
+                Tap <b>People</b> to add fellow fans.
+              </Typography>
+            ) : (
+              friends.map((x) => (
+                <Box
+                  key={x.id}
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 1,
+                    px: 1.5,
+                    py: 0.8,
+                    '&:hover': { bgcolor: 'action.hover' },
+                  }}
+                >
+                  <Box
+                    onClick={() => navigate(`/messages/${x.id}`)}
+                    sx={{ display: 'flex', alignItems: 'center', gap: 1.2, flex: 1, minWidth: 0, cursor: 'pointer' }}
+                  >
+                    <Avatar src={memberAvatar(friendsInfo, x.id) || undefined} sx={{ width: 40, height: 40, bgcolor: 'primary.main', fontWeight: 800 }}>
+                      {(x.full_name || x.email || '?').slice(0, 1).toUpperCase()}
+                    </Avatar>
+                    <Box sx={{ minWidth: 0 }}>
+                      <Typography variant="subtitle2" sx={{ fontWeight: 800 }} noWrap>
+                        {memberName(friendsInfo, x.id, x.full_name || x.email)}
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        {ROLE_LABEL[x.role] || x.role}
+                      </Typography>
+                    </Box>
+                  </Box>
+                  <Button
+                    size="small"
+                    color="error"
+                    startIcon={<PersonRemoveRounded />}
+                    onClick={() => toggleSupporter(x.id)}
+                    sx={{ textTransform: 'none', fontWeight: 800, whiteSpace: 'nowrap' }}
+                  >
+                    Remove
+                  </Button>
+                </Box>
+              ))
+            )}
+          </Box>
+        </>
       ) : (
         <>
           <Box sx={{ px: 1.5, pb: 1, borderBottom: 1, borderColor: 'divider' }}>
             <TextField
               fullWidth
               size="small"
-              placeholder="Search members…"
+              placeholder="Search fellow fans…"
               value={peopleQuery}
               onChange={(e) => setPeopleQuery(e.target.value)}
             />
-            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
-              {supporterCount} fellow supporter{supporterCount === 1 ? '' : 's'}
-            </Typography>
           </Box>
           <Box sx={{ flex: 1, overflowY: 'auto' }}>
             {loadingPeople && !people.length ? (
