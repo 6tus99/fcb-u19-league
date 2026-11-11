@@ -304,42 +304,45 @@ export default function Messages() {
         display: { xs: userId ? 'none' : 'flex', sm: 'flex' },
       }}
     >
-      <Box sx={{ p: 1.5, pb: 1, display: 'flex', gap: 0.5, alignItems: 'center' }}>
-        <Typography variant="h6" sx={{ fontWeight: 900, flex: 1 }}>
+      <Box sx={{ p: 1.5, pb: 1 }}>
+        <Typography variant="h6" sx={{ fontWeight: 900 }}>
           Messages
         </Typography>
-        <Button
-          size="small"
-          variant={tab === 'chats' ? 'contained' : 'text'}
-          onClick={() => setTab('chats')}
-          sx={{ textTransform: 'none', fontWeight: 800, py: 0.4 }}
-        >
-          Chats
-        </Button>
-        <Button
-          size="small"
-          variant={tab === 'friends' ? 'contained' : 'text'}
-          onClick={() => {
-            setTab('friends');
-            loadFriends();
-          }}
-          startIcon={<GroupRounded />}
-          sx={{ textTransform: 'none', fontWeight: 800, py: 0.4 }}
-        >
-          Friends
-        </Button>
-        <Button
-          size="small"
-          variant={tab === 'people' ? 'contained' : 'text'}
-          onClick={() => {
-            setTab('people');
-            loadPeople();
-          }}
-          startIcon={<PeopleRounded />}
-          sx={{ textTransform: 'none', fontWeight: 800, py: 0.4 }}
-        >
-          People
-        </Button>
+        {/* three equal-width tabs: each word always has its own third of the row */}
+        <Box sx={{ display: 'flex', gap: 0.5, mt: 1 }}>
+          <Button
+            size="small"
+            variant={tab === 'chats' ? 'contained' : 'text'}
+            onClick={() => setTab('chats')}
+            sx={{ flex: 1, px: 0, py: 0.5, textTransform: 'none', fontWeight: 800, fontSize: 13, justifyContent: 'center' }}
+          >
+            Chats
+          </Button>
+          <Button
+            size="small"
+            variant={tab === 'friends' ? 'contained' : 'text'}
+            onClick={() => {
+              setTab('friends');
+              loadFriends();
+            }}
+            startIcon={<GroupRounded sx={{ fontSize: 18 }} />}
+            sx={{ flex: 1, px: 0.25, py: 0.5, textTransform: 'none', fontWeight: 800, fontSize: 13, justifyContent: 'center', gap: 0.5 }}
+          >
+            Friends
+          </Button>
+          <Button
+            size="small"
+            variant={tab === 'people' ? 'contained' : 'text'}
+            onClick={() => {
+              setTab('people');
+              loadPeople();
+            }}
+            startIcon={<PeopleRounded sx={{ fontSize: 18 }} />}
+            sx={{ flex: 1, px: 0.25, py: 0.5, textTransform: 'none', fontWeight: 800, fontSize: 13, justifyContent: 'center', gap: 0.5 }}
+          >
+            People
+          </Button>
+        </Box>
       </Box>
 
       {tab === 'chats' ? (
