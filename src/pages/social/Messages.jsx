@@ -101,15 +101,18 @@ export default function Messages() {
     async (other) => {
       if (!me || !other) return;
       setLoadingThread(true);
-      const { data } = await supabase
-        .from('messages')
-        .select('id, sender_id, recipient_id, body, media_url, media_type, created_at')
-        .or(
-          `(sender_id.eq.${me},recipient_id.eq.${other}),(sender_id.eq.${other},recipient_id.eq.${me})`
-        )
-        .order('created_at', { ascending: true })
-        .limit(200);
-      setThread(data || []);
+      // the whole conversation in both directions, as two plain queries
+      // (a single .or() query hits PostgREST parser edge cases)
+      const cols = 'id, sender_id, recipient_id, body, media_url, media_type, created_at';
+      const [a, b] = await Promise.all([
+        supabase.from('messages').select(cols).eq('sender_id', me).eq('recipient_id', other).order('created_at', { ascending: true }).limit(200),
+        supabase.from('messages').select(cols).eq('sender_id', other).eq('recipient_id', me).order('created_at', { ascending: true }).limit(200),
+      ]);
+      setThread(
+        [...(a.data || []), ...(b.data || [])]
+          .sort((x, y) => new Date(x.created_at) - new Date(y.created_at))
+          .slice(0, 200)
+      );
       setLoadingThread(false);
       // mark their messages to me as read
       await supabase
@@ -244,11 +247,11 @@ export default function Messages() {
   // send a friend request (or auto-accept when they already asked for me)
   const handleAddFriend = async (otherId) => {
     if (!me) return;
-    const { data: existing } = await supabase
-      .from('supporters')
-      .select('id, user_id, status')
-      .or(`(user_id.eq.${me},added_id.eq.${otherId}),(user_id.eq.${otherId},added_id.eq.${me})`)
-      .limit(2);
+    const [mineQ, theirsQ] = await Promise.all([
+      supabase.from('supporters').select('id, user_id, status').eq('user_id', me).eq('added_id', otherId),
+      supabase.from('supporters').select('id, user_id, status').eq('user_id', otherId).eq('added_id', me),
+    ]);
+    const existing = [...(mineQ.data || []), ...(theirsQ.data || [])];
     if (existing && existing.length) {
       const mine = existing.find((r) => r.user_id === me);
       if (mine && mine.status === 'pending') return;
@@ -295,11 +298,10 @@ export default function Messages() {
 
   const removeFriend = async (otherId) => {
     if (!me) return;
-    await supabase
-      .from('supporters')
-      .delete()
-      .eq('status', 'accepted')
-      .or(`(user_id.eq.${me},added_id.eq.${otherId}),(user_id.eq.${otherId},added_id.eq.${me})`);
+    await Promise.all([
+      supabase.from('supporters').delete().eq('status', 'accepted').eq('user_id', me).eq('added_id', otherId),
+      supabase.from('supporters').delete().eq('status', 'accepted').eq('user_id', otherId).eq('added_id', me),
+    ]);
     loadFriends();
   };
 
