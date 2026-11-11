@@ -5,6 +5,11 @@ import Paper from '@mui/material/Paper';
 import Typography from '@mui/material/Typography';
 import Button from '@mui/material/Button';
 import TextField from '@mui/material/TextField';
+import Dialog from '@mui/material/Dialog';
+import DialogTitle from '@mui/material/DialogTitle';
+import DialogContent from '@mui/material/DialogContent';
+import DialogActions from '@mui/material/DialogActions';
+import MenuItem from '@mui/material/MenuItem';
 import Alert from '@mui/material/Alert';
 import Divider from '@mui/material/Divider';
 import PlayArrowRounded from '@mui/icons-material/PlayArrowRounded';
@@ -78,6 +83,7 @@ export default function LiveMatchControl() {
   const [loaded, setLoaded] = useState(false);
   const [matchErr, setMatchErr] = useState('');
   const [commissioners, setCommissioners] = useState([]);
+  const [editEvent, setEditEvent] = useState(null);
   // Live match clock — ticks once a second while the match is live.
   const [now, setNow] = useState(Date.now());
   const isLive = match?.status === 'live';
@@ -510,6 +516,9 @@ export default function LiveMatchControl() {
                   <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: teams.find((t) => t.id === ev.team_id)?.primary_color || 'grey' }} />
                 )}
                 <Typography sx={{ flex: 1 }}>{ev.description || ev.event_type.replace('_', ' ')}</Typography>
+                <Button size="small" sx={{ fontSize: 12 }} onClick={() => setEditEvent({ ...ev })}>
+                  Edit
+                </Button>
                 <Button size="small" color="error" sx={{ fontSize: 12 }} onClick={async () => await supabase.from('match_events').delete().eq('id', ev.id).then(() => loadMatch(match.id))}>
                   Delete
                 </Button>
@@ -518,6 +527,74 @@ export default function LiveMatchControl() {
           </Box>
         )}
       </GlassCard>
+
+      <Dialog open={Boolean(editEvent)} onClose={() => setEditEvent(null)} maxWidth="xs" fullWidth>
+        <DialogTitle sx={{ fontWeight: 900 }}>Edit event</DialogTitle>
+        <DialogContent>
+          {editEvent && (
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+              <TextField
+                label="Minute"
+                type="number"
+                value={editEvent.minute ?? ''}
+                onChange={(e) => setEditEvent({ ...editEvent, minute: e.target.value === '' ? null : Number(e.target.value) })}
+                inputProps={{ min: 0, max: 120 }}
+              />
+              <TextField
+                label="Type"
+                select
+                value={editEvent.event_type}
+                onChange={(e) => setEditEvent({ ...editEvent, event_type: e.target.value })}
+              >
+                {EVENT_TYPES.map((t) => (
+                  <MenuItem key={t.id} value={t.id}>
+                    {t.label}
+                  </MenuItem>
+                ))}
+              </TextField>
+              <TextField
+                label="Team"
+                select
+                value={editEvent.team_id || ''}
+                onChange={(e) => setEditEvent({ ...editEvent, team_id: e.target.value || null })}
+              >
+                <MenuItem value="">No team</MenuItem>
+                {teams.map((t) => (
+                  <MenuItem key={t.id} value={t.id}>
+                    {t.name}
+                  </MenuItem>
+                ))}
+              </TextField>
+              <TextField
+                label="Description (optional)"
+                value={editEvent.description || ''}
+                onChange={(e) => setEditEvent({ ...editEvent, description: e.target.value })}
+              />
+            </Box>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setEditEvent(null)}>Cancel</Button>
+          <Button
+            variant="contained"
+            onClick={async () => {
+              await supabase
+                .from('match_events')
+                .update({
+                  minute: editEvent.minute,
+                  event_type: editEvent.event_type,
+                  team_id: editEvent.team_id,
+                  description: editEvent.description || null,
+                })
+                .eq('id', editEvent.id);
+              setEditEvent(null);
+              loadMatch(match.id);
+            }}
+          >
+            Save
+          </Button>
+        </DialogActions>
+      </Dialog>
     </div>
   );
 }

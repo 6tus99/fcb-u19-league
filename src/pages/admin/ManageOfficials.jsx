@@ -11,6 +11,7 @@ import LoadingSpinner from '../../components/LoadingSpinner';
 import EmptyState from '../../components/EmptyState';
 import AddRounded from '@mui/icons-material/AddRounded';
 import DeleteRounded from '@mui/icons-material/DeleteRounded';
+import EditRounded from '@mui/icons-material/EditRounded';
 import supabase from '../../lib/supabase';
 import useAutoRefresh from '../../hooks/useAutoRefresh';
 
@@ -19,6 +20,7 @@ const EMPTY = { name: '', type: 'referee', phone: '' };
 export default function ManageOfficials() {
   const [officials, setOfficials] = useState([]);
   const [form, setForm] = useState(EMPTY);
+  const [editId, setEditId] = useState(null);
   const [message, setMessage] = useState(null);
   const [loaded, setLoaded] = useState(false);
 
@@ -33,14 +35,32 @@ export default function ManageOfficials() {
   }, [load]);
   useAutoRefresh(load, 30000);
 
-  const handleAdd = async (e) => {
+  const startEdit = (o) => {
+    setForm({ name: o.name, type: o.type, phone: o.phone || '' });
+    setEditId(o.id);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const cancelEdit = () => {
+    setEditId(null);
+    setForm(EMPTY);
+  };
+
+  const handleSave = async (e) => {
     e.preventDefault();
     if (!form.name.trim()) return;
-    const { error } = await supabase.from('officials').insert({
-      name: form.name,
-      type: form.type,
-      phone: form.phone || null,
-    });
+    const payload = { name: form.name, type: form.type, phone: form.phone || null };
+    if (editId) {
+      const { error } = await supabase.from('officials').update(payload).eq('id', editId);
+      if (error) setMessage({ severity: 'error', text: error.message });
+      else {
+        setMessage({ severity: 'success', text: 'Official updated.' });
+        cancelEdit();
+        load();
+      }
+      return;
+    }
+    const { error } = await supabase.from('officials').insert(payload);
     if (error) setMessage({ severity: 'error', text: error.message });
     else {
       setMessage({ severity: 'success', text: 'Official added.' });
@@ -71,8 +91,8 @@ export default function ManageOfficials() {
         </Alert>
       )}
 
-      <GlassCard title="Add official" sx={{ mb: 3 }}>
-        <Box component="form" onSubmit={handleAdd} sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: '1fr', md: '2fr 1fr 1fr auto' }, alignItems: 'center' }}>
+      <GlassCard title={editId ? 'Edit official' : 'Add official'} sx={{ mb: 3 }}>
+        <Box component="form" onSubmit={handleSave} sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: '1fr', md: editId ? '2fr 1fr 1fr auto auto' : '2fr 1fr 1fr auto' }, alignItems: 'center' }}>
           <TextField label="Name" required value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
           <TextField label="Type" select value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })}>
             <MenuItem value="referee">Referee</MenuItem>
@@ -80,9 +100,12 @@ export default function ManageOfficials() {
             <MenuItem value="commissioner">Commissioner</MenuItem>
           </TextField>
           <TextField label="Phone (optional)" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
-          <Button type="submit" variant="contained" startIcon={<AddRounded />}>
-            Add
+          <Button type="submit" variant="contained" startIcon={editId ? <EditRounded /> : <AddRounded />}>
+            {editId ? 'Save changes' : 'Add'}
           </Button>
+          {editId && (
+            <Button onClick={cancelEdit}>Cancel</Button>
+          )}
         </Box>
       </GlassCard>
 
@@ -110,6 +133,9 @@ export default function ManageOfficials() {
                     {o.phone}
                   </Typography>
                 )}
+                <Button size="small" startIcon={<EditRounded />} onClick={() => startEdit(o)}>
+                  Edit
+                </Button>
                 <Button size="small" color="error" startIcon={<DeleteRounded />} onClick={() => remove(o)}>
                   Remove
                 </Button>

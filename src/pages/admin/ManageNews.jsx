@@ -11,6 +11,7 @@ import PollRounded from '@mui/icons-material/PollRounded';
 import CloseRounded from '@mui/icons-material/CloseRounded';
 import AddRounded from '@mui/icons-material/AddRounded';
 import DeleteRounded from '@mui/icons-material/DeleteRounded';
+import EditRounded from '@mui/icons-material/EditRounded';
 import PageHeader from '../../components/PageHeader';
 import GlassCard from '../../components/GlassCard';
 import LoadingSpinner from '../../components/LoadingSpinner';
@@ -39,6 +40,11 @@ export default function ManageNews() {
   const [videoFile, setVideoFile] = useState(null); // { file, name, size }
   const [pollQ, setPollQ] = useState('');
   const [pollOptions, setPollOptions] = useState([]); // array of strings
+
+  const [editId, setEditId] = useState(null);
+  const [editArticle, setEditArticle] = useState(null);
+  const [imageRemoved, setImageRemoved] = useState(false);
+  const [videoRemoved, setVideoRemoved] = useState(false);
 
   const load = useCallback(async () => {
     const { data } = await supabase.from('news').select('*').order('created_at', { ascending: false });
@@ -81,6 +87,32 @@ export default function ManageNews() {
     return supabase.storage.from('news-media').getPublicUrl(path).data.publicUrl;
   };
 
+  const startEdit = (a) => {
+    setEditId(a.id);
+    setEditArticle(a);
+    setTitle(a.title);
+    setBody(a.body || '');
+    setPollQ('');
+    setPollOptions(a.poll_options ? [...a.poll_options] : []);
+    setImageFile(null);
+    setVideoFile(null);
+    setImageRemoved(false);
+    setVideoRemoved(false);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const cancelEdit = () => {
+    setEditId(null);
+    setEditArticle(null);
+    setImageRemoved(false);
+    setVideoRemoved(false);
+  };
+
+  const delOldMedia = (url) => {
+    const path = url?.split('/news-media/')[1];
+    if (path) supabase.storage.from('news-media').remove([path]);
+  };
+
   const handlePublish = async (e) => {
     e.preventDefault();
     if (!title.trim()) {
@@ -101,18 +133,31 @@ export default function ManageNews() {
       };
       if (imageFile) payload.image_url = await uploadMedia(imageFile.file);
       if (videoFile) payload.video_url = await uploadMedia(videoFile.file);
-      const { error } = await supabase.from('news').insert(payload);
-      if (error) throw new Error(error.message);
-      setMessage({ severity: 'success', text: 'Story published.' });
+      if (editId) {
+        if (imageRemoved) payload.image_url = null;
+        if (videoRemoved) payload.video_url = null;
+        if (imageFile || imageRemoved) delOldMedia(editArticle?.image_url);
+        if (videoFile || videoRemoved) delOldMedia(editArticle?.video_url);
+      }
+      if (editId) {
+        const { error } = await supabase.from('news').update(payload).eq('id', editId);
+        if (error) throw new Error(error.message);
+        setMessage({ severity: 'success', text: 'Story updated.' });
+      } else {
+        const { error } = await supabase.from('news').insert(payload);
+        if (error) throw new Error(error.message);
+        setMessage({ severity: 'success', text: 'Story published.' });
+      }
       setTitle('');
       setBody('');
       setImageFile(null);
       setVideoFile(null);
       setPollQ('');
       setPollOptions([]);
+      cancelEdit();
       load();
     } catch (err) {
-      setMessage({ severity: 'error', text: `Could not publish: ${err.message}` });
+      setMessage({ severity: 'error', text: `Could not save: ${err.message}` });
     }
     setBusy(false);
   };
@@ -144,7 +189,7 @@ export default function ManageNews() {
         </Alert>
       )}
 
-      <GlassCard title="Publish a story" sx={{ mb: 3 }} accent="yellow">
+      <GlassCard title={editId ? 'Edit story' : 'Publish a story'} sx={{ mb: 3 }} accent="yellow">
         <Box component="form" onSubmit={handlePublish} sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
           <TextField label="Title" required value={title} onChange={(e) => setTitle(e.target.value)} />
           <TextField
@@ -171,6 +216,24 @@ export default function ManageNews() {
                 Remove picture
               </Button>
             </Box>
+          ) : editId && editArticle?.image_url && !imageRemoved ? (
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
+              <Box
+                component="img"
+                src={editArticle.image_url}
+                sx={{ width: 96, height: 64, objectFit: 'cover', borderRadius: 2, border: '1px solid', borderColor: 'cardBorder' }}
+              />
+              <Typography variant="body2" color="text.secondary">
+                Current picture
+              </Typography>
+              <Button size="small" color="error" startIcon={<CloseRounded />} onClick={() => setImageRemoved(true)}>
+                Remove picture
+              </Button>
+              <Button component="label" variant="outlined" startIcon={<AddPhotoAlternateRounded />}>
+                Replace
+                <input hidden type="file" accept="image/*" onChange={pickImage} />
+              </Button>
+            </Box>
           ) : (
             <Button component="label" variant="outlined" startIcon={<AddPhotoAlternateRounded />}>
               Add a picture (optional, max {MAX_IMAGE_MB} MB)
@@ -187,6 +250,20 @@ export default function ManageNews() {
               </Typography>
               <Button size="small" color="error" startIcon={<CloseRounded />} onClick={() => setVideoFile(null)}>
                 Remove video
+              </Button>
+            </Box>
+          ) : editId && editArticle?.video_url && !videoRemoved ? (
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+              <VideocamRounded color="primary" />
+              <Typography variant="body2" color="text.secondary">
+                Current video
+              </Typography>
+              <Button size="small" color="error" startIcon={<CloseRounded />} onClick={() => setVideoRemoved(true)}>
+                Remove video
+              </Button>
+              <Button component="label" variant="outlined" startIcon={<VideocamRounded />}>
+                Replace
+                <input hidden type="file" accept="video/*" onChange={pickVideo} />
               </Button>
             </Box>
           ) : (
@@ -236,10 +313,15 @@ export default function ManageNews() {
             )}
           </Box>
 
-          <Box>
-            <Button type="submit" variant="contained" startIcon={<AddRounded />} disabled={busy}>
-              {busy ? 'Publishing…' : 'Publish'}
+          <Box sx={{ display: 'flex', gap: 1 }}>
+            <Button type="submit" variant="contained" startIcon={editId ? <EditRounded /> : <AddRounded />} disabled={busy}>
+              {busy ? (editId ? 'Saving…' : 'Publishing…') : editId ? 'Save changes' : 'Publish'}
             </Button>
+            {editId && (
+              <Button onClick={cancelEdit} disabled={busy}>
+                Cancel
+              </Button>
+            )}
           </Box>
         </Box>
       </GlassCard>
@@ -270,6 +352,9 @@ export default function ManageNews() {
                   <Typography variant="caption" color="text.secondary">
                     {formatDate(a.created_at)}
                   </Typography>
+                  <Button size="small" startIcon={<EditRounded />} onClick={() => startEdit(a)}>
+                    Edit
+                  </Button>
                   <Button size="small" color="error" startIcon={<DeleteRounded />} onClick={() => remove(a)}>
                     Delete
                   </Button>

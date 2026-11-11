@@ -14,6 +14,7 @@ import Alert from '@mui/material/Alert';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 import DeleteRounded from '@mui/icons-material/DeleteRounded';
+import EditRounded from '@mui/icons-material/EditRounded';
 import FavoriteRounded from '@mui/icons-material/FavoriteRounded';
 import FavoriteBorderRounded from '@mui/icons-material/FavoriteBorderRounded';
 import CommentRounded from '@mui/icons-material/CommentRounded';
@@ -117,14 +118,14 @@ export default function SocialFeed() {
     let commentsErr = null;
     ({ data: comments, error: commentsErr } = await supabase
       .from('post_comments')
-      .select('id, post_id, body, created_at, media_url, media_type, profiles!post_comments_user_id_fkey(full_name)')
+      .select('id, post_id, user_id, body, created_at, media_url, media_type, profiles!post_comments_user_id_fkey(full_name)')
       .in('post_id', ids)
       .order('created_at', { ascending: true }));
     if (commentsErr) {
       // voice columns not created yet — fall back to text-only comments
       const { data: oldC } = await supabase
         .from('post_comments')
-        .select('id, post_id, body, created_at, profiles!post_comments_user_id_fkey(full_name)')
+        .select('id, post_id, user_id, body, created_at, profiles!post_comments_user_id_fkey(full_name)')
         .in('post_id', ids)
         .order('created_at', { ascending: true });
       comments = oldC;
@@ -296,6 +297,28 @@ export default function SocialFeed() {
     load();
   };
 
+  const editPost = async (postId, body, media) => {
+    const { error: e } = await supabase
+      .from('posts')
+      .update({
+        body: body ? body.trim() : null,
+        media_url: media?.url || null,
+        media_type: media?.type || null,
+      })
+      .eq('id', postId);
+    if (e) setSnack({ severity: 'error', text: e.message });
+    else load();
+  };
+
+  const editComment = async (commentId, text) => {
+    const { error: e } = await supabase
+      .from('post_comments')
+      .update({ body: text.trim() })
+      .eq('id', commentId);
+    if (e) setSnack({ severity: 'error', text: e.message });
+    else load();
+  };
+
   const deletePost = async (postId) => {
     if (!window.confirm('Delete this post?')) return;
     await supabase.from('posts').delete().eq('id', postId);
@@ -396,6 +419,8 @@ export default function SocialFeed() {
             onReact={(kind, url) => addReaction(p.id, kind, url)}
             onRemoveReaction={(uid) => removeReaction(p.id, uid)}
             onComment={(t, v) => addComment(p.id, t, v)}
+            onEdit={(b, m) => editPost(p.id, b, m)}
+            onEditComment={(id, t) => editComment(id, t)}
             notify={setSnack}
             onGift={() => {
               setGiftTarget(p);
@@ -560,6 +585,8 @@ function PostCard({
   onComment,
   onGift,
   onDelete,
+  onEdit,
+  onEditComment,
   draft,
   setDraft,
   notify,
@@ -576,6 +603,17 @@ function PostCard({
   const [rxBusy, setRxBusy] = useState(false);
   const rxRef = useRef(null);
   const myReaction = reactions.find((r) => r.user_id === meId);
+
+  // ---------- edit my post ----------
+  const [editOpen, setEditOpen] = useState(false);
+  const [editBody, setEditBody] = useState('');
+  const [editMedia, setEditMedia] = useState(null); // { url, type }
+  const [editUploading, setEditUploading] = useState(false);
+  const [editKind, setEditKind] = useState('image');
+  const editFileRef = useRef(null);
+  // ---------- edit my comment ----------
+  const [editingComment, setEditingComment] = useState(null);
+  const [commentText, setCommentText] = useState('');
 
   const pickReaction = (kind) => {
     setRxKind(kind);
@@ -698,6 +736,50 @@ function PostCard({
     }
   };
 
+  const openEdit = () => {
+    setEditBody(post.body || '');
+    setEditMedia(post.media_url ? { url: post.media_url, type: post.media_type } : null);
+    setEditOpen(true);
+  };
+
+  const pickEditFile = (kind) => {
+    setEditKind(kind);
+    if (editFileRef.current) editFileRef.current.accept = kind === 'image' ? 'image/*' : 'video/*';
+    editFileRef.current?.click();
+  };
+
+  const onEditFile = async (e) => {
+    const f = e.target.files?.[0];
+    e.target.value = '';
+    if (!f) return;
+    if (f.size > MAX_BYTES) {
+      notify({ severity: 'error', text: 'Too big — max 40 MB.' });
+      return;
+    }
+    const ext = (f.name.split('.').pop() || (editKind === 'image' ? 'jpg' : 'mp4')).toLowerCase();
+    setEditUploading(true);
+    const path = `${meId}/edit-${Date.now()}.${ext}`;
+    const { error: upErr } = await supabase.storage
+      .from('social-media')
+      .upload(path, f);
+    setEditUploading(false);
+    if (upErr) {
+      notify({ severity: 'error', text: upErr.message });
+      return;
+    }
+    const { data } = supabase.storage.from('social-media').getPublicUrl(path);
+    setEditMedia({ url: data.publicUrl, type: editKind });
+  };
+
+  const saveEdit = async () => {
+    if (!editBody.trim() && !editMedia) {
+      notify({ severity: 'error', text: 'A post needs text or media.' });
+      return;
+    }
+    await onEdit(editBody, editMedia);
+    setEditOpen(false);
+  };
+
   const fmtSec = (x) => `${Math.floor(x / 60)}:${String(x % 60).padStart(2, '0')}`;
 
   const submit = async () => {
@@ -733,9 +815,14 @@ function PostCard({
           </Typography>
         </Box>
         {isMine && (
-          <IconButton size="small" onClick={onDelete} aria-label="Delete post">
-            <DeleteRounded fontSize="small" />
-          </IconButton>
+          <>
+            <IconButton size="small" onClick={openEdit} aria-label="Edit post">
+              <EditRounded fontSize="small" />
+            </IconButton>
+            <IconButton size="small" onClick={onDelete} aria-label="Delete post">
+              <DeleteRounded fontSize="small" />
+            </IconButton>
+          </>
         )}
       </Box>
 
@@ -843,11 +930,60 @@ function PostCard({
                 {c.media_url && c.media_type === 'audio' && (
                   <Box component="audio" src={c.media_url} controls sx={{ width: '100%', maxWidth: 320, my: 0.5, display: 'block' }} />
                 )}
-                {c.body && (
-                  <Typography variant="body2" sx={{ wordBreak: 'break-word', display: 'inline' }}>
-                    {' '}
-                    {c.body}
-                  </Typography>
+                {editingComment === c.id ? (
+                  <Box sx={{ display: 'flex', gap: 0.5, mt: 0.5, alignItems: 'center' }}>
+                    <TextField
+                      size="small"
+                      fullWidth
+                      value={commentText}
+                      onChange={(e) => setCommentText(e.target.value.slice(0, 500))}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          if (commentText.trim()) {
+                            onEditComment(c.id, commentText);
+                            setEditingComment(null);
+                          }
+                        }
+                      }}
+                    />
+                    <Button
+                      size="small"
+                      variant="contained"
+                      disabled={!commentText.trim()}
+                      onClick={() => {
+                        onEditComment(c.id, commentText);
+                        setEditingComment(null);
+                      }}
+                    >
+                      Save
+                    </Button>
+                    <IconButton size="small" aria-label="Cancel edit" onClick={() => setEditingComment(null)}>
+                      <CancelRounded fontSize="small" />
+                    </IconButton>
+                  </Box>
+                ) : (
+                  <>
+                    {c.body && (
+                      <Typography variant="body2" sx={{ wordBreak: 'break-word', display: 'inline' }}>
+                        {' '}
+                        {c.body}
+                      </Typography>
+                    )}
+                    {c.user_id === meId && (
+                      <IconButton
+                        size="small"
+                        sx={{ ml: 0.5, p: 0.3 }}
+                        aria-label="Edit comment"
+                        onClick={() => {
+                          setEditingComment(c.id);
+                          setCommentText(c.body || '');
+                        }}
+                      >
+                        <EditRounded sx={{ fontSize: 14 }} />
+                      </IconButton>
+                    )}
+                  </>
                 )}
                 <Typography variant="caption" color="text.secondary" display="block">
                   {timeAgo(c.created_at)}
@@ -966,6 +1102,53 @@ function PostCard({
           )}
           <Box sx={{ flex: 1 }} />
           <Button onClick={() => setRxView(null)}>Close</Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* edit post dialog */}
+      <Dialog open={editOpen} onClose={() => setEditOpen(false)} maxWidth="xs" fullWidth>
+        <DialogTitle sx={{ fontWeight: 900 }}>Edit your post</DialogTitle>
+        <DialogContent>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+            <TextField
+              label="Text"
+              multiline
+              minRows={2}
+              value={editBody}
+              onChange={(e) => setEditBody(e.target.value.slice(0, 1000))}
+            />
+            {editMedia &&
+              (editMedia.type === 'video' ? (
+                <Box component="video" src={editMedia.url} controls playsInline sx={{ maxWidth: '100%', maxHeight: 240, borderRadius: 2 }} />
+              ) : (
+                <Box component="img" src={editMedia.url} alt="post media" sx={{ maxWidth: '100%', maxHeight: 240, objectFit: 'cover', borderRadius: 2 }} />
+              ))}
+            <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', alignItems: 'center' }}>
+              <Button size="small" startIcon={<PhotoCameraRounded />} onClick={() => pickEditFile('image')} disabled={editUploading}>
+                Photo
+              </Button>
+              <Button size="small" startIcon={<VideocamRounded />} onClick={() => pickEditFile('video')} disabled={editUploading}>
+                Video
+              </Button>
+              {editMedia && (
+                <Button size="small" color="error" startIcon={<DeleteRounded />} onClick={() => setEditMedia(null)}>
+                  Remove
+                </Button>
+              )}
+              {editUploading && (
+                <Typography variant="caption" color="text.secondary">
+                  Uploading…
+                </Typography>
+              )}
+            </Box>
+            <input ref={editFileRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={onEditFile} aria-label="Edit media" />
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setEditOpen(false)}>Cancel</Button>
+          <Button variant="contained" onClick={saveEdit}>
+            Save
+          </Button>
         </DialogActions>
       </Dialog>
     </Box>
