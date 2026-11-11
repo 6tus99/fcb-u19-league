@@ -270,6 +270,10 @@ export default function Messages() {
     if (error) {
       // before the `status` column exists, fall back to the old direct add
       ({ error } = await supabase.from('supporters').insert({ user_id: me, added_id: otherId }));
+      if (!error) {
+        setFriendState((m) => ({ ...m, [otherId]: 'friend' }));
+        return;
+      }
     }
     if (error) {
       alert(error.message);
