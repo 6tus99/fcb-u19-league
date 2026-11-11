@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Outlet, useLocation, useNavigate, Link as RouterLink } from 'react-router-dom';
 import AppBar from '@mui/material/AppBar';
 import Toolbar from '@mui/material/Toolbar';
@@ -11,6 +11,7 @@ import Menu from '@mui/material/Menu';
 import MenuItem from '@mui/material/MenuItem';
 import Avatar from '@mui/material/Avatar';
 import Chip from '@mui/material/Chip';
+import Badge from '@mui/material/Badge';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import Tooltip from '@mui/material/Tooltip';
 import Container from '@mui/material/Container';
@@ -364,6 +365,40 @@ export default function AppLayout() {
   // While the user is inside their own dashboard area, the back arrow in
   // the top-left becomes a HOME button that takes them to the fan view.
   const inRoleArea = profile.role !== 'fan' && inRoleAreaPath;
+  // unread received messages — badge on the Messages tab
+  const [unreadMsgs, setUnreadMsgs] = useState(0);
+  const loadUnread = useCallback(async () => {
+    const myId = profile?.id;
+    if (!myId) return;
+    const { count } = await supabase
+      .from('messages')
+      .select('*', { count: 'exact', head: true })
+      .eq('recipient_id', myId)
+      .is('read_at', null);
+    setUnreadMsgs(count || 0);
+  }, [profile?.id]);
+
+  useEffect(() => {
+    if (!profile?.id) return undefined;
+    loadUnread();
+    const channel = supabase
+      .channel('unread-badge')
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'messages', filter: `recipient_id=eq.${profile.id}` },
+        () => loadUnread()
+      )
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'messages', filter: `recipient_id=eq.${profile.id}` },
+        () => loadUnread()
+      )
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [profile?.id, loadUnread]);
+
   const name = profile.display_name || profile.full_name || profile.email || '?';
   const initials = name
     .split(' ')
@@ -636,7 +671,27 @@ export default function AppLayout() {
                   '&:hover': { bgcolor: 'rgba(255,255,255,0.12)' },
                 }}
               >
-                {item.label}
+                {item.to === '/messages' && unreadMsgs > 0 ? (
+                  <Badge
+                    badgeContent={unreadMsgs}
+                    max={99}
+                    sx={{
+                      '& .MuiBadge-badge': {
+                        bgcolor: '#dc2626',
+                        color: '#ffffff',
+                        fontWeight: 800,
+                        fontSize: 11,
+                        minWidth: 18,
+                        height: 18,
+                        border: '1.5px solid rgba(255,255,255,0.85)',
+                      },
+                    }}
+                  >
+                    {item.label}
+                  </Badge>
+                ) : (
+                  item.label
+                )}
               </ButtonBase>
             );
           })}
