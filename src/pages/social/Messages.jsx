@@ -121,6 +121,13 @@ export default function Messages() {
         .eq('recipient_id', me)
         .eq('sender_id', other)
         .is('read_at', null);
+      // and clear the "New message from X" bell card for this chat
+      await supabase
+        .from('notifications')
+        .update({ read_at: new Date().toISOString() })
+        .eq('user_id', me)
+        .eq('link', `/messages/${other}`)
+        .is('read_at', null);
       loadConvos();
     },
     [me, loadConvos]

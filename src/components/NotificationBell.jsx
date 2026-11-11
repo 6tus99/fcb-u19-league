@@ -67,7 +67,9 @@ export default function NotificationBell() {
       supabase.from('notifications').select('*', { count: 'exact', head: true }).is('read_at', null),
     ]);
     const data = res.data || [];
-    setItems(data);
+    // Message notifications disappear once the chat is read; other
+    // notifications (team, requests) stay as history after being read.
+    setItems(data.filter((n) => !(n.read_at && String(n.link || '').startsWith('/messages/'))));
     setUnread(cnt.count || 0);
     // First load just learns the existing ids (no pop-out). Anything NEW
     // after that pops out from the bell, shows for 6 s, then slides back.
@@ -94,6 +96,11 @@ export default function NotificationBell() {
       .on(
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'notifications', filter: `user_id=eq.${profile.id}` },
+        () => load()
+      )
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'notifications', filter: `user_id=eq.${profile.id}` },
         () => load()
       )
       .subscribe();
