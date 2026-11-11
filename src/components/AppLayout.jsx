@@ -402,7 +402,8 @@ export default function AppLayout() {
     const ext = (f.name.split('.').pop() || 'jpg').toLowerCase();
     setUploadingPhoto(true);
     setProfileMsg(null);
-    const path = `avatars/${profile.id}/${Date.now()}.${ext}`;
+    // storage policy: first folder must be the user's own id (same as posts)
+    const path = `${profile.id}/avatar-${Date.now()}.${ext}`;
     const { error: upErr } = await supabase.storage
       .from('social-media')
       .upload(path, f);
@@ -732,7 +733,7 @@ export default function AppLayout() {
             </Box>
           </Box>
           <TextField
-            label="Display name (nickname)"
+            label="Fan name"
             value={nick}
             onChange={(e) => setNick(e.target.value.slice(0, 40))}
             helperText={`This is the name other members see. Your real name (${profile.full_name || '—'}) stays as it is.`}
