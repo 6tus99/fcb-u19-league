@@ -42,7 +42,8 @@ export default function Messages() {
   const [loadingThread, setLoadingThread] = useState(false);
   const [tab, setTab] = useState('chats');
   const [people, setPeople] = useState([]);
-  const [supporterIds, setSupporterIds] = useState({});
+  const [friendState, setFriendState] = useState({}); // otherId -> 'friend' | 'requested'
+  const [requests, setRequests] = useState([]); // pending requests addressed to me
   const [peopleQuery, setPeopleQuery] = useState('');
   const [loadingPeople, setLoadingPeople] = useState(false);
   const [friends, setFriends] = useState([]);
@@ -132,34 +133,53 @@ export default function Messages() {
       .order('full_name')
       .limit(500);
     setPeople(data || []);
-    const { data: sups } = await supabase.from('supporters').select('added_id').eq('user_id', me);
-    const map = {};
-    (sups || []).forEach((x) => {
-      map[x.added_id] = true;
-    });
-    setSupporterIds(map);
     setLoadingPeople(false);
   }, [me]);
 
-  // friends = the members I have added as fellow supporters
+  // friends (accepted, either direction) + friend requests (pending, to me)
   const loadFriends = useCallback(async () => {
     if (!me) return;
     setLoadingFriends(true);
-    const { data: sups } = await supabase
+    // fails silently before the `status` column exists -> old behaviour
+    const { data: rows } = await supabase
       .from('supporters')
-      .select('added_id')
-      .eq('user_id', me);
-    const ids = [...new Set((sups || []).map((x) => x.added_id))];
-    let list = [];
-    if (ids.length) {
+      .select('id, user_id, added_id, status')
+      .or(`user_id.eq.${me},added_id.eq.${me}`);
+    const list = rows || [];
+    const state = {};
+    const reqRows = [];
+    const friendIds = new Set();
+    list.forEach((r) => {
+      const other = r.user_id === me ? r.added_id : r.user_id;
+      if (r.status === 'accepted') {
+        friendIds.add(other);
+        state[other] = 'friend';
+      } else if (r.status === 'pending') {
+        if (r.added_id === me) reqRows.push(r);
+        else state[other] = 'requested';
+      }
+    });
+    setFriendState(state);
+    const wantIds = [...new Set([...friendIds, ...reqRows.map((r) => r.user_id)])];
+    let profs = [];
+    if (wantIds.length) {
       const { data } = await supabase
         .from('profiles')
         .select('id, full_name, email, role')
-        .in('id', ids)
+        .in('id', wantIds)
         .order('full_name');
-      list = data || [];
+      profs = data || [];
     }
-    setFriends(list);
+    const byId = {};
+    (profs || []).forEach((x) => {
+      byId[x.id] = x;
+    });
+    setFriends([...friendIds].map((id) => byId[id]).filter(Boolean));
+    setRequests(
+      reqRows
+        .map((r) => ({ ...r, name: byId[r.user_id]?.full_name || 'Member', role: byId[r.user_id]?.role || '' }))
+        .filter((r) => byId[r.user_id])
+    );
     setLoadingFriends(false);
   }, [me]);
 
@@ -192,6 +212,10 @@ export default function Messages() {
         }
       )
       .subscribe();
+    const supChannel = supabase
+      .channel('supporters-app')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'supporters' }, () => loadFriends())
+      .subscribe();
     const id = setInterval(loadConvos, 15000);
     const onVisible = () => {
       if (document.visibilityState === 'visible') loadConvos();
@@ -203,6 +227,7 @@ export default function Messages() {
       document.removeEventListener('visibilitychange', onVisible);
       window.removeEventListener('focus', onVisible);
       supabase.removeChannel(channel);
+      supabase.removeChannel(supChannel);
     };
   }, [me, loadConvos, loadPeople, loadFriends, userId, loadThread]);
 
@@ -216,24 +241,61 @@ export default function Messages() {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
   }, [thread.length]);
 
-  const toggleSupporter = async (addedId) => {
+  // send a friend request (or auto-accept when they already asked for me)
+  const handleAddFriend = async (otherId) => {
     if (!me) return;
-    if (supporterIds[addedId]) {
-      await supabase.from('supporters').delete().eq('user_id', me).eq('added_id', addedId);
-      setSupporterIds((m) => {
-        const next = { ...m };
-        delete next[addedId];
-        return next;
-      });
-      loadFriends();
+    const { data: existing } = await supabase
+      .from('supporters')
+      .select('id, user_id, status')
+      .or(`(user_id.eq.${me}.and.added_id.eq.${otherId}),(user_id.eq.${otherId}.and.added_id.eq.${me})`)
+      .limit(2);
+    if (existing && existing.length) {
+      const mine = existing.find((r) => r.user_id === me);
+      if (mine && mine.status === 'pending') return;
+      if ((mine && mine.status === 'accepted') || existing.some((r) => r.status === 'accepted')) return;
+      const theirs = existing.find((r) => r.user_id === otherId);
+      if (theirs && theirs.status === 'pending') {
+        await supabase
+          .from('supporters')
+          .update({ status: 'accepted' })
+          .eq('id', theirs.id)
+          .eq('added_id', me);
+        loadFriends();
+        return;
+      }
+    }
+    let { error } = await supabase
+      .from('supporters')
+      .insert({ user_id: me, added_id: otherId, status: 'pending' });
+    if (error) {
+      // before the `status` column exists, fall back to the old direct add
+      ({ error } = await supabase.from('supporters').insert({ user_id: me, added_id: otherId }));
+    }
+    if (error) {
+      alert(error.message);
       return;
     }
-    const { error: e } = await supabase.from('supporters').insert({ user_id: me, added_id: addedId });
-    if (e) {
-      alert(e.message);
-      return;
-    }
-    setSupporterIds((m) => ({ ...m, [addedId]: true }));
+    loadFriends();
+  };
+
+  const respondRequest = async (rowId, status) => {
+    if (!me) return;
+    const { error } = await supabase
+      .from('supporters')
+      .update({ status })
+      .eq('id', rowId)
+      .eq('added_id', me);
+    if (error) alert(error.message);
+    loadFriends();
+  };
+
+  const removeFriend = async (otherId) => {
+    if (!me) return;
+    await supabase
+      .from('supporters')
+      .delete()
+      .eq('status', 'accepted')
+      .or(`(user_id.eq.${me}.and.added_id.eq.${otherId}),(user_id.eq.${otherId}.and.added_id.eq.${me})`);
     loadFriends();
   };
 
@@ -281,7 +343,7 @@ export default function Messages() {
 
   const convosInfo = useMemberInfo(convos.map((c) => c.user));
   const peopleInfo = useMemberInfo(people.map((x) => x.id));
-  const friendsInfo = useMemberInfo(friends.map((f) => f.id));
+  const friendsInfo = useMemberInfo([...friends.map((f) => f.id), ...requests.map((r) => r.user_id)]);
 
   if (!profile) return null;
   const activeC = convos.find((c) => c.user === userId);
@@ -336,6 +398,7 @@ export default function Messages() {
             onClick={() => {
               setTab('people');
               loadPeople();
+              loadFriends();
             }}
             startIcon={<PeopleRounded sx={{ fontSize: 18 }} />}
             sx={{ flex: 1, px: 0.25, py: 0.5, textTransform: 'none', fontWeight: 800, fontSize: 13, justifyContent: 'center', gap: 0.5 }}
@@ -403,9 +466,48 @@ export default function Messages() {
         <>
           <Box sx={{ px: 1.5, pb: 1, borderBottom: 1, borderColor: 'divider' }}>
             <Typography variant="caption" color="text.secondary" display="block">
-              {friends.length} friend{friends.length === 1 ? '' : 's'} — the members you have added
+              {friends.length} friend{friends.length === 1 ? '' : 's'} — confirmed by both members
             </Typography>
           </Box>
+          {requests.length > 0 && (
+            <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
+              <Typography variant="caption" sx={{ display: 'block', px: 1.5, pt: 1, fontWeight: 800, color: 'primary.main' }}>
+                Friend requests ({requests.length})
+              </Typography>
+              {requests.map((r) => (
+                <Box key={r.id} sx={{ display: 'flex', alignItems: 'center', gap: 1, px: 1.5, py: 0.8, bgcolor: 'action.hover' }}>
+                  <Avatar src={memberAvatar(friendsInfo, r.user_id) || undefined} sx={{ width: 36, height: 36, bgcolor: 'primary.main', fontWeight: 800 }}>
+                    {(r.name || '?').slice(0, 1).toUpperCase()}
+                  </Avatar>
+                  <Box sx={{ flex: 1, minWidth: 0 }}>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 800 }} noWrap>
+                      {memberName(friendsInfo, r.user_id, r.name)}
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      {ROLE_LABEL[r.role] || r.role} • wants to be your friend
+                    </Typography>
+                  </Box>
+                  <Button
+                    size="small"
+                    variant="contained"
+                    startIcon={<CheckRounded />}
+                    onClick={() => respondRequest(r.id, 'accepted')}
+                    sx={{ textTransform: 'none', fontWeight: 800, whiteSpace: 'nowrap' }}
+                  >
+                    Accept
+                  </Button>
+                  <Button
+                    size="small"
+                    color="error"
+                    onClick={() => respondRequest(r.id, 'declined')}
+                    sx={{ textTransform: 'none', fontWeight: 800, whiteSpace: 'nowrap' }}
+                  >
+                    Decline
+                  </Button>
+                </Box>
+              ))}
+            </Box>
+          )}
           <Box sx={{ flex: 1, overflowY: 'auto' }}>
             {loadingFriends && !friends.length ? (
               <Typography color="text.secondary" sx={{ px: 2, py: 4, textAlign: 'center' }}>
@@ -450,7 +552,7 @@ export default function Messages() {
                     size="small"
                     color="error"
                     startIcon={<PersonRemoveRounded />}
-                    onClick={() => toggleSupporter(x.id)}
+                    onClick={() => removeFriend(x.id)}
                     sx={{ textTransform: 'none', fontWeight: 800, whiteSpace: 'nowrap' }}
                   >
                     Remove
@@ -482,7 +584,7 @@ export default function Messages() {
               </Typography>
             ) : (
               filteredPeople.map((x) => {
-                const added = Boolean(supporterIds[x.id]);
+                const st = friendState[x.id];
                 return (
                   <Box
                     key={x.id}
@@ -511,16 +613,36 @@ export default function Messages() {
                         </Typography>
                       </Box>
                     </Box>
-                    <Button
-                      size="small"
-                      variant={added ? 'outlined' : 'contained'}
-                      color={added ? 'success' : 'primary'}
-                      startIcon={added ? <CheckRounded /> : <PersonAddRounded />}
-                      onClick={() => toggleSupporter(x.id)}
-                      sx={{ textTransform: 'none', fontWeight: 800, whiteSpace: 'nowrap', px: 1.25 }}
-                    >
-                      {added ? 'Added' : 'Add'}
-                    </Button>
+                    {st === 'friend' ? (
+                      <Button
+                        size="small"
+                        disabled
+                        variant="outlined"
+                        color="success"
+                        startIcon={<CheckRounded />}
+                        sx={{ textTransform: 'none', fontWeight: 800, whiteSpace: 'nowrap', px: 1.25 }}
+                      >
+                        Friend
+                      </Button>
+                    ) : st === 'requested' ? (
+                      <Button
+                        size="small"
+                        disabled
+                        sx={{ textTransform: 'none', fontWeight: 800, whiteSpace: 'nowrap', px: 1.25 }}
+                      >
+                        Requested…
+                      </Button>
+                    ) : (
+                      <Button
+                        size="small"
+                        variant="contained"
+                        startIcon={<PersonAddRounded />}
+                        onClick={() => handleAddFriend(x.id)}
+                        sx={{ textTransform: 'none', fontWeight: 800, whiteSpace: 'nowrap', px: 1.25 }}
+                      >
+                        Add
+                      </Button>
+                    )}
                   </Box>
                 );
               })
