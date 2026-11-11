@@ -101,6 +101,35 @@ const ROLE_LABEL = {
 
 export default function AppLayout() {
   const { profile, signOut } = useAuth();
+
+  // heartbeat: keep my "last seen" fresh for the Messages screen
+  const lastPing = useRef(0);
+  useEffect(() => {
+    const myId = profile?.id;
+    if (!myId) return undefined;
+    const ping = () => {
+      const nowTs = Date.now();
+      if (nowTs - lastPing.current < 60000) return;
+      lastPing.current = nowTs;
+      supabase
+        .from('profiles')
+        .update({ last_seen_at: new Date().toISOString() })
+        .eq('id', myId)
+        .then(() => {});
+    };
+    ping();
+    const onVis = () => {
+      if (document.visibilityState === 'visible') ping();
+    };
+    document.addEventListener('visibilitychange', onVis);
+    window.addEventListener('focus', onVis);
+    const id = setInterval(ping, 60000);
+    return () => {
+      document.removeEventListener('visibilitychange', onVis);
+      window.removeEventListener('focus', onVis);
+      clearInterval(id);
+    };
+  }, [profile?.id]);
   const isPhone = useMediaQuery('(max-width: 600px)');
   const { mode, setChoice } = useThemeMode();
   const location = useLocation();

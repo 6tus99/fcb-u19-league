@@ -71,6 +71,11 @@ export default function Messages() {
       .from('profiles')
       .select('id, full_name, role, email')
       .in('id', ids);
+    const { data: seen } = await supabase.from('profiles').select('id, last_seen_at').in('id', ids);
+    const seenById = {};
+    (seen || []).forEach((u) => {
+      seenById[u.id] = u.last_seen_at || null;
+    });
     const nameById = {};
     (users || []).forEach((u) => {
       nameById[u.id] = u;
@@ -78,7 +83,11 @@ export default function Messages() {
     setConvos(
       Object.values(byUser)
         .sort((a, b) => new Date(b.last.created_at) - new Date(a.last.created_at))
-        .map((c) => ({ ...c, name: nameById[c.user]?.full_name || nameById[c.user]?.email || 'Member' }))
+        .map((c) => ({
+          ...c,
+          name: nameById[c.user]?.full_name || nameById[c.user]?.email || 'Member',
+          lastSeen: seenById[c.user] || null,
+        }))
     );
   }, [me]);
 
@@ -242,6 +251,8 @@ export default function Messages() {
 
   if (!profile) return null;
   const activeC = convos.find((c) => c.user === userId);
+  const seenTs = activeC?.lastSeen ? new Date(activeC.lastSeen).getTime() : null;
+  const seenActive = Boolean(seenTs && Date.now() - seenTs < 2 * 60 * 1000);
 
   const peopleQ = peopleQuery.trim().toLowerCase();
   const filteredPeople = people.filter(
@@ -430,12 +441,40 @@ export default function Messages() {
             <IconButton size="small" onClick={() => navigate('/messages')} sx={{ display: { xs: 'inline-flex', sm: 'none' } }}>
               <ArrowBackIosRounded fontSize="small" />
             </IconButton>
-            <Avatar sx={{ width: 36, height: 36, bgcolor: 'primary.main', fontWeight: 800 }}>
-              {(activeC?.name || '?').slice(0, 1).toUpperCase()}
-            </Avatar>
-            <Typography variant="subtitle1" sx={{ fontWeight: 800 }} noWrap>
-              {activeC?.name || 'Conversation'}
-            </Typography>
+            <Box sx={{ position: 'relative' }}>
+              <Avatar sx={{ width: 36, height: 36, bgcolor: 'primary.main', fontWeight: 800 }}>
+                {(activeC?.name || '?').slice(0, 1).toUpperCase()}
+              </Avatar>
+              {seenActive && (
+                <Box
+                  sx={{
+                    position: 'absolute',
+                    bottom: 0,
+                    right: 0,
+                    width: 10,
+                    height: 10,
+                    borderRadius: '50%',
+                    bgcolor: '#4caf50',
+                    border: '2px solid',
+                    borderColor: 'background.paper',
+                  }}
+                />
+              )}
+            </Box>
+            <Box sx={{ minWidth: 0 }}>
+              <Typography variant="subtitle1" sx={{ fontWeight: 800 }} noWrap>
+                {activeC?.name || 'Conversation'}
+              </Typography>
+              {activeC?.lastSeen && (
+                <Typography
+                  variant="caption"
+                  sx={{ color: seenActive ? 'success.main' : 'text.secondary', fontWeight: 700 }}
+                  noWrap
+                >
+                  {seenActive ? 'Active now' : `Last seen ${timeAgo(activeC.lastSeen)}`}
+                </Typography>
+              )}
+            </Box>
           </Box>
           <Box sx={{ flex: 1, overflowY: 'auto', px: 1.5, py: 2 }}>
             {loadingThread ? (
