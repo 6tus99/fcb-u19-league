@@ -700,30 +700,26 @@ export default function AppLayout() {
             '&:hover': { filter: 'brightness(1.06)' },
           }}
         >
-          {/* poker-chip stack — white chips with the button colour cut through */}
-          <svg viewBox="0 0 24 24" width="34" height="34" aria-hidden="true">
-            {[
-              { cx: 13.2, cy: 7.2 },
-              { cx: 7.6, cy: 10.6 },
-              { cx: 16.4, cy: 10.6 },
-              { cx: 12, cy: 15.4 },
-            ].map((c) => (
-              <g key={`${c.cx}-${c.cy}`}>
-                <circle cx={c.cx} cy={c.cy} r="5.2" fill="#ffffff" />
-                {[0, 60, 120, 180, 240, 300].map((a) => (
-                  <rect
-                    key={a}
-                    x={c.cx - 0.9}
-                    y={c.cy - 5.6}
-                    width="1.8"
-                    height="3.4"
-                    fill={mode === 'dark' ? '#a3d15e' : '#76a52e'}
-                    transform={`rotate(${a} ${c.cx} ${c.cy})`}
-                  />
-                ))}
-                <circle cx={c.cx} cy={c.cy} r="3.1" fill={mode === 'dark' ? '#a3d15e' : '#76a52e'} />
-              </g>
+          {/* single poker chip — white with the button colour cut through */}
+          <svg viewBox="0 0 24 24" width="32" height="32" aria-hidden="true">
+            <circle cx="12" cy="12" r="10" fill="#ffffff" />
+            {[0, 60, 120, 180, 240, 300].map((a) => (
+              <rect
+                key={a}
+                x="10.7"
+                y="0.3"
+                width="2.6"
+                height="5.4"
+                fill={mode === 'dark' ? '#a3d15e' : '#76a52e'}
+                transform={`rotate(${a} 12 12)`}
+              />
             ))}
+            <circle cx="12" cy="12" r="7.4" fill={mode === 'dark' ? '#a3d15e' : '#76a52e'} />
+            <circle cx="12" cy="12" r="5.6" fill="#ffffff" />
+            <path
+              d="M12 8.6 L12.88 10.79 L15.23 10.95 L13.43 12.46 L14 14.75 L12 13.5 L10 14.75 L10.57 12.46 L8.77 10.95 L11.12 10.79 Z"
+              fill={mode === 'dark' ? '#a3d15e' : '#76a52e'}
+            />
           </svg>
         </Fab>
       )}
