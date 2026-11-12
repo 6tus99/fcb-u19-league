@@ -631,20 +631,16 @@ export default function AppLayout() {
                   py: 0.5,
                   borderRadius: 2,
                   fontSize: 14,
-                  fontWeight: active ? 700 : 500,
-                  color: active
-                    ? (mode === 'dark' ? '#ffffff' : '#101d4a')
-                    : mode === 'dark'
-                      ? 'rgba(255,255,255,0.72)'
-                      : 'rgba(16,29,74,0.90)',
+                  fontWeight: active ? 800 : 600,
+                  color: 'primary.main',
                   bgcolor: active
                     ? mode === 'dark'
                       ? 'rgba(74,222,128,0.22)'
-                      : 'rgba(118,165,46,0.22)'
+                      : 'rgba(118,165,46,0.20)'
                     : 'transparent',
                   whiteSpace: 'nowrap',
                   '&:hover': {
-                    bgcolor: mode === 'dark' ? 'rgba(255,255,255,0.12)' : 'rgba(23,39,106,0.06)',
+                    bgcolor: mode === 'dark' ? 'rgba(74,222,128,0.14)' : 'rgba(118,165,46,0.10)',
                   },
                 }}
               >
