@@ -138,7 +138,6 @@ export default function AppLayout() {
   const location = useLocation();
   const navigate = useNavigate();
   const [anchorEl, setAnchorEl] = useState(null);
-  const [themeAnchor, setThemeAnchor] = useState(null);
   const [leagueName, setLeagueName] = useState('FCB Under 19 Football League');
   const [season, setSeason] = useState('');
   const [pendingChange, setPendingChange] = useState(null);
@@ -597,34 +596,13 @@ export default function AppLayout() {
             </Tooltip>
           ) : null}
           <IconButton
-            onClick={(e) => setThemeAnchor(e.currentTarget)}
+            onClick={() => setChoice(mode === 'dark' ? 'light' : 'dark')}
             size="small"
-            aria-label="Theme settings"
+            aria-label={mode === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'}
             sx={{ color: 'headerIcon', flexShrink: 0 }}
           >
             {mode === 'dark' ? <DarkModeRounded /> : <LightModeRounded />}
           </IconButton>
-          <Menu
-            open={Boolean(themeAnchor)}
-            anchorEl={themeAnchor}
-            onClose={() => setThemeAnchor(null)}
-          >
-            {[
-              { id: 'light', label: 'Light' },
-              { id: 'dark', label: 'Dark' },
-            ].map((o) => (
-              <MenuItem
-                key={o.id}
-                selected={o.id === mode}
-                onClick={() => {
-                  setChoice(o.id);
-                  setThemeAnchor(null);
-                }}
-              >
-                {o.label}
-              </MenuItem>
-            ))}
-          </Menu>
           <NotificationBell />
           <IconButton onClick={(e) => setAnchorEl(e.currentTarget)} size="small" aria-label="Account menu" sx={{ flexShrink: 0 }}>
             {profile.avatar_url ? (
