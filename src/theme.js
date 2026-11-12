@@ -34,11 +34,11 @@ export function buildTheme(mode) {
         : {}),
       // bank brand: blue header + green accents + white body (light mode),
       // layered navy throughout (dark mode)
-      appbar: '#17276a',
+      appbar: dark ? '#17276a' : '#ffffff',
       tint: dark ? 'rgba(148, 163, 184, 0.08)' : 'rgba(255, 255, 255, 0.90)',
       tintHover: dark ? 'rgba(148, 163, 184, 0.15)' : 'rgba(255, 255, 255, 0.96)',
-      headerText: '#ffffff',
-      headerIcon: 'rgba(255,255,255,0.85)',
+      headerText: dark ? '#ffffff' : '#17276a',
+      headerIcon: dark ? 'rgba(255,255,255,0.85)' : 'rgba(23, 39, 106, 0.9)',
     },
     typography: {
       fontFamily: '"Segoe UI", Roboto, Helvetica, Arial, sans-serif',
@@ -54,10 +54,10 @@ export function buildTheme(mode) {
             // the brand line: green (dark) / light (light) under the header
             borderBottom: dark
               ? '1px solid rgba(74, 222, 128, 0.35)'
-              : '1px solid rgba(255,255,255,0.25)',
+              : '1px solid rgba(23, 39, 106, 0.14)',
             boxShadow: dark
               ? '0 4px 20px rgba(2, 6, 23, 0.5)'
-              : '0 2px 12px rgba(23, 39, 106, 0.25)',
+              : '0 2px 10px rgba(23, 39, 106, 0.10)',
           },
         },
       },

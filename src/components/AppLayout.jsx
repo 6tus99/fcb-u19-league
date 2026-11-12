@@ -486,7 +486,7 @@ export default function AppLayout() {
         sx={{
           bgcolor: 'appbar',
           backdropFilter: 'blur(8px)',
-          borderBottom: '1px solid rgba(255,255,255,0.14)',
+          borderBottom: mode === 'dark' ? '1px solid rgba(255,255,255,0.14)' : '1px solid rgba(23,39,106,0.12)',
           color: 'headerText',
         }}
       >
@@ -534,8 +534,8 @@ export default function AppLayout() {
                   fontSize: 9,
                   fontWeight: 700,
                   mt: 0.25,
-                  bgcolor: 'rgba(255,255,255,0.16)',
-                  color: '#ffffff',
+                  bgcolor: mode === 'dark' ? 'rgba(255,255,255,0.16)' : 'rgba(23,39,106,0.08)',
+                  color: mode === 'dark' ? '#ffffff' : '#17276a',
                   // On phones the chip makes no room for the league name,
                   // so it moves out of the header — the role is still
                   // obvious from the pages and the dashboard button.
@@ -579,15 +579,23 @@ export default function AppLayout() {
                   flexShrink: 0,
                   fontWeight: 700,
                   ...(inRoleArea
-                    ? {
-                        bgcolor: '#ffffff',
-                        color: '#17276a',
-                        '&:hover': { bgcolor: 'rgba(255,255,255,0.92)' },
-                      }
+                    ? mode === 'dark'
+                      ? {
+                          bgcolor: '#ffffff',
+                          color: '#17276a',
+                          '&:hover': { bgcolor: 'rgba(255,255,255,0.92)' },
+                        }
+                      : {
+                          bgcolor: '#17276a',
+                          color: '#ffffff',
+                          '&:hover': { bgcolor: 'rgba(23,39,106,0.88)' },
+                        }
                     : {
-                        color: '#ffffff',
-                        borderColor: 'rgba(255,255,255,0.55)',
-                        '&:hover': { borderColor: '#ffffff', bgcolor: 'rgba(255,255,255,0.12)' },
+                        color: mode === 'dark' ? '#ffffff' : '#17276a',
+                        borderColor: mode === 'dark' ? 'rgba(255,255,255,0.55)' : 'rgba(23,39,106,0.45)',
+                        '&:hover': mode === 'dark'
+                          ? { borderColor: '#ffffff', bgcolor: 'rgba(255,255,255,0.12)' }
+                          : { borderColor: '#17276a', bgcolor: 'rgba(23,39,106,0.06)' },
                       }),
                 }}
               >
@@ -627,10 +635,20 @@ export default function AppLayout() {
                   borderRadius: 2,
                   fontSize: 14,
                   fontWeight: active ? 700 : 500,
-                  color: active ? '#ffffff' : 'rgba(255,255,255,0.72)',
-                  bgcolor: active ? 'rgba(74,222,128,0.22)' : 'transparent',
+                  color: active
+                    ? (mode === 'dark' ? '#ffffff' : '#17276a')
+                    : mode === 'dark'
+                      ? 'rgba(255,255,255,0.72)'
+                      : 'rgba(23,39,106,0.66)',
+                  bgcolor: active
+                    ? mode === 'dark'
+                      ? 'rgba(74,222,128,0.22)'
+                      : 'rgba(118,165,46,0.16)'
+                    : 'transparent',
                   whiteSpace: 'nowrap',
-                  '&:hover': { bgcolor: 'rgba(255,255,255,0.12)' },
+                  '&:hover': {
+                    bgcolor: mode === 'dark' ? 'rgba(255,255,255,0.12)' : 'rgba(23,39,106,0.06)',
+                  },
                 }}
               >
                 {item.to === '/messages' && unreadMsgs > 0 ? (
