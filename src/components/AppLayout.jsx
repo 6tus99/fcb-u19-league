@@ -531,8 +531,8 @@ export default function AppLayout() {
                   fontSize: 9,
                   fontWeight: 700,
                   mt: 0.25,
-                  bgcolor: mode === 'dark' ? 'rgba(255,255,255,0.16)' : 'rgba(23,39,106,0.08)',
-                  color: mode === 'dark' ? '#ffffff' : '#17276a',
+                  bgcolor: mode === 'dark' ? 'rgba(255,255,255,0.16)' : 'rgba(16,29,74,0.12)',
+                  color: mode === 'dark' ? '#ffffff' : '#101d4a',
                   // On phones the chip makes no room for the league name,
                   // so it moves out of the header — the role is still
                   // obvious from the pages and the dashboard button.
@@ -633,14 +633,14 @@ export default function AppLayout() {
                   fontSize: 14,
                   fontWeight: active ? 700 : 500,
                   color: active
-                    ? (mode === 'dark' ? '#ffffff' : '#17276a')
+                    ? (mode === 'dark' ? '#ffffff' : '#101d4a')
                     : mode === 'dark'
                       ? 'rgba(255,255,255,0.72)'
-                      : 'rgba(23,39,106,0.66)',
+                      : 'rgba(16,29,74,0.90)',
                   bgcolor: active
                     ? mode === 'dark'
                       ? 'rgba(74,222,128,0.22)'
-                      : 'rgba(118,165,46,0.16)'
+                      : 'rgba(118,165,46,0.22)'
                     : 'transparent',
                   whiteSpace: 'nowrap',
                   '&:hover': {
@@ -696,11 +696,11 @@ export default function AppLayout() {
             zIndex: 1200,
             width: 56,
             height: 56,
-            bgcolor: mode === 'dark' ? '#fb923c' : '#ea580c',
+            bgcolor: mode === 'dark' ? '#a3d15e' : '#76a52e',
             boxShadow:
               mode === 'dark'
-                ? '0 8px 26px rgba(251,146,60,0.5)'
-                : '0 8px 24px rgba(234,88,12,0.42)',
+                ? '0 8px 26px rgba(163,209,94,0.5)'
+                : '0 8px 24px rgba(118,165,46,0.45)',
             '&:hover': { filter: 'brightness(1.06)' },
           }}
         >
@@ -721,11 +721,11 @@ export default function AppLayout() {
                     y={c.cy - 5.6}
                     width="1.8"
                     height="3.4"
-                    fill={mode === 'dark' ? '#fb923c' : '#ea580c'}
+                    fill={mode === 'dark' ? '#a3d15e' : '#76a52e'}
                     transform={`rotate(${a} ${c.cx} ${c.cy})`}
                   />
                 ))}
-                <circle cx={c.cx} cy={c.cy} r="3.1" fill={mode === 'dark' ? '#fb923c' : '#ea580c'} />
+                <circle cx={c.cx} cy={c.cy} r="3.1" fill={mode === 'dark' ? '#a3d15e' : '#76a52e'} />
               </g>
             ))}
           </svg>

@@ -11,13 +11,13 @@ const wave = (a, b) =>
 
 export const AQUATIC_LIGHT = [
   // sunlight falling through the surface
-  'radial-gradient(90% 50% at 75% -5%, rgba(190,229,252,0.50) 0%, rgba(190,229,252,0) 60%)',
+  'radial-gradient(90% 50% at 75% -5%, rgba(147,197,253,0.22) 0%, rgba(147,197,253,0) 60%)',
   // a patch of light rays on the left
-  'radial-gradient(55% 35% at 12% 10%, rgba(125,211,252,0.30) 0%, rgba(125,211,252,0) 55%)',
+  'radial-gradient(55% 35% at 12% 10%, rgba(96,165,250,0.14) 0%, rgba(96,165,250,0) 55%)',
   // gentle waves
-  `url("${wave('0.14', '0.09')}")`,
-  // navy depths opening into aqua
-  'linear-gradient(180deg, #123a7d 0%, #1d5a9e 38%, #3d84b8 68%, #63b0cf 88%, #8ecfe0 100%)',
+  `url("${wave('0.10', '0.06')}")`,
+  // deeper navy depths, calmer aqua at the bottom
+  'linear-gradient(180deg, #0e2a5e 0%, #164a86 38%, #2a6396 68%, #4580a8 88%, #6ea3bd 100%)',
 ].join(', ');
 
 export const AQUATIC_DARK = [
@@ -32,6 +32,6 @@ export const AQUATIC_DARK = [
 ].join(', ');
 
 export const AQUATIC_BASE = {
-  light: '#123a7d',
+  light: '#0e2a5e',
   dark: '#050d24',
 };

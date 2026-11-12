@@ -37,8 +37,8 @@ export function buildTheme(mode) {
       appbar: dark ? '#17276a' : '#ffffff',
       tint: dark ? 'rgba(148, 163, 184, 0.08)' : 'rgba(255, 255, 255, 0.90)',
       tintHover: dark ? 'rgba(148, 163, 184, 0.15)' : 'rgba(255, 255, 255, 0.96)',
-      headerText: dark ? '#ffffff' : '#17276a',
-      headerIcon: dark ? 'rgba(255,255,255,0.85)' : 'rgba(23, 39, 106, 0.9)',
+      headerText: dark ? '#ffffff' : '#101d4a',
+      headerIcon: dark ? 'rgba(255,255,255,0.85)' : '#101d4a',
     },
     typography: {
       fontFamily: '"Segoe UI", Roboto, Helvetica, Arial, sans-serif',
