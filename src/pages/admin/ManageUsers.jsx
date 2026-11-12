@@ -15,7 +15,6 @@ import DialogTitle from '@mui/material/DialogTitle';
 import DialogContent from '@mui/material/DialogContent';
 import DialogActions from '@mui/material/DialogActions';
 import SearchRounded from '@mui/icons-material/SearchRounded';
-import DeleteOutlineRounded from '@mui/icons-material/DeleteOutlineRounded';
 import LockResetRounded from '@mui/icons-material/LockResetRounded';
 import ChevronRightRounded from '@mui/icons-material/ChevronRightRounded';
 import EditableCell from '../../components/EditableCell';
@@ -61,8 +60,6 @@ export default function ManageUsers() {
   const [grant, setGrant] = useState(null); // { user, role } awaiting confirm
   const [grantBusy, setGrantBusy] = useState(false);
   const [grantResult, setGrantResult] = useState(null); // { name, email, sent, code, role }
-  const [deleteTarget, setDeleteTarget] = useState(null);
-  const [deleteBusy, setDeleteBusy] = useState(false);
   const [tab, setTab] = useState('all'); // 'all' or one of ROLES
   const [query, setQuery] = useState('');
   const [openId, setOpenId] = useState(null); // expanded row (accordion: one at a time)
@@ -107,25 +104,6 @@ export default function ManageUsers() {
       (p) => p.status === 'pending' && new Date(p.expires_at) > new Date()
     );
 
-  // supabase-js functions.invoke never throws — it returns { data, error }.
-  // This digs the real reason out of that error (the HTTP response body when
-  // there is one, otherwise the network/relay failure message).
-  const invokeDetail = async (err) => {
-    if (!err) return '';
-    let detail = '';
-    try {
-      if (err.context && typeof err.context.json === 'function') {
-        const body = await err.context.json();
-        detail = (body && (body.error || body.message)) || JSON.stringify(body);
-      }
-    } catch (e) {
-      /* response body was not JSON */
-    }
-    if (!detail && err.context && err.context.message) detail = err.context.message;
-    if (!detail) detail = err.message || 'unknown error';
-    return detail;
-  };
-
   const changeRole = async (user, role) => {
     if (role === user.role) return;
     setGrant({ user, role });
@@ -134,57 +112,34 @@ export default function ManageUsers() {
   const confirmGrant = async () => {
     const { user, role } = grant;
     setGrantBusy(true);
-    // A long-open tab can hold an expired access token, which makes the edge
-    // function answer "Unauthorized". Refresh the session first so the call
-    // always carries a fresh token — this is why a page refresh used to be
-    // needed before sending worked.
-    await supabase.auth.refreshSession().catch(() => {});
+    // The pending change is stored in the database; the member activates
+    // it by entering the 6-digit code in their app within 15 minutes.
     const code = String(Math.floor(100000 + Math.random() * 900000));
     const codeHash = await sha256Hex(code);
     const expiresAt = new Date(Date.now() + 15 * 60 * 1000).toISOString();
-    let sent = false;
-    let devCode = code;
-    let emailError = '';
-
-    // Preferred path: Supabase edge function (sends the email via Resend).
-    // Fallback: store the pending change directly.
-    const { data, error: invErr } = await supabase.functions.invoke('send-role-code', {
-      body: { profile_id: user.id, new_role: role, phone: user.phone || '', requested_by: me.id },
+    const { error: insErr } = await supabase.from('pending_role_changes').insert({
+      profile_id: user.id,
+      new_role: role,
+      code_hash: codeHash,
+      phone: user.phone || null,
+      requested_by: me.id,
+      expires_at: expiresAt,
     });
-    if (data && data.ok) {
-      sent = !!data.sent;
-      devCode = data.devCode || code;
-      emailError = data.emailError || '';
-    } else if (data && data.error) {
-      setMessage({ severity: 'error', text: `Verification service: ${data.error}` });
-    } else {
-      emailError =
-        (await invokeDetail(invErr)) ||
-        'The mailer function could not be reached — check that send-role-code is deployed.';
-      const { error: insErr } = await supabase.from('pending_role_changes').insert({
-        profile_id: user.id,
-        new_role: role,
-        code_hash: codeHash,
-        phone: user.phone || null,
-        requested_by: me.id,
-        expires_at: expiresAt,
-      });
-      if (insErr) {
-        setMessage({ severity: 'error', text: insErr.message });
-        setGrantBusy(false);
-        setGrant(null);
-        return;
-      }
+    if (insErr) {
+      setMessage({ severity: 'error', text: insErr.message });
+      setGrantBusy(false);
+      setGrant(null);
+      return;
     }
 
     setGrantBusy(false);
     setGrant(null);
     setGrantResult({
       name: user.full_name,
-      email: data && data.email ? data.email : user.email,
-      sent,
-      code: devCode,
-      emailError,
+      email: user.email,
+      sent: false,
+      code,
+      emailError: '',
       role,
     });
     load();
@@ -213,32 +168,6 @@ export default function ManageUsers() {
         ? { severity: 'error', text: error.message }
         : { severity: 'success', text: 'Dashboard password reset — they will set a new one next time.' }
     );
-  };
-
-  const confirmDelete = async () => {
-    setDeleteBusy(true);
-    // Deletion runs a database function (public.delete_user_account) that
-    // checks the caller is a league admin, then removes the login —
-    // everything else (profile, messages, friends, posts, notifications)
-    // cascades automatically.
-    await supabase.auth.refreshSession().catch(() => {});
-    const { error } = await supabase.rpc('delete_user_account', {
-      target_id: deleteTarget.id,
-    });
-    setDeleteBusy(false);
-    const name = deleteTarget.full_name;
-    setDeleteTarget(null);
-    if (error) {
-      let text = error.message || 'Delete failed.';
-      if (text.includes('does not exist')) {
-        text =
-          'Delete is not active yet. Run the delete-user SQL (Supabase -> SQL Editor -> Run), then try again.';
-      }
-      setMessage({ severity: 'error', text });
-    } else {
-      setMessage({ severity: 'success', text: `Account deleted: ${name}.` });
-      load();
-    }
   };
 
   const changeTeam = async (userId, teamId) => {
@@ -461,19 +390,6 @@ export default function ManageUsers() {
                         >
                           <LockResetRounded fontSize="small" />
                         </IconButton>
-                        {u.id !== me?.id && (
-                          <IconButton
-                            size="small"
-                            color="error"
-                            aria-label={`Delete ${u.full_name}`}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setDeleteTarget(u);
-                            }}
-                          >
-                            <DeleteOutlineRounded fontSize="small" />
-                          </IconButton>
-                        )}
                         <ChevronRightRounded
                           sx={{
                             color: 'text.secondary',
@@ -651,30 +567,6 @@ export default function ManageUsers() {
         <DialogActions>
           <Button onClick={() => setGrantResult(null)} variant="contained">
             Done
-          </Button>
-        </DialogActions>
-      </Dialog>
-
-      <Dialog open={!!deleteTarget} onClose={() => !deleteBusy && setDeleteTarget(null)} maxWidth="xs" fullWidth>
-        <DialogTitle>Delete account</DialogTitle>
-        <DialogContent>
-          {deleteTarget && (
-            <>
-              <Typography>
-                Permanently delete <b>{deleteTarget.full_name}</b> ({deleteTarget.email})?
-              </Typography>
-              <Alert severity="warning" sx={{ mt: 2 }}>
-                This removes their login and all their league data. It cannot be undone.
-              </Alert>
-            </>
-          )}
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setDeleteTarget(null)} disabled={deleteBusy}>
-            Cancel
-          </Button>
-          <Button onClick={confirmDelete} color="error" variant="contained" disabled={deleteBusy}>
-            {deleteBusy ? 'Deleting…' : 'Delete'}
           </Button>
         </DialogActions>
       </Dialog>

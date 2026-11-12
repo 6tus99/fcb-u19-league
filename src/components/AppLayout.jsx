@@ -231,43 +231,27 @@ export default function AppLayout() {
   }, [profile?.id]);
 
   const submitVerify = async () => {
+    const code = verifyCode.trim();
+    if (!code) return;
     setVerifyBusy(true);
     setVerifyMsg(null);
-    const { data, error } = await supabase.functions.invoke('verify-role-code', {
-      body: { code: verifyCode.trim() },
-    });
+    // The code is hashed on this device; the database function checks it
+    // against the stored hash and applies the role.
+    const codeHash = await sha256Hex(code);
+    const { error } = await supabase.rpc('verify_role_code', { code_hash: codeHash });
     setVerifyBusy(false);
     if (error) {
-      // The function may be alive and reporting a specific problem
-      // (wrong code, expired, nothing pending) — surface that instead of
-      // assuming the whole service is missing.
-      let detail = '';
-      try {
-        if (error.context && typeof error.context.json === 'function') {
-          const ctx = await error.context.json();
-          detail = (ctx && (ctx.error || ctx.message)) || '';
-        }
-      } catch {
-        /* response was not JSON — fall through to the error message */
+      let text = error.message || 'Verification failed. Try again.';
+      if (text.includes('does not exist')) {
+        text =
+          'Role verification is not active yet. The admin needs to run the role-code SQL (Supabase -> SQL Editor -> Run). Your code is stored and will work as soon as that is done.';
       }
-      if (!detail) detail = error.message || '';
-      if (!detail || /not found/i.test(detail)) {
-        setVerifyMsg({
-          severity: 'warning',
-          text: 'Verification is not set up yet. The admin needs to add the two small Supabase functions (send-role-code and verify-role-code). Your code is stored and will work as soon as that is done.',
-        });
-      } else {
-        setVerifyMsg({ severity: 'error', text: detail });
-      }
+      setVerifyMsg({ severity: 'error', text });
       return;
     }
-    if (data && data.ok) {
-      setPendingChange(null);
-      setVerifyOpen(false);
-      window.location.reload(); // re-fetch the profile so the new role applies
-      return;
-    }
-    setVerifyMsg({ severity: 'error', text: (data && data.error) || 'Verification failed. Try again.' });
+    setPendingChange(null);
+    setVerifyOpen(false);
+    window.location.reload(); // re-fetch the profile so the new role applies
   };
 
   // Layout mode. Everyone lands in the FAN layout after logging in; when
