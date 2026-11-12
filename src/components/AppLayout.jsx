@@ -23,7 +23,6 @@ import Alert from '@mui/material/Alert';
 import TextField from '@mui/material/TextField';
 import Snackbar from '@mui/material/Snackbar';
 import Fab from '@mui/material/Fab';
-import CasinoRounded from '@mui/icons-material/CasinoRounded';
 import LeagueLogo from './LeagueLogo';
 import LogoutRounded from '@mui/icons-material/LogoutRounded';
 import ArrowBackIosRounded from '@mui/icons-material/ArrowBackIosRounded';
@@ -688,7 +687,6 @@ export default function AppLayout() {
         <Fab
           component={RouterLink}
           to="/fan/betting"
-          variant="extended"
           aria-label="Betting board"
           title="Betting board (virtual points)"
           sx={{
@@ -696,22 +694,37 @@ export default function AppLayout() {
             right: { xs: 14, sm: 24 },
             bottom: { xs: 14, sm: 24 },
             zIndex: 1200,
-            borderRadius: 999,
-            px: 2.2,
-            py: 1,
-            fontWeight: 800,
-            fontSize: 14,
+            width: 56,
+            height: 56,
             bgcolor: mode === 'dark' ? '#fb923c' : '#ea580c',
-            color: mode === 'dark' ? '#1a1200' : '#ffffff',
             boxShadow:
               mode === 'dark'
                 ? '0 8px 26px rgba(251,146,60,0.5)'
                 : '0 8px 24px rgba(234,88,12,0.42)',
-            '&:hover': { bgcolor: mode === 'dark' ? '#f97316' : '#c2410c' },
+            '&:hover': { filter: 'brightness(1.06)' },
           }}
         >
-          <CasinoRounded sx={{ mr: 1 }} />
-          Betting
+          {/* poker chip — single-chip design, white with the button colour cut through */}
+          <svg viewBox="0 0 24 24" width="32" height="32" aria-hidden="true">
+            <circle cx="12" cy="12" r="10" fill="#ffffff" />
+            {[0, 60, 120, 180, 240, 300].map((a) => (
+              <rect
+                key={a}
+                x="10.7"
+                y="0.3"
+                width="2.6"
+                height="5.4"
+                fill={mode === 'dark' ? '#fb923c' : '#ea580c'}
+                transform={`rotate(${a} 12 12)`}
+              />
+            ))}
+            <circle cx="12" cy="12" r="7.4" fill={mode === 'dark' ? '#fb923c' : '#ea580c'} />
+            <circle cx="12" cy="12" r="5.6" fill="#ffffff" />
+            <path
+              d="M12 8.6 L12.88 10.79 L15.23 10.95 L13.43 12.46 L14 14.75 L12 13.5 L10 14.75 L10.57 12.46 L8.77 10.95 L11.12 10.79 Z"
+              fill={mode === 'dark' ? '#fb923c' : '#ea580c'}
+            />
+          </svg>
         </Fab>
       )}
 
