@@ -217,23 +217,26 @@ export default function ManageUsers() {
 
   const confirmDelete = async () => {
     setDeleteBusy(true);
-    // Deleting a login needs the Supabase "delete-user" function (it uses a
-    // server-only key — a website can never do this on its own).
-    const { data, error } = await supabase.functions.invoke('delete-user', {
-      body: { id: deleteTarget.id },
+    // Deletion runs a database function (public.delete_user_account) that
+    // checks the caller is a league admin, then removes the login —
+    // everything else (profile, messages, friends, posts, notifications)
+    // cascades automatically.
+    await supabase.auth.refreshSession().catch(() => {});
+    const { error } = await supabase.rpc('delete_user_account', {
+      target_id: deleteTarget.id,
     });
     setDeleteBusy(false);
+    const name = deleteTarget.full_name;
     setDeleteTarget(null);
-    if (error || (data && data.error)) {
-      setMessage({
-        severity: 'error',
-        text:
-          (data && data.error) ||
-          (await invokeDetail(error)) ||
-          'Delete failed. The delete-user function may not be deployed yet.',
-      });
+    if (error) {
+      let text = error.message || 'Delete failed.';
+      if (text.includes('does not exist')) {
+        text =
+          'Delete is not active yet. Run the delete-user SQL (Supabase -> SQL Editor -> Run), then try again.';
+      }
+      setMessage({ severity: 'error', text });
     } else {
-      setMessage({ severity: 'success', text: 'Account deleted.' });
+      setMessage({ severity: 'success', text: `Account deleted: ${name}.` });
       load();
     }
   };
