@@ -37,6 +37,7 @@ import AddPhotoAlternateRounded from '@mui/icons-material/AddPhotoAlternateRound
 import { useAuth } from '../context/AuthContext';
 import { sha256Hex } from '../utils/crypto';
 import { useThemeMode } from '../context/ThemeContext';
+import { AQUATIC_LIGHT, AQUATIC_DARK, AQUATIC_BASE } from '../utils/backgrounds';
 import { homeForRole, dashboardForRole } from './ProtectedRoute';
 import NotificationBell from './NotificationBell';
 import supabase from '../lib/supabase';
@@ -471,12 +472,9 @@ export default function AppLayout() {
         display: 'flex',
         flexDirection: 'column',
         overflowX: 'clip',
-        // FCB brand look: navy -> steel-blue gradient, like the First
-        // Capital Bank app (header sits on the same navy and blends in)
-        backgroundColor: mode === 'dark' ? '#0a1128' : '#17276a',
-        backgroundImage: mode === 'dark'
-            ? 'linear-gradient(180deg, #0a1128 0%, #12264a 55%, #1f3f63 100%)'
-            : 'linear-gradient(180deg, #17276a 0%, #2c4f7e 55%, #4d80a2 100%)',
+        // Aquatic background: sunlit lagoon (light) / deep sea (dark)
+        backgroundColor: mode === 'dark' ? AQUATIC_BASE.dark : AQUATIC_BASE.light,
+        backgroundImage: mode === 'dark' ? AQUATIC_DARK : AQUATIC_LIGHT,
         backgroundAttachment: 'fixed',
       }}
     >

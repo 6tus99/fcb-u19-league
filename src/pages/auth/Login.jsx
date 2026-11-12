@@ -14,9 +14,8 @@ import { homeForRole } from '../../components/ProtectedRoute';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import ThemeToggleFloat from '../../components/ThemeToggleFloat';
 import { useThemeMode } from '../../context/ThemeContext';
+import { AQUATIC_LIGHT, AQUATIC_DARK, AQUATIC_BASE } from '../../utils/backgrounds';
 // FCB brand gradients (navy -> steel blue), like the First Capital Bank app
-const G_LIGHT_FIXED = 'linear-gradient(180deg, #17276a 0%, #2c4f7e 55%, #4d80a2 100%) fixed';
-const G_DARK_FIXED = 'linear-gradient(180deg, #0a1128 0%, #12264a 55%, #1f3f63 100%) fixed';
 
 
 export default function Login() {
@@ -51,7 +50,9 @@ export default function Login() {
         alignItems: 'center',
         justifyContent: 'center',
         p: 2,
-        background: mode === 'dark' ? G_DARK_FIXED : G_LIGHT_FIXED,
+        backgroundColor: mode === 'dark' ? AQUATIC_BASE.dark : AQUATIC_BASE.light,
+        backgroundImage: mode === 'dark' ? AQUATIC_DARK : AQUATIC_LIGHT,
+        backgroundAttachment: 'fixed',
       }}
     >
       <ThemeToggleFloat />
