@@ -51,3 +51,12 @@ update public.matches set scheduled_at = '2026-11-21 13:00+02' where id = '01b20
 -- Verify: shows the new fixture card
 select week, scheduled_at, status, home_score, away_score
 from public.matches order by scheduled_at;
+
+-- News items: bump the 3 seeded stories to this week so the homepage
+-- dates match the new fixture card (safe to re-run).
+update public.news set created_at = '2026-11-13 08:00+02'
+ where id = 'c43492a8-606e-44f4-8bf9-c844c09e7001';  -- Week 3 kicks off today
+update public.news set created_at = '2026-11-12 09:00+02'
+ where id = '0751e21e-e0f8-4aad-83bb-f6f3d35c1865';  -- top the table
+update public.news set created_at = '2026-11-11 10:00+02'
+ where id = 'ebc80586-a8ac-4e4b-8f06-e806cd86285c';  -- officials confirmed

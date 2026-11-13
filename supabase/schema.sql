@@ -336,13 +336,13 @@ insert into public.match_events (match_id, minute, event_type, team_id, descript
   ('01b20000-0000-4000-8000-000000000017', 61, 'goal',        '01b10000-0000-4000-8000-000000000001', 'Goal — Chikondi Banda')
 on conflict do nothing;
 
-insert into public.news (title, body) values
+insert into public.news (title, body, created_at) values
   ('Week 3 kicks off today — CC Stars host Bullets Youth',
-   'The third round of the 2026 season begins today at CC Stadium as CC Stars host Bullets Youth, with the full Week 3 card taking place this weekend. Check the Matches page for kickoff times and venues.'),
+   'The third round of the 2026 season begins today at CC Stadium as CC Stars host Bullets Youth, with the full Week 3 card taking place this weekend. Check the Matches page for kickoff times and venues.', '2026-11-13 08:00+02'),
   ('CC Stars, Nyambadwe United and Bullets Youth top the table',
-   'After two rounds, CC Stars, Nyambadwe United and Bullets Youth all sit on six points. Mphatso Jere of Nyambadwe United leads the league with four goals, keeping the title race wide open heading into Week 3.'),
+   'After two rounds, CC Stars, Nyambadwe United and Bullets Youth all sit on six points. Mphatso Jere of Nyambadwe United leads the league with four goals, keeping the title race wide open heading into Week 3.', '2026-11-12 09:00+02'),
   ('Match officials confirmed for Week 4',
-   'The league committee has confirmed officials for all eight Week 4 fixtures at the weekend. Officials can view their details in the Officials section of the admin dashboard.')
+   'The league committee has confirmed officials for all eight Week 4 fixtures at the weekend. Officials can view their details in the Officials section of the admin dashboard.', '2026-11-11 10:00+02')
 on conflict do nothing;
 --  HOW TO RUN: Supabase Dashboard -> SQL Editor -> New query
 --  -> paste everything -> Run.  (Safe to re-run; idempotent.)
