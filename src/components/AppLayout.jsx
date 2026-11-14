@@ -913,7 +913,8 @@ export default function AppLayout() {
         onClick={() => {
           if (toast?.link) navigate(toast.link);
         }}
-        sx={{ zIndex: 2000, bottom: 96 }}
+        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+        sx={{ zIndex: 2000, top: 120 }}
       >
         <Alert
           onClose={() => setToast(null)}

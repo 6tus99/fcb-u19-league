@@ -4,8 +4,6 @@ import Badge from '@mui/material/Badge';
 import IconButton from '@mui/material/IconButton';
 import Menu from '@mui/material/Menu';
 import MenuItem from '@mui/material/MenuItem';
-import Paper from '@mui/material/Paper';
-import Slide from '@mui/material/Slide';
 import Typography from '@mui/material/Typography';
 import Divider from '@mui/material/Divider';
 import NotificationsNoneRounded from '@mui/icons-material/NotificationsNoneRounded';
@@ -21,40 +19,7 @@ export default function NotificationBell() {
   const [anchorEl, setAnchorEl] = useState(null);
   const [items, setItems] = useState([]);
   const [unread, setUnread] = useState(0);
-  const [peek, setPeek] = useState(null);
-  // Last peeked notification, kept during the slide-back-out animation:
-  // when `peek` flips to null the card is still mounted for a moment while
-  // it animates out, and its content must not re-render against null.
-  const [lastPeek, setLastPeek] = useState(null);
-  // Queue of notifications still to be played back, one by one. Items are
-  // stored oldest-first so a burst (goal → card → half-time) reads in order.
-  const [queue, setQueue] = useState([]);
-  const knownIdsRef = useRef(null);
-  const peekTimerRef = useRef(null);
   const bellRef = useRef(null);
-
-  const showPeek = useCallback((item) => {
-    setPeek(item);
-    setLastPeek(item);
-    if (peekTimerRef.current) clearTimeout(peekTimerRef.current);
-    peekTimerRef.current = setTimeout(() => setPeek(null), 6000);
-  }, []);
-
-  // Auto-advance: when the current card has finished (peek is null) and the
-  // queue still has items, wait a beat for the slide-out to finish, then pop
-  // the next one out. Repeats until the queue is drained. Pauses while the
-  // full list is open so the card never covers the menu.
-  useEffect(() => {
-    if (peek !== null) return undefined;
-    if (queue.length === 0) return undefined;
-    if (anchorEl) return undefined;
-    const t = setTimeout(() => {
-      const [next, ...rest] = queue;
-      setQueue(rest);
-      showPeek(next);
-    }, 650);
-    return () => clearTimeout(t);
-  }, [peek, queue, anchorEl, showPeek]);
 
   const load = useCallback(async () => {
     if (!profile?.id) return;
@@ -71,22 +36,7 @@ export default function NotificationBell() {
     // notifications (team, requests) stay as history after being read.
     setItems(data.filter((n) => !(n.read_at && String(n.link || '').startsWith('/messages/'))));
     setUnread(cnt.count || 0);
-    // First load just learns the existing ids (no pop-out). Anything NEW
-    // after that pops out from the bell, shows for 6 s, then slides back.
-    const fresh = data.filter((n) => !knownIdsRef.current || !knownIdsRef.current.has(n.id));
-    if (!knownIdsRef.current) {
-      knownIdsRef.current = new Set(data.map((n) => n.id));
-    } else if (fresh.length > 0) {
-      fresh.forEach((n) => knownIdsRef.current.add(n.id));
-      // `fresh` is newest-first (inherited from the query order); reverse so
-      // the playback runs in the order the events actually happened.
-      setQueue((q) => [...q, ...[...fresh].reverse()]);
-    }
   }, [profile?.id]);
-
-  useEffect(() => () => {
-    if (peekTimerRef.current) clearTimeout(peekTimerRef.current);
-  }, []);
 
   useEffect(() => {
     if (!profile?.id) return undefined;
@@ -123,23 +73,6 @@ export default function NotificationBell() {
   const openItem = (link) => {
     setAnchorEl(null);
     if (link) navigate(link);
-  };
-
-  // Tap the pop-out card: mark read + jump to it (or open the full list).
-  // Tapping means the user is taking over, so the remaining queued cards
-  // stop popping out — they're all visible in the bell list.
-  const peekOpen = async () => {
-    const item = peek;
-    setPeek(null);
-    setQueue([]);
-    if (peekTimerRef.current) clearTimeout(peekTimerRef.current);
-    if (item?.id && profile?.id) {
-      await supabase.from('notifications').update({ read_at: new Date().toISOString() }).eq('id', item.id);
-      setItems((prev) => prev.map((n) => (n.id === item.id ? { ...n, read_at: new Date().toISOString() } : n)));
-      setUnread((u) => Math.max(0, u - 1));
-    }
-    if (item?.link) navigate(item.link);
-    else setAnchorEl(bellRef.current);
   };
 
   return (
@@ -222,75 +155,6 @@ export default function NotificationBell() {
         )}
       </Menu>
 
-      {/* Pop-out peek: new notification slides out from the bell, shows for
-          6 seconds, then slides back in. Tap to open it. */}
-      <Slide in={Boolean(peek)} direction="down" mountOnEnter unmountOnExit>
-        <Box
-          onClick={peekOpen}
-          sx={{
-            position: 'fixed',
-            top: 72,
-            right: 12,
-            zIndex: 1400,
-            width: 340,
-            maxWidth: 'calc(100vw - 24px)',
-            cursor: 'pointer',
-          }}
-        >
-          <Paper
-            elevation={10}
-            sx={{
-              border: '1px solid',
-              borderColor: (t) => (t.palette.mode === 'dark' ? '#8fa3e8' : '#17276a'),
-              borderRadius: 3,
-              p: 1.5,
-              display: 'flex',
-              gap: 1.25,
-              alignItems: 'flex-start',
-              boxShadow: (t) => (t.palette.mode === 'dark' ? '0 10px 30px rgba(2,6,23,0.7)' : '0 10px 30px rgba(23,39,106,0.25)'),
-            }}
-          >
-            <Box
-              sx={{
-                width: 38,
-                height: 38,
-                borderRadius: '50%',
-                bgcolor: 'primary.main',
-                color: 'background.paper',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                flexShrink: 0,
-              }}
-            >
-              <NotificationsNoneRounded fontSize="small" />
-            </Box>
-            <Box sx={{ flex: 1, minWidth: 0 }}>
-              <Typography sx={{ fontWeight: 800, fontSize: 14 }} noWrap>
-                {lastPeek?.title}
-              </Typography>
-              {lastPeek?.body && (
-                <Typography
-                  variant="body2"
-                  color="text.secondary"
-                  sx={{
-                    mt: 0.25,
-                    display: '-webkit-box',
-                    WebkitLineClamp: 2,
-                    WebkitBoxOrient: 'vertical',
-                    overflow: 'hidden',
-                  }}
-                >
-                  {lastPeek.body}
-                </Typography>
-              )}
-              <Typography variant="caption" color="primary.main" sx={{ fontWeight: 700, mt: 0.5, display: 'block' }}>
-                Tap to open
-              </Typography>
-            </Box>
-          </Paper>
-        </Box>
-      </Slide>
     </>
   );
 }
