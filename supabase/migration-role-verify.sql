@@ -19,6 +19,7 @@ declare
   v_row record;
 begin
   select pending_role_changes.id,
+         pending_role_changes.profile_id,
          pending_role_changes.new_role,
          pending_role_changes.code_hash,
          pending_role_changes.expires_at

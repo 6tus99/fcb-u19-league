@@ -1,62 +1,32 @@
-import React, { useState } from 'react';
+import React from 'react';
 import Box from '@mui/material/Box';
 import IconButton from '@mui/material/IconButton';
-import Menu from '@mui/material/Menu';
-import MenuItem from '@mui/material/MenuItem';
-import Typography from '@mui/material/Typography';
 import LightModeRounded from '@mui/icons-material/LightModeRounded';
 import DarkModeRounded from '@mui/icons-material/DarkModeRounded';
 import { useThemeMode } from '../context/ThemeContext';
 
-const OPTIONS = [
-  { id: 'light', label: 'Light', icon: <LightModeRounded /> },
-  { id: 'dark', label: 'Dark', icon: <DarkModeRounded /> },
-];
-
+// Instant toggle: one tap flips light/dark immediately (no menu),
+// same behaviour as the theme button in the main app header.
 export default function ThemeToggleFloat() {
   const { mode, setChoice } = useThemeMode();
-  const [anchorEl, setAnchorEl] = useState(null);
-  const active = OPTIONS.find((o) => o.id === mode) || OPTIONS[0];
+  const isDark = mode === 'dark';
 
   return (
-    <>
-      <Box sx={{ position: 'fixed', top: 12, right: 12, zIndex: 1200 }}>
-        <IconButton
-          onClick={(e) => setAnchorEl(e.currentTarget)}
-          aria-label="Theme settings"
-          title={`Theme: ${active.label}`}
-          sx={{
-            bgcolor: 'background.paper',
-            border: '1px solid',
-            borderColor: 'cardBorder',
-            color: 'text.secondary',
-            '&:hover': { bgcolor: 'tint' },
-          }}
-        >
-          {active.icon}
-        </IconButton>
-      </Box>
-      <Menu
-        open={Boolean(anchorEl)}
-        anchorEl={anchorEl}
-        onClose={() => setAnchorEl(null)}
-        slotProps={{ paper: { sx: { borderRadius: 2.5, border: '1px solid', borderColor: 'cardBorder' } } }}
+    <Box sx={{ position: 'fixed', top: 12, right: 12, zIndex: 1200 }}>
+      <IconButton
+        onClick={() => setChoice(isDark ? 'light' : 'dark')}
+        aria-label={isDark ? 'Switch to light theme' : 'Switch to dark theme'}
+        title={isDark ? 'Light mode' : 'Dark mode'}
+        sx={{
+          bgcolor: 'background.paper',
+          border: '1px solid',
+          borderColor: 'cardBorder',
+          color: 'text.secondary',
+          '&:hover': { bgcolor: 'tint' },
+        }}
       >
-        {OPTIONS.map((o) => (
-          <MenuItem
-            key={o.id}
-            selected={o.id === mode}
-            onClick={() => {
-              setChoice(o.id);
-              setAnchorEl(null);
-            }}
-            sx={{ gap: 1.5, minWidth: 170 }}
-          >
-            {o.icon}
-            <Typography sx={{ fontWeight: o.id === mode ? 800 : 600 }}>{o.label}</Typography>
-          </MenuItem>
-        ))}
-      </Menu>
-    </>
+        {isDark ? <LightModeRounded /> : <DarkModeRounded />}
+      </IconButton>
+    </Box>
   );
 }
