@@ -30,16 +30,18 @@ export default function MatchCard({ match, teams }) {
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1, gap: 1 }}>
           <Typography variant="caption" color="text.secondary" sx={{ minWidth: 0 }}>
             Week {match.week}
-            {match.status === 'scheduled' ? ` • ${formatDate(match.scheduled_at, false)}` : ''}
+            {match.status === 'scheduled' && match.scheduled_at
+              ? ` • ${formatDate(match.scheduled_at, false)} • ${timeOnly(match.scheduled_at)}`
+              : ''}
           </Typography>
           <StatusChip status={match.status} />
         </Box>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, flex: 1, justifyContent: 'flex-end', minWidth: 0 }}>
-            <Typography sx={{ fontWeight: 700, textAlign: 'right' }} noWrap>
+        <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, alignItems: { xs: 'stretch', sm: 'center' }, gap: { xs: 0.75, sm: 1 } }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, flex: 1, justifyContent: { xs: 'flex-start', sm: 'flex-end' }, minWidth: 0 }}>
+            <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: home ? home.primary_color : 'grey', flexShrink: 0 }} />
+            <Typography sx={{ fontWeight: 700, fontSize: { xs: 15, sm: 16 } }} noWrap>
               {home ? home.name : 'TBD'}
             </Typography>
-            <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: home ? home.primary_color : 'grey', flexShrink: 0 }} />
           </Box>
           <Box
             sx={{
@@ -51,6 +53,7 @@ export default function MatchCard({ match, teams }) {
               textAlign: 'center',
               whiteSpace: 'nowrap',
               flexShrink: 0,
+              alignSelf: { xs: 'center', sm: 'auto' },
             }}
           >
             <Typography sx={{ fontWeight: 800, fontSize: { xs: 14, sm: 16 }, color: isLive ? 'primary.main' : 'inherit' }}>
@@ -59,7 +62,7 @@ export default function MatchCard({ match, teams }) {
           </Box>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, flex: 1, minWidth: 0 }}>
             <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: away ? away.primary_color : 'grey', flexShrink: 0 }} />
-            <Typography sx={{ fontWeight: 700 }} noWrap>
+            <Typography sx={{ fontWeight: 700, fontSize: { xs: 15, sm: 16 } }} noWrap>
               {away ? away.name : 'TBD'}
             </Typography>
           </Box>

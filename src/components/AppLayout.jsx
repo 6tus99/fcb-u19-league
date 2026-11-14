@@ -644,10 +644,10 @@ export default function AppLayout() {
                 component={RouterLink}
                 to={item.to}
                 sx={{
-                  px: 1.5,
+                  px: { xs: 1, sm: 1.5 },
                   py: 0.5,
                   borderRadius: 2,
-                  fontSize: 14,
+                  fontSize: { xs: 12.5, sm: 14 },
                   fontWeight: active ? 800 : 600,
                   color: 'primary.main',
                   bgcolor: active
