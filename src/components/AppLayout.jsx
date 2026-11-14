@@ -157,28 +157,46 @@ export default function AppLayout() {
 
   // A role upgrade granted by an admin waits here until the user verifies the
   // 6-digit code sent to their phone (multi-authentication step).
-  useEffect(() => {
+  const loadPendingChange = useCallback(async () => {
     if (!profile?.id) {
       setPendingChange(null);
-      return undefined;
+      return;
     }
-    let active = true;
-    supabase
+    const { data } = await supabase
       .from('pending_role_changes')
       .select('id, new_role, phone, expires_at')
       .eq('profile_id', profile.id)
       .eq('status', 'pending')
       .order('created_at', { ascending: false })
-      .limit(1)
-      .then(({ data }) => {
-        if (!active) return;
-        const row = data?.[0];
-        setPendingChange(row && new Date(row.expires_at) > new Date() ? row : null);
-      });
-    return () => {
-      active = false;
-    };
+      .limit(1);
+    const row = data?.[0];
+    setPendingChange(row && new Date(row.expires_at) > new Date() ? row : null);
   }, [profile?.id]);
+
+  useEffect(() => {
+    loadPendingChange();
+    if (!profile?.id) return undefined;
+    // Live: the verify banner appears the moment an admin grants the role —
+    // no page refresh needed (same realtime pattern as chat/notifications).
+    const channel = supabase
+      .channel(`pending-role-${profile.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'pending_role_changes',
+          filter: `profile_id=eq.${profile.id}`,
+        },
+        () => loadPendingChange()
+      )
+      .subscribe();
+    const poll = setInterval(loadPendingChange, 30000); // fallback
+    return () => {
+      supabase.removeChannel(channel);
+      clearInterval(poll);
+    };
+  }, [profile?.id, loadPendingChange]);
 
   // Live toasts: when a notification arrives while the app is open
   // (match started, goal, foul, substitution, halves, added time,

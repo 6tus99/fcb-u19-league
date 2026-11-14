@@ -18,12 +18,15 @@ as $$
 declare
   v_row record;
 begin
-  select id, new_role, code_hash, expires_at
+  select pending_role_changes.id,
+         pending_role_changes.new_role,
+         pending_role_changes.code_hash,
+         pending_role_changes.expires_at
   into v_row
   from public.pending_role_changes
-  where profile_id = auth.uid()
-    and status = 'pending'
-  order by created_at desc
+  where pending_role_changes.profile_id = auth.uid()
+    and pending_role_changes.status = 'pending'
+  order by pending_role_changes.created_at desc
   limit 1;
 
   if v_row is null then
@@ -31,7 +34,8 @@ begin
   end if;
 
   if v_row.expires_at < now() then
-    update public.pending_role_changes set status = 'cancelled' where id = v_row.id;
+    update public.pending_role_changes set status = 'cancelled'
+     where pending_role_changes.id = v_row.id;
     raise exception 'code expired - ask the admin to send a new one';
   end if;
 
@@ -42,7 +46,7 @@ begin
   update public.profiles set role = v_row.new_role where id = v_row.profile_id;
   update public.pending_role_changes
     set status = 'verified', verified_at = now()
-  where id = v_row.id;
+  where pending_role_changes.id = v_row.id;
 
   return v_row.new_role;
 end;
