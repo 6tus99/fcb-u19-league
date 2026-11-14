@@ -154,6 +154,42 @@ export default function LiveMatchControl() {
     };
   }, [match, loadMatch]);
 
+  // Match clock: 1st half counts 0:00 -> 40:00 and AUTO-STOPS; the 2nd
+  // half restarts from 0:00 when "2nd half begins" is recorded, and once
+  // it passes 40:00 it keeps counting added time (40+0:01, 40+0:02…)
+  // automatically. Halves are FIXED at 40 minutes — not editable anywhere.
+  // Computed before the early returns so the minute field can auto-fill.
+  let clock = null;
+  let autoMinute = null;
+  if (match && match.status === 'live' && match.live_started_at) {
+    const HALF = HALF_MINUTES * 60 * 1000;
+    const liveStart = new Date(match.live_started_at).getTime();
+    const shEvent = events.find((e) => e.event_type === 'second_half');
+    if (!shEvent) {
+      const elapsed = now - liveStart;
+      const over = elapsed >= HALF;
+      clock = {
+        text: fmtClock(Math.min(elapsed, HALF)),
+        label: over ? `Half time — clock auto-stopped at ${HALF_MINUTES}:00` : '1st half',
+        running: !over,
+      };
+      autoMinute = Math.min(HALF_MINUTES, Math.floor(elapsed / 60000));
+    } else {
+      const elapsed = now - new Date(shEvent.created_at).getTime();
+      if (elapsed <= HALF) {
+        clock = { text: fmtClock(elapsed), label: '2nd half', running: true };
+      } else {
+        clock = { text: `40+${fmtClock(elapsed - HALF)}`, label: 'Added time — counting automatically', running: true };
+      }
+      autoMinute = HALF_MINUTES + Math.floor(elapsed / 60000);
+    }
+  }
+
+  // The event minute auto-fills from the running clock — no typing needed.
+  useEffect(() => {
+    if (autoMinute != null) setMinute(String(autoMinute));
+  }, [autoMinute]);
+
   if (!loaded) return <LoadingSpinner message="Loading live control…" />;
 
   const teamName = (teamId) => teams.find((t) => t.id === teamId)?.name || 'TBD';
@@ -327,47 +363,6 @@ export default function LiveMatchControl() {
   const home = teams.find((t) => t.id === match.home_team_id);
   const away = teams.find((t) => t.id === match.away_team_id);
 
-  // Match clock: 1st half counts 0:00 -> 40:00 and AUTO-STOPS; the 2nd
-  // half restarts from 0:00 when "2nd half begins" is recorded, and once
-  // it passes 40:00 it keeps counting added time (40+0:01, 40+0:02…)
-  // automatically — no need to enter added time first.
-  let clock = null;
-  if (isLive && match.live_started_at) {
-    const HALF = HALF_MINUTES * 60 * 1000;
-    const liveStart = new Date(match.live_started_at).getTime();
-    const shEvent = events.find((e) => e.event_type === 'second_half');
-    if (!shEvent) {
-      const elapsed = now - liveStart;
-      const over = elapsed >= HALF;
-      clock = {
-        text: fmtClock(Math.min(elapsed, HALF)),
-        label: over ? `Half time — clock auto-stopped at ${HALF_MINUTES}:00` : '1st half',
-        running: !over,
-      };
-    } else {
-      const elapsed = now - new Date(shEvent.created_at).getTime();
-      if (elapsed <= HALF) {
-        clock = { text: fmtClock(elapsed), label: '2nd half', running: true };
-      } else {
-        clock = { text: `40+${fmtClock(elapsed - HALF)}`, label: 'Added time — counting automatically', running: true };
-      }
-    }
-  }
-
-  // "End match" (big red) only appears when the match is actually over:
-  // once 2nd-half added time has started — or as a safety valve after
-  // 100+ minutes live. It is hidden while play is still on.
-  let canEnd = false;
-  if (isLive) {
-    if (!match.live_started_at) {
-      canEnd = true; // no clock data yet (SQL pending) — keep it available
-    } else if (clock && clock.label.startsWith('Added time')) {
-      canEnd = true;
-    } else if (now - new Date(match.live_started_at).getTime() > 100 * 60 * 1000) {
-      canEnd = true;
-    }
-  }
-
   return (
     <div>
       <PageHeader
@@ -394,17 +389,17 @@ export default function LiveMatchControl() {
           <StatusChip status={match.status} />
         </Box>
 
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-          <Box sx={{ flex: 1, textAlign: 'right' }}>
-            <Box sx={{ width: 14, height: 14, borderRadius: '50%', bgcolor: home ? home.primary_color : 'grey', ml: 'auto', mb: 1 }} />
-            <Typography variant="h5">{home ? home.name : 'TBD'}</Typography>
+        <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, alignItems: 'center', gap: { xs: 0.5, sm: 2 } }}>
+          <Box sx={{ flex: 1, textAlign: { xs: 'center', sm: 'right' } }}>
+            <Box sx={{ width: 14, height: 14, borderRadius: '50%', bgcolor: home ? home.primary_color : 'grey', ml: 'auto', mr: { xs: 'auto', sm: 0 }, mb: 0.5 }} />
+            <Typography variant="h5" sx={{ fontSize: { xs: 20, sm: 24 } }}>{home ? home.name : 'TBD'}</Typography>
           </Box>
-          <Typography variant="h1" sx={{ fontWeight: 900, color: match.status === 'live' ? 'primary.main' : 'inherit' }}>
+          <Typography variant="h1" sx={{ fontWeight: 900, fontSize: { xs: 44, sm: 72 }, color: match.status === 'live' ? 'primary.main' : 'inherit' }}>
             {match.home_score} : {match.away_score}
           </Typography>
-          <Box sx={{ flex: 1 }}>
-            <Box sx={{ width: 14, height: 14, borderRadius: '50%', bgcolor: away ? away.primary_color : 'grey', mb: 1 }} />
-            <Typography variant="h5">{away ? away.name : 'TBD'}</Typography>
+          <Box sx={{ flex: 1, textAlign: { xs: 'center', sm: 'left' } }}>
+            <Box sx={{ width: 14, height: 14, borderRadius: '50%', bgcolor: away ? away.primary_color : 'grey', ml: { xs: 'auto', sm: 0 }, mr: { xs: 'auto', sm: 'auto' }, mb: 0.5 }} />
+            <Typography variant="h5" sx={{ fontSize: { xs: 20, sm: 24 } }}>{away ? away.name : 'TBD'}</Typography>
           </Box>
         </Box>
 
@@ -439,8 +434,8 @@ export default function LiveMatchControl() {
               Start match
             </Button>
           )}
-          {isLive && canEnd && (
-            <Button variant="contained" color="secondary" size="large" startIcon={<StopRounded />} onClick={() => setMatchStatus('finished')} sx={{ fontWeight: 800 }}>
+          {isLive && (
+            <Button variant="contained" color="error" size="large" startIcon={<StopRounded />} onClick={() => setMatchStatus('finished')} sx={{ fontWeight: 800 }}>
               End match
             </Button>
           )}
@@ -452,15 +447,14 @@ export default function LiveMatchControl() {
             <Divider sx={{ my: 2 }} />
             <Box sx={{ display: 'flex', justifyContent: 'center', mb: 1.5 }}>
               <TextField
-                label="Minute"
+                label="Minute (auto)"
                 type="number"
                 size="medium"
                 variant="filled"
                 value={minute}
-                onChange={(e) => setMinute(e.target.value)}
-                inputProps={{ min: 0, max: 120, style: { textAlign: 'center' } }}
+                inputProps={{ min: 0, max: 120, readOnly: true, style: { textAlign: 'center' } }}
                 sx={{
-                  width: 110,
+                  width: 130,
                   '& .MuiFilledInput-root': { borderRadius: 2, fontWeight: 700, fontSize: 16 },
                   '& .MuiInputLabel-root': { fontWeight: 600 },
                 }}
