@@ -17,7 +17,7 @@ export function dashboardForRole(role) {
     case 'admin':
       return '/admin';
     case 'commissioner':
-      return '/commissioner';
+      return '/commissioner/match-center';
     case 'manager':
       return '/manager';
     case 'player':

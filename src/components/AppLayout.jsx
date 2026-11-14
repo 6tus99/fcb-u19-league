@@ -55,7 +55,6 @@ const NAV = {
     { to: '/messages', label: 'Messages' },
   ],
   commissioner: [
-    { to: '/commissioner', label: 'Dashboard' },
     { to: '/commissioner/match-center', label: 'Match Center' },
     { to: '/standings', label: 'Standings' },
     { to: '/social', label: 'Social' },
