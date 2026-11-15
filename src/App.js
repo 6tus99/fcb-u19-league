@@ -1,6 +1,7 @@
 import React from 'react';
 import { Routes, Route, Navigate, useParams } from 'react-router-dom';
 import { isConfigured } from './lib/supabase';
+import { DashboardAccessProvider } from './context/DashboardAccessContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import SetupScreen from './components/SetupScreen';
 import LoadingSpinner from './components/LoadingSpinner';
@@ -64,6 +65,7 @@ export default function App() {
 
   return (
     <AuthProvider>
+      <DashboardAccessProvider>
       <InstallPrompt />
       <Routes>
         <Route path="/login" element={<Login />} />
@@ -256,6 +258,7 @@ export default function App() {
 
         <Route path="*" element={<NotFound />} />
       </Routes>
+      </DashboardAccessProvider>
     </AuthProvider>
   );
 }

@@ -2,6 +2,7 @@ import React from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import LoadingSpinner from './LoadingSpinner';
+import DashboardGate from './DashboardGate';
 
 // Every user — whatever their role — lands on the fan view (the league home)
 // when they log in. It is the default screen for everyone.
@@ -22,6 +23,8 @@ export function dashboardForRole(role) {
       return '/manager';
     case 'player':
       return '/player';
+    case 'editor':
+      return '/editor/news';
     default:
       return '/fan';
   }
@@ -33,5 +36,7 @@ export default function ProtectedRoute({ roles, children }) {
   if (!user) return <Navigate to="/login" replace />;
   if (!profile) return <LoadingSpinner message="Loading your profile…" />;
   if (roles && !roles.includes(profile.role)) return <Navigate to={homeForRole(profile.role)} replace />;
-  return children;
+  // Role authorisation first, then password verification, before mounting
+  // any dashboard page. The outer signed-in/public layout remains PIN-free.
+  return roles ? <DashboardGate>{children}</DashboardGate> : children;
 }

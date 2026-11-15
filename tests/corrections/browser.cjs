@@ -24,9 +24,9 @@ const fs=require('fs');
    }else if(url.pathname.includes('/rest/v1/')){
     const table=url.pathname.split('/rest/v1/')[1];
     if(['profiles','teams','matches','match_events','match_correction_history'].includes(table)){
-     if(req.method()==='PATCH' && table==='matches'){
+     if(req.method()==='PATCH' && (table==='matches' || (table==='profiles' && req.postDataJSON().dashboard_pin_hash))){
       const a=req.postDataJSON(),id=url.searchParams.get('id').slice(3),cols=Object.keys(a);
-      await db.query(`update matches set ${cols.map((c,i)=>`"${c}"=$${i+1}`).join(',')} where id=$${cols.length+1}`,[...Object.values(a),id]);
+      await db.query(`update "${table}" set ${cols.map((c,i)=>`"${c}"=$${i+1}`).join(',')} where id=$${cols.length+1}`,[...Object.values(a),id]);
      }
      result=(await db.query(`select * from "${table}"`)).rows;
      for(const[k,v]of url.searchParams){
@@ -46,9 +46,17 @@ const fs=require('fs');
  });
  const page=await ctx.newPage();page.on('pageerror',e=>errors.push(e.message));
  const wait=async(fn)=>{for(let i=0;i<60;i++){if(await fn())return;await page.waitForTimeout(100);}throw new Error('wait failed: '+fn)};
+ const enterDashboard = async () => {
+  await page.getByLabel('6-digit password').waitFor();
+  await page.getByLabel('6-digit password').fill('123456');
+  const create = await page.getByLabel('Repeat password').count();
+  if (create) await page.getByLabel('Repeat password').fill('123456');
+  await page.getByRole('dialog').getByRole('button',{name:create ? 'Save & open' : 'Unlock',exact:true}).click();
+  await page.getByRole('dialog').waitFor({state:'hidden'});
+ };
  const score=async(h,a)=>wait(async()=>await page.getByText(`${h} : ${a}`,{exact:true}).count()>0);
  try{
- await page.goto(`${process.env.TEST_BASE_URL || 'http://localhost:8765'}/commissioner/match-center/live/${mid}`);
+ await page.goto(`${process.env.TEST_BASE_URL || 'http://localhost:8765'}/commissioner/match-center/live/${mid}`);await enterDashboard();
  await page.getByRole('button',{name:'End match',exact:true}).waitFor();
  await page.getByRole('button',{name:'⚽ Goal',exact:true}).first().click();
  await page.getByRole('button',{name:'John',exact:true}).click();await score(1,0);console.log('PASS phone: record goal with live automatic minute');
@@ -73,11 +81,11 @@ const fs=require('fs');
  assert.equal(await page.getByRole('button',{name:'Edit',exact:true}).count(),0);assert.equal(await page.getByRole('button',{name:'Cancel event',exact:true}).count(),0);console.log('PASS phone: finalisation hides editing and locks report');
  await page.getByRole('button',{name:/Show correction history/}).click();
  await page.screenshot({path:__dirname+'/artifacts/finalised-record-phone.png',fullPage:true});
- await page.goto(`${process.env.TEST_BASE_URL || 'http://localhost:8765'}/commissioner/match-center/matches`);
+ await page.goto(`${process.env.TEST_BASE_URL || 'http://localhost:8765'}/commissioner/match-center/matches`);await enterDashboard();
  await page.getByRole('tab',{name:'Completed',exact:true}).click();await page.getByText('Finalised',{exact:true}).filter({visible:true}).waitFor();
  assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth-window.innerWidth),0);
  await page.waitForTimeout(300);await page.screenshot({path:__dirname+'/artifacts/completed-matches-phone.png',fullPage:true});console.log('PASS phone: completed-match history, year selector and summary render with no page overflow');
- actor=admin;await page.evaluate(id=>{const s=JSON.parse(localStorage.getItem('sb-placeholder-auth-token'));s.user.id=id;localStorage.setItem('sb-placeholder-auth-token',JSON.stringify(s));},admin);await page.goto(`${process.env.TEST_BASE_URL || 'http://localhost:8765'}/commissioner/match-center/live/${mid}`);
+ actor=admin;await page.evaluate(id=>{const s=JSON.parse(localStorage.getItem('sb-placeholder-auth-token'));s.user.id=id;localStorage.setItem('sb-placeholder-auth-token',JSON.stringify(s));},admin);await page.goto(`${process.env.TEST_BASE_URL || 'http://localhost:8765'}/commissioner/match-center/live/${mid}`);await enterDashboard();
  await page.getByRole('button',{name:'Reopen report for corrections',exact:true}).click();
  await page.getByLabel('Reason for reopening').fill('Review disputed match event');await page.getByRole('dialog').getByRole('button',{name:'Confirm',exact:true}).click();
  await page.getByRole('button',{name:'Edit',exact:true}).waitFor();console.log('PASS admin: reopening re-enables correction');
@@ -90,11 +98,11 @@ const fs=require('fs');
  console.log('PASS desktop: cancellation dialog and layout');
  actor=fan;await page.evaluate(id=>{const s=JSON.parse(localStorage.getItem('sb-placeholder-auth-token'));s.user.id=id;localStorage.setItem('sb-placeholder-auth-token',JSON.stringify(s));},fan);await page.goto(`${process.env.TEST_BASE_URL || 'http://localhost:8765'}/matches/${mid}`);await page.getByText('Cancelled — Goal disallowed for offside',{exact:true}).waitFor();console.log('PASS fan: cancelled event is clearly marked');
  actor=p1;await page.evaluate(id=>{const s=JSON.parse(localStorage.getItem('sb-placeholder-auth-token'));s.user.id=id;localStorage.setItem('sb-placeholder-auth-token',JSON.stringify(s));},p1);
- await page.goto(`${process.env.TEST_BASE_URL || 'http://localhost:8765'}/player`);
+ await page.goto(`${process.env.TEST_BASE_URL || 'http://localhost:8765'}/player`);await enterDashboard();
  await page.getByText('My goals',{exact:true}).waitFor();
  assert.match(await page.getByText('My goals',{exact:true}).locator('..').innerText(),/^1/);
  actor=p2;await page.evaluate(id=>{const s=JSON.parse(localStorage.getItem('sb-placeholder-auth-token'));s.user.id=id;localStorage.setItem('sb-placeholder-auth-token',JSON.stringify(s));},p2);
- await page.goto(`${process.env.TEST_BASE_URL || 'http://localhost:8765'}/player`);
+ await page.goto(`${process.env.TEST_BASE_URL || 'http://localhost:8765'}/player`);await enterDashboard();
  await page.getByText('My goals',{exact:true}).waitFor();
  assert.match(await page.getByText('My goals',{exact:true}).locator('..').innerText(),/^0/);
  console.log('PASS player dashboards: active goal counts, cancelled goal excluded');

@@ -49,3 +49,13 @@ node tests/corrections/notification-groups-browser.cjs
 ```
 
 Uses intercepted REST and Phoenix WebSocket events with fictional data (no production writes). Tests one expandable group per fixture, independent unrelated notifications, read isolation, retained history beyond 200 alerts, live inserts updating the same group, phone/desktop layouts, and navigation to the live score/timeline. Uses the test build/server described above. Optional TEST_SUPABASE_URL and TEST_BASE_URL let the same test verify a deployed frontend while all backend traffic remains intercepted. Unit grouping tests live in `src/utils/notificationGroups.test.js` and run with the app's CRA test command.
+
+## Dashboard password gate
+
+```sh
+node tests/corrections/dashboard-gate-browser.cjs
+```
+
+Intercepted-backend Playwright tests cover an actual assignment-notification click, wrong/correct PINs, preserving the exact match URL, no protected page mounting/data fetch while locked, role-internal navigation, leaving and returning via browser history, refresh, legacy links, page-cache restore handling, network failures, resets during verification, first-time password creation/save failures, all five role dashboards via direct links/notifications/header button, and PIN-free fan match viewing. Existing regression fixtures now include password setup and unlock steps.
+
+The PIN gate is an application-navigation lock, using the existing dashboard password hash. It does not replace Supabase role/RLS authorisation. Verification grants live only in React memory for the current restricted-area visit; no unlock flags are persisted in browser storage.

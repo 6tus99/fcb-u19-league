@@ -7,7 +7,7 @@ module.exports = async()=>{
  create role authenticated; create role anon; create schema auth;
  create function auth.uid() returns uuid language sql stable as $$select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid$$;
  grant usage on schema auth to authenticated,anon; grant execute on function auth.uid() to authenticated,anon;
- create table profiles(id uuid primary key,full_name text,role text not null,team_id uuid);
+ create table profiles(id uuid primary key,full_name text,role text not null,team_id uuid,dashboard_pin_hash text);
  create table teams(id uuid primary key,name text);
  create table matches(id uuid primary key,home_team_id uuid,away_team_id uuid,commissioner_id uuid,referee_id uuid,week int,scheduled_at timestamptz,venue text,status text,home_score int default 0,away_score int default 0,live_started_at timestamptz);
  create table match_events(id uuid primary key default gen_random_uuid(),match_id uuid references matches(id) on delete cascade,event_type text,team_id uuid,player_id uuid,minute int,description text,created_at timestamptz default now());
