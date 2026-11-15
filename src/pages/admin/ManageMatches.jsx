@@ -4,6 +4,8 @@ import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import TextField from '@mui/material/TextField';
 import MenuItem from '@mui/material/MenuItem';
+import Tabs from '@mui/material/Tabs';
+import Tab from '@mui/material/Tab';
 import Select from '@mui/material/Select';
 import Alert from '@mui/material/Alert';
 import Table from '@mui/material/Table';
@@ -42,6 +44,8 @@ export default function ManageMatches() {
   const [officials, setOfficials] = useState([]);
   const [commissioners, setCommissioners] = useState([]);
   const [loaded, setLoaded] = useState(false);
+  const [workFilter, setWorkFilter] = useState('all');
+  const [seasonYear, setSeasonYear] = useState('all');
 
   const load = useCallback(async () => {
     const [t, m, o, c] = await Promise.all([
@@ -274,8 +278,11 @@ export default function ManageMatches() {
   // Assigned matches sort to the top: live first, then by date.
   const myId = profile?.id;
   const statusRank = (st) => (st === 'live' ? 0 : st === 'scheduled' ? 1 : 2);
-  const myMatches = matches
-    .filter((m) => m.commissioner_id === myId)
+  const assigned = matches.filter((m) => m.commissioner_id === myId);
+  const years = [...new Set(assigned.map((m) => String(new Date(m.scheduled_at).getFullYear())))].sort().reverse();
+  const seasonMatches = assigned.filter((m) => seasonYear === 'all' || String(new Date(m.scheduled_at).getFullYear()) === seasonYear);
+  const myMatches = seasonMatches
+    .filter((m) => workFilter === 'all' || m.status === workFilter)
     .sort((a, b) => statusRank(a.status) - statusRank(b.status) || new Date(a.scheduled_at) - new Date(b.scheduled_at));
   const otherUpcoming = matches
     .filter((m) => m.commissioner_id !== myId && m.status === 'scheduled')
@@ -482,6 +489,7 @@ export default function ManageMatches() {
                       )}
                     </TableCell>
                     <TableCell align="right">
+                      {m.status === 'finished' && <Button size="small" onClick={() => navigate(`/commissioner/match-center/live/${m.id}`)}>Report / corrections</Button>}
                       <Button size="small" onClick={() => startEdit(m)}>
                         Edit
                       </Button>
@@ -497,13 +505,41 @@ export default function ManageMatches() {
           )
         ) : (
           <>
+            <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', mb: 2 }}>
+              {[
+                ['Assigned', seasonMatches.length],
+                ['Completed', seasonMatches.filter((m) => m.status === 'finished').length],
+                ['Upcoming', seasonMatches.filter((m) => m.status === 'scheduled').length],
+                ['Live', seasonMatches.filter((m) => m.status === 'live').length],
+              ].map(([label, count]) => <Box key={label} sx={{ flex: '1 1 100px', p: 1.5, border: '1px solid', borderColor: 'divider', borderRadius: 2 }}><Typography variant="h5">{count}</Typography><Typography variant="caption">{label}</Typography></Box>)}
+            </Box>
+            <TextField select label="Match year" size="small" value={seasonYear} onChange={(e) => setSeasonYear(e.target.value)} sx={{ minWidth: 160, mb: 1 }} helperText="Calendar-year filter for your match history">
+              <MenuItem value="all">All years</MenuItem>
+              {years.map((y) => <MenuItem key={y} value={y}>{y}</MenuItem>)}
+            </TextField>
+            <Tabs value={workFilter} onChange={(_, v) => setWorkFilter(v)} variant="fullWidth" sx={{ mb: 2, '& .MuiTab-root': { minWidth: 0, px: 0.5, fontSize: { xs: 11, sm: 14 } } }}>
+              <Tab value="all" label="All" /><Tab value="scheduled" label="Upcoming" /><Tab value="live" label="Live" /><Tab value="finished" label="Completed" />
+            </Tabs>
             <Typography variant="h6" sx={{ fontWeight: 800, mb: 1 }}>
               My assigned matches ({myMatches.length})
             </Typography>
             {myMatches.length === 0 ? (
-              <EmptyState message="The league admin hasn't assigned you to any matches yet." />
+              <EmptyState message="No assigned matches in this view. Try another tab or year." />
             ) : (
-              <TableContainer sx={{ overflowX: 'auto' }}>
+              <>
+              <Box sx={{ display: { xs: 'flex', sm: 'none' }, flexDirection: 'column', gap: 1.5 }}>
+                {myMatches.map((m) => <Box key={m.id} sx={{ p: 1.5, border: '1px solid', borderColor: 'divider', borderRadius: 2 }}>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', gap: 1, mb: 1 }}><Typography variant="caption">Week {m.week}</Typography><StatusChip status={m.status} /></Box>
+                  <Typography sx={{ fontWeight: 800 }}>{teamName(m.home_team_id)}</Typography>
+                  <Typography sx={{ fontWeight: 900, color: 'primary.main', my: 0.5 }}>{m.status === 'scheduled' ? 'vs' : `${m.home_score} – ${m.away_score}`}</Typography>
+                  <Typography sx={{ fontWeight: 800 }}>{teamName(m.away_team_id)}</Typography>
+                  <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>{formatDate(m.scheduled_at, true)}</Typography>
+                  <Typography variant="body2" color="text.secondary">{m.venue || 'Venue TBC'}</Typography>
+                  {m.status === 'finished' && <Typography variant="caption" display="block" sx={{ mt: 0.5 }}>{m.report_finalized_at ? 'Finalised' : 'Awaiting report'}</Typography>}
+                  <Button fullWidth variant="outlined" sx={{ mt: 1 }} endIcon={<ChevronRightRounded />} onClick={() => navigate(`/commissioner/match-center/live/${m.id}`)}>{m.status === 'finished' ? 'View match record' : m.status === 'live' ? 'Continue live match' : 'Open match'}</Button>
+                </Box>)}
+              </Box>
+              <TableContainer sx={{ display: { xs: 'none', sm: 'block' }, overflowX: 'auto' }}>
                 <Table size="small">
                   <TableHead>
                     <TableRow>
@@ -543,6 +579,7 @@ export default function ManageMatches() {
                         </TableCell>
                         <TableCell>
                           <StatusChip status={m.status} />
+                          {m.status === 'finished' && <Typography variant="caption" display="block">{m.report_finalized_at ? 'Finalised' : 'Awaiting report'}</Typography>}
                         </TableCell>
                         <TableCell align="right">
                           <Button size="small" endIcon={<ChevronRightRounded />}>
@@ -554,7 +591,9 @@ export default function ManageMatches() {
                   </TableBody>
                 </Table>
               </TableContainer>
+              </>
             )}
+            {(workFilter === 'all' || workFilter === 'scheduled') && <>
             <Typography variant="h6" sx={{ fontWeight: 800, mt: 4, mb: 1 }}>
               All upcoming matches ({otherUpcoming.length})
             </Typography>
@@ -592,6 +631,7 @@ export default function ManageMatches() {
                         </TableCell>
                         <TableCell>
                           <StatusChip status={m.status} />
+                          {m.status === 'finished' && <Typography variant="caption" display="block">{m.report_finalized_at ? 'Finalised' : 'Awaiting report'}</Typography>}
                         </TableCell>
                       </TableRow>
                     ))}
@@ -599,6 +639,7 @@ export default function ManageMatches() {
                 </Table>
               </TableContainer>
             )}
+            </>}
           </>
         )}
       </GlassCard>

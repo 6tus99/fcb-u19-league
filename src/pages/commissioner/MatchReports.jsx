@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { Link as RouterLink } from 'react-router-dom';
 import Box from '@mui/material/Box';
 import Paper from '@mui/material/Paper';
@@ -10,10 +10,14 @@ import ExpandLessRounded from '@mui/icons-material/ExpandLessRounded';
 import PageHeader from '../../components/PageHeader';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import EmptyState from '../../components/EmptyState';
+import { useAuth } from '../../context/AuthContext';
 import { formatDate } from '../../utils/standings';
 import supabase from '../../lib/supabase';
+import useAutoRefresh from '../../hooks/useAutoRefresh';
 
 export default function MatchReports() {
+  const { profile } = useAuth();
+  const [mineOnly, setMineOnly] = useState(true);
   const [matches, setMatches] = useState([]);
   const [teams, setTeams] = useState([]);
   const [eventsByMatch, setEventsByMatch] = useState({});
@@ -24,7 +28,7 @@ export default function MatchReports() {
   const byMinute = (list) =>
     [...list].sort((a, b) => (a.minute ?? 9999) - (b.minute ?? 9999));
 
-  useEffect(() => {
+  const load = useCallback(() => {
     Promise.all([
       supabase.from('matches').select('*').eq('status', 'finished').order('scheduled_at', { ascending: false }),
       supabase.from('teams').select('*'),
@@ -33,13 +37,15 @@ export default function MatchReports() {
       setMatches(m.data || []);
       setTeams(t.data || []);
       const grouped = {};
-      (ev.data || []).forEach((e) => {
+      (ev.data || []).filter((e) => !e.cancelled_at).forEach((e) => {
         (grouped[e.match_id] = grouped[e.match_id] || []).push(e);
       });
       setEventsByMatch(grouped);
       setLoaded(true);
     });
   }, []);
+  useEffect(() => { load(); }, [load]);
+  useAutoRefresh(load, 15000);
 
   if (!loaded) return <LoadingSpinner message="Loading reports…" />;
 
@@ -48,15 +54,16 @@ export default function MatchReports() {
 
   return (
     <div>
-      <PageHeader title="Match Reports" subtitle="Post-match summaries for every finished game" />
+      <PageHeader title="Match Reports" subtitle="Review completed matches and finalise your reports" />
 
-      {matches.length === 0 ? (
+      {profile?.role === 'commissioner' && <Button sx={{ mb: 2 }} onClick={() => setMineOnly(!mineOnly)}>{mineOnly ? 'Show all league reports' : 'Show only my reports'}</Button>}
+      {matches.filter((m) => profile?.role === 'admin' || !mineOnly || m.commissioner_id === profile?.id).length === 0 ? (
         <Paper sx={{ border: '1px solid', borderColor: 'cardBorder', borderRadius: 3, p: 3 }}>
           <EmptyState message="No finished matches yet." />
         </Paper>
       ) : (
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-          {matches.map((m) => {
+          {matches.filter((m) => profile?.role === 'admin' || !mineOnly || m.commissioner_id === profile?.id).map((m) => {
             const evs = eventsByMatch[m.id] || [];
             const goals = evs.filter((e) => e.event_type === 'goal');
             const yellows = evs.filter((e) => e.event_type === 'yellow_card').length;
@@ -80,6 +87,10 @@ export default function MatchReports() {
                   {winner ? ` • Winner: ${winner}` : ' • Draw'}
                 </Typography>
 
+                <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', flexWrap: 'wrap', mb: 1 }}>
+                  <Typography variant="caption">{m.report_finalized_at ? 'Report finalised' : 'Report awaiting review'}</Typography>
+                  {(profile?.role === 'admin' || m.commissioner_id === profile?.id) && <Button component={RouterLink} to={`/commissioner/match-center/live/${m.id}`} size="small" variant="outlined">{m.report_finalized_at ? 'View record / corrections' : 'Review & finalise'}</Button>}
+                </Box>
                 {goals.length > 0 && (
                   <Box sx={{ mb: 1 }}>
                     <Typography variant="caption" color="text.secondary">

@@ -51,7 +51,7 @@ export default function MatchDetail() {
 
   // Live updates while the match is in progress
   useEffect(() => {
-    if (!match || match.status !== 'live') return undefined;
+    if (!match) return undefined;
     const channel = supabase
       .channel(`match-detail-${match.id}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'matches', filter: `id=eq.${match.id}` }, () => loadMatch())
@@ -140,7 +140,7 @@ export default function MatchDetail() {
                       </Typography>
                       <Typography sx={{ fontSize: 20 }}>{EVENT_ICONS[ev.event_type] || '📝'}</Typography>
                       {team && <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: team.primary_color }} />}
-                      <Typography>{ev.description || ev.event_type.replace('_', ' ')}</Typography>
+                      <Box sx={{ minWidth: 0 }}><Typography sx={{ textDecoration: ev.cancelled_at ? 'line-through' : 'none', opacity: ev.cancelled_at ? 0.6 : 1 }}>{ev.description || ev.event_type.replace('_', ' ')}</Typography>{ev.cancelled_at && <Typography variant="caption" color="error">Cancelled — {ev.cancellation_reason}</Typography>}</Box>
                     </Box>
                   );
                 })}

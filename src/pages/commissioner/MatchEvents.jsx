@@ -37,7 +37,7 @@ export default function MatchEvents() {
       .select('*')
       .eq('match_id', selectedId)
       .order('minute', { ascending: true, nullsFirst: false })
-      .then(({ data }) => setEvents(data || []));
+      .then(({ data }) => setEvents((data || []).filter((e) => !e.cancelled_at)));
   }, [selectedId]);
 
   if (!loaded) return <LoadingSpinner message="Loading events…" />;

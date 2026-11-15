@@ -24,6 +24,7 @@ import StatusChip from '../../components/StatusChip';
 import { formatDate, readableTextOn } from '../../utils/standings';
 import { useAuth } from '../../context/AuthContext';
 import supabase from '../../lib/supabase';
+import useAutoRefresh from '../../hooks/useAutoRefresh';
 
 const TRANSFERS_SELECT = '*, team:teams!requests_team_id_fkey (id, name)';
 
@@ -71,12 +72,23 @@ export default function PlayerDashboard() {
       setTeams(all.data || []);
       setMatches(m.data || []);
       setSquad(sq.data || []);
-      setMyEvents(ev.data || []);
+      setMyEvents((ev.data || []).filter((e) => !e.cancelled_at));
       setLoaded(true);
     });
     loadTransfers();
     return undefined;
   }, [teamId, profile.id, loadTransfers]);
+
+  const refreshStats = useCallback(async () => {
+    if (!teamId) return;
+    const [ev, m] = await Promise.all([
+      supabase.from('match_events').select('*, match:matches(id, week)').eq('player_id', profile.id).order('minute'),
+      supabase.from('matches').select('*'),
+    ]);
+    if (!ev.error) setMyEvents((ev.data || []).filter((e) => !e.cancelled_at));
+    if (!m.error) setMatches(m.data || []);
+  }, [teamId, profile.id]);
+  useAutoRefresh(refreshStats, 15000);
 
   if (!loaded) return <LoadingSpinner message="Loading your club…" />;
 
@@ -169,7 +181,7 @@ export default function PlayerDashboard() {
           <StatTile
             icon={<EmojiEventsRounded sx={{ fontSize: 26 }} />}
             label="My goals"
-            value={myEvents.filter((e) => e.type === 'goal').length}
+            value={myEvents.filter((e) => e.event_type === 'goal').length}
             tone="green"
           />
         </Grid>
@@ -177,7 +189,7 @@ export default function PlayerDashboard() {
           <StatTile
             icon={<HandshakeRounded sx={{ fontSize: 26 }} />}
             label="My assists"
-            value={myEvents.filter((e) => e.type === 'assist').length}
+            value={myEvents.filter((e) => e.event_type === 'assist').length}
             tone="amber"
           />
         </Grid>
