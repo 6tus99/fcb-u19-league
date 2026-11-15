@@ -41,3 +41,11 @@ Run `supabase/migration-event-corrections.sql` in Supabase SQL Editor. It adds R
 If match notification helpers are already installed, corrections also send notifications. This migration does not install the broader match-start notification system; that remains in `migration-match-notifications.sql`. When setting up a fresh database, run the notifications migration before the corrections migration (the latter includes the full event-type constraint, including fouls).
 
 The match-history selector is explicitly calendar year, not a new cross-year league-season data model.
+
+## Grouped match notifications
+
+```sh
+node tests/corrections/notification-groups-browser.cjs
+```
+
+Uses intercepted REST and Phoenix WebSocket events with fictional data (no production writes). Tests one expandable group per fixture, independent unrelated notifications, read isolation, retained history beyond 200 alerts, live inserts updating the same group, phone/desktop layouts, and navigation to the live score/timeline. Uses the test build/server described above. Optional TEST_SUPABASE_URL and TEST_BASE_URL let the same test verify a deployed frontend while all backend traffic remains intercepted. Unit grouping tests live in `src/utils/notificationGroups.test.js` and run with the app's CRA test command.
