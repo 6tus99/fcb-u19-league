@@ -34,12 +34,15 @@ import HourglassTopRounded from '@mui/icons-material/HourglassTopRounded';
 import PersonRounded from '@mui/icons-material/PersonRounded';
 import ForumRounded from '@mui/icons-material/ForumRounded';
 import ChatRounded from '@mui/icons-material/ChatRounded';
+import LeaderboardRounded from '@mui/icons-material/LeaderboardRounded';
+import NewspaperRounded from '@mui/icons-material/NewspaperRounded';
 import useAutoHideShortcut from '../hooks/useAutoHideShortcut';
 import { navigationItemActive, communityShortcut } from '../utils/navigationSections';
 import AddPhotoAlternateRounded from '@mui/icons-material/AddPhotoAlternateRounded';
 import { useAuth } from '../context/AuthContext';
 import { sha256Hex } from '../utils/crypto';
 import { useThemeMode } from '../context/ThemeContext';
+import kumaStandStadium from '../assets/kuma-stand-stadium.jpeg';
 import { AQUATIC_LIGHT, AQUATIC_DARK, AQUATIC_BASE } from '../utils/backgrounds';
 import { isDashboardPath } from '../utils/dashboardAccess';
 import { homeForRole, dashboardForRole } from './ProtectedRoute';
@@ -93,6 +96,21 @@ const NAV = {
   ],
 };
 
+const NAV_ICONS = { '/fan': HomeRounded, '/social': ForumRounded, '/standings': LeaderboardRounded, '/news': NewspaperRounded };
+
+// Identical size, colour and idle animation for all floating shortcuts.
+const shortcutStyle = (visible, bottom) => ({
+  position: 'fixed', right: { xs: 14, sm: 24 }, bottom, zIndex: 1200,
+  width: 48, height: 48, minHeight: 48, bgcolor: 'primary.main', color: '#17276a',
+  opacity: visible ? 1 : 0, visibility: visible ? 'visible' : 'hidden',
+  pointerEvents: visible ? 'auto' : 'none',
+  transform: visible ? 'translateY(0)' : 'translateY(8px)',
+  transition: visible ? 'opacity 160ms ease, transform 160ms ease, visibility 0s'
+    : 'opacity 160ms ease, transform 160ms ease, visibility 0s linear 160ms',
+  '@media (prefers-reduced-motion: reduce)': { transition: 'none' },
+  '&:hover': { bgcolor: 'primary.main', filter: 'brightness(1.06)' },
+});
+
 const ROLE_LABEL = {
   admin: 'League Admin',
   commissioner: 'Commissioner',
@@ -137,7 +155,10 @@ export default function AppLayout() {
   const { mode, setChoice } = useThemeMode();
   const location = useLocation();
   const shortcut = communityShortcut(location.pathname);
-  const shortcutVisible = useAutoHideShortcut(Boolean(shortcut), location.key);
+  const isKumaStand = location.pathname === '/social';
+  const showBetting = !location.pathname.startsWith('/fan/betting') && !/^\/messages\/.+/.test(location.pathname);
+  const shortcutVisible = useAutoHideShortcut(Boolean(shortcut) || showBetting, location.key, 3000);
+  const navigationExpanded = useAutoHideShortcut(true, location.key, 5000);
   const navigate = useNavigate();
   const [anchorEl, setAnchorEl] = useState(null);
   const [leagueName, setLeagueName] = useState('FCB Under 19 Football League');
@@ -413,6 +434,7 @@ export default function AppLayout() {
 
   return (
     <Box
+      data-page-background={isKumaStand ? 'kuma-stand-stadium' : 'aquatic'}
       sx={{
         minHeight: '100vh',
         display: 'flex',
@@ -420,7 +442,18 @@ export default function AppLayout() {
         overflowX: 'clip',
         // Aquatic background: sunlit lagoon (light) / deep sea (dark)
         backgroundColor: mode === 'dark' ? AQUATIC_BASE.dark : AQUATIC_BASE.light,
-        backgroundImage: mode === 'dark' ? AQUATIC_DARK : AQUATIC_LIGHT,
+        backgroundImage: isKumaStand ? 'none' : mode === 'dark' ? AQUATIC_DARK : AQUATIC_LIGHT,
+        // A fixed layer works on phones without relying on iOS background-attachment.
+        // The supplied stadium photograph is exclusive to the kuma-stand feed.
+        position: 'relative',
+        isolation: 'isolate',
+        ...(isKumaStand && { '&::before': {
+          content: '""', position: 'fixed', inset: 0, zIndex: -1, pointerEvents: 'none',
+          backgroundImage: `${mode === 'dark'
+            ? 'linear-gradient(rgba(5,14,35,0.48), rgba(5,14,35,0.26) 50%, rgba(5,14,35,0.54))'
+            : 'linear-gradient(rgba(244,248,251,0.64), rgba(244,248,251,0.38) 50%, rgba(244,248,251,0.70))'}, url(${kumaStandStadium})`,
+          backgroundSize: 'cover', backgroundPosition: 'center', backgroundRepeat: 'no-repeat',
+        } }),
         backgroundAttachment: 'fixed',
       }}
     >
@@ -565,19 +598,26 @@ export default function AppLayout() {
             )}
           </IconButton>
         </Toolbar>
-        <Toolbar component="nav" aria-label="Main navigation" sx={{ gap: 0.5, px: 2, minHeight: 44, overflowX: view === 'fan' ? 'visible' : 'auto', color: 'inherit' }}>
+        <Toolbar component="nav" aria-label="Main navigation" data-navigation-mode={view === 'fan' && !navigationExpanded ? 'icons' : 'labels'} sx={{ gap: 0.5, px: 2, minHeight: 44, overflowX: view === 'fan' ? 'visible' : 'auto', color: 'inherit' }}>
           {items.map((item) => {
             const active = navigationItemActive(location.pathname, item.to);
+            const Icon = NAV_ICONS[item.to];
+            const compact = view === 'fan' && !navigationExpanded && Boolean(Icon);
+            const content = compact
+              ? <Icon data-navigation-icon={item.to} aria-hidden="true" sx={{ fontSize: 22 }} />
+              : <Box component="span" data-navigation-label sx={{ display: 'inline-flex', alignItems: 'center', minHeight: 22 }}>{item.label}</Box>;
             return (
               <ButtonBase
                 key={item.to}
                 component={RouterLink}
                 to={item.to}
+                title={item.label}
                 aria-current={active ? 'page' : undefined}
                 aria-label={item.to === '/social' && unreadMsgs > 0 ? `kuma-stand, ${unreadMsgs} unread messages` : item.label}
                 sx={{
                   flex: view === 'fan' ? 1 : '0 0 auto',
                   minWidth: 0,
+                  minHeight: 36,
                   px: { xs: 1, sm: 1.5 },
                   py: 0.5,
                   borderRadius: 2,
@@ -611,11 +651,9 @@ export default function AppLayout() {
                       },
                     }}
                   >
-                    {item.label}
+                    {content}
                   </Badge>
-                ) : (
-                  item.label
-                )}
+                ) : content}
               </ButtonBase>
             );
           })}
@@ -627,23 +665,12 @@ export default function AppLayout() {
       </Container>
 
       {/* News -> kuma-stand -> Messages. These contextual shortcuts use
-          icons only and reveal for four seconds on entry/activity. */}
+          icons only and reveal for three seconds on entry/activity. */}
       {shortcut && <Fab component={RouterLink} to={shortcut.to}
         aria-label={`Open ${shortcut.label}`} title={shortcut.label}
         aria-hidden={!shortcutVisible} tabIndex={shortcutVisible ? 0 : -1}
         data-community-shortcut="true"
-        sx={{ position: 'fixed', right: { xs: 14, sm: 24 }, bottom: { xs: 82, sm: 92 },
-          zIndex: 1200, height: 48, width: 48, minHeight: 48,
-          bgcolor: 'primary.main', color: '#17276a',
-          opacity: shortcutVisible ? 1 : 0,
-          visibility: shortcutVisible ? 'visible' : 'hidden',
-          pointerEvents: shortcutVisible ? 'auto' : 'none',
-          transform: shortcutVisible ? 'translateY(0)' : 'translateY(8px)',
-          transition: shortcutVisible
-            ? 'opacity 160ms ease, transform 160ms ease, visibility 0s'
-            : 'opacity 160ms ease, transform 160ms ease, visibility 0s linear 160ms',
-          '@media (prefers-reduced-motion: reduce)': { transition: 'none' },
-          '&:hover': { bgcolor: 'primary.main', filter: 'brightness(1.06)' } }}>
+        sx={shortcutStyle(shortcutVisible, { xs: 74, sm: 84 })}>
         <Badge badgeContent={unreadMsgs} max={99} sx={{ '& .MuiBadge-badge': {
           bgcolor: 'primary.main', color: '#17276a', fontWeight: 800, border: '1.5px solid #17276a',
         } }}>
@@ -654,31 +681,19 @@ export default function AppLayout() {
       {/* Floating betting button — follows you down the page.
           Hidden inside an open chat: on phones it sits exactly over the
           chat's Send button and eats the tap. */}
-      {!location.pathname.startsWith('/fan/betting') &&
-        !/^\/messages\/.+/.test(location.pathname) && (
+      {showBetting && (
         <Fab
           component={RouterLink}
           to="/fan/betting"
           aria-label="Betting board"
           title="Betting board (virtual points)"
-          sx={{
-            position: 'fixed',
-            right: { xs: 14, sm: 24 },
-            bottom: { xs: 14, sm: 24 },
-            zIndex: 1200,
-            width: 56,
-            height: 56,
-            bgcolor: mode === 'dark' ? '#a3d15e' : '#76a52e',
-            boxShadow:
-              mode === 'dark'
-                ? '0 8px 26px rgba(163,209,94,0.5)'
-                : '0 8px 24px rgba(118,165,46,0.45)',
-            '&:hover': { filter: 'brightness(1.06)' },
-          }}
+          aria-hidden={!shortcutVisible} tabIndex={shortcutVisible ? 0 : -1}
+          data-betting-shortcut="true"
+          sx={shortcutStyle(shortcutVisible, { xs: 14, sm: 24 })}
         >
-          {/* single poker chip — white with the button colour cut through */}
-          <svg viewBox="0 0 24 24" width="32" height="32" aria-hidden="true">
-            <circle cx="12" cy="12" r="10" fill="#ffffff" />
+          {/* single poker chip — navy, matching the other shortcut icons */}
+          <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+            <circle cx="12" cy="12" r="10" fill="currentColor" />
             {[0, 60, 120, 180, 240, 300].map((a) => (
               <rect
                 key={a}
@@ -691,7 +706,7 @@ export default function AppLayout() {
               />
             ))}
             <circle cx="12" cy="12" r="7.4" fill={mode === 'dark' ? '#a3d15e' : '#76a52e'} />
-            <circle cx="12" cy="12" r="5.6" fill="#ffffff" />
+            <circle cx="12" cy="12" r="5.6" fill="currentColor" />
             <path
               d="M12 8.6 L12.88 10.79 L15.23 10.95 L13.43 12.46 L14 14.75 L12 13.5 L10 14.75 L10.57 12.46 L8.77 10.95 L11.12 10.79 Z"
               fill={mode === 'dark' ? '#a3d15e' : '#76a52e'}

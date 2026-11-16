@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
 
-// Only the contextual community shortcut fades; the betting chip and main
-// navigation stay available. Every activity starts a fresh four-second window.
-export default function useAutoHideShortcut(enabled, pageKey, delay = 4000) {
+// Shared activity timer: floating shortcuts use three seconds; navigation
+// labels use five seconds. Every interaction starts a fresh timeout.
+export default function useAutoHideShortcut(enabled, pageKey, delay = 3000) {
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
