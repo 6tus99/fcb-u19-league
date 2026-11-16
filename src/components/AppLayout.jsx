@@ -55,32 +55,38 @@ const NAV = {
     { to: '/admin/news', label: 'News Desk' },
     { to: '/admin/officials', label: 'Officials' },
     { to: '/admin/settings', label: 'Settings' },
+    { to: '/social', label: 'Social' },
     { to: '/news', label: 'News' },
   ],
   commissioner: [
     { to: '/commissioner/match-center', label: 'Match Center' },
     { to: '/standings', label: 'Standings' },
+    { to: '/social', label: 'Social' },
     { to: '/news', label: 'News' },
   ],
   manager: [
     { to: '/manager', label: 'My Team' },
     { to: '/manager/matches', label: 'Team Matches' },
     { to: '/standings', label: 'Standings' },
+    { to: '/social', label: 'Social' },
     { to: '/news', label: 'News' },
   ],
   player: [
     { to: '/player', label: 'My Team' },
     { to: '/player/matches', label: 'Team Matches' },
     { to: '/standings', label: 'Standings' },
+    { to: '/social', label: 'Social' },
     { to: '/news', label: 'News' },
   ],
   editor: [
     { to: '/fan', label: 'Home' },
     { to: '/editor/news', label: 'News Desk' },
+    { to: '/social', label: 'Social' },
     { to: '/news', label: 'News' },
   ],
   fan: [
     { to: '/fan', label: 'Home' },
+    { to: '/social', label: 'Social' },
     { to: '/standings', label: 'Standings' },
     { to: '/news', label: 'News' },
   ],
@@ -566,7 +572,7 @@ export default function AppLayout() {
                 component={RouterLink}
                 to={item.to}
                 aria-current={active ? 'page' : undefined}
-                aria-label={item.to === '/news' && unreadMsgs > 0 ? `News, ${unreadMsgs} unread messages` : item.label}
+                aria-label={item.to === '/social' && unreadMsgs > 0 ? `Social, ${unreadMsgs} unread messages` : item.label}
                 sx={{
                   flex: view === 'fan' ? 1 : '0 0 auto',
                   minWidth: 0,
@@ -587,7 +593,7 @@ export default function AppLayout() {
                   },
                 }}
               >
-                {item.to === '/news' && unreadMsgs > 0 ? (
+                {item.to === '/social' && unreadMsgs > 0 ? (
                   <Badge
                     badgeContent={unreadMsgs}
                     max={99}

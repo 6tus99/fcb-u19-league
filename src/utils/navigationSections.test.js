@@ -7,8 +7,15 @@ test('matches and team detail URLs belong to Standings without changing deep lin
   expect(leagueSection('/standings')).toBe('/standings');
 });
 
-test('News is the parent of Social and Messages', () => {
-  ['/news', '/news/story', '/social', '/messages', '/messages/friend'].forEach((path) => expect(navigationItemActive(path, '/news')).toBe(true));
+test('Social is the parent of Messages; News stays a separate top-level section', () => {
+  ['/social', '/messages', '/messages/friend'].forEach((path) => {
+    expect(navigationItemActive(path, '/social')).toBe(true);
+    expect(navigationItemActive(path, '/news')).toBe(false);
+  });
+  ['/news', '/news/story'].forEach((path) => {
+    expect(navigationItemActive(path, '/news')).toBe(true);
+    expect(navigationItemActive(path, '/social')).toBe(false);
+  });
   expect(navigationItemActive('/admin/news', '/news')).toBe(false);
   expect(navigationItemActive('/social-club', '/news')).toBe(false);
 });

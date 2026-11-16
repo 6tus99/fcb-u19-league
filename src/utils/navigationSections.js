@@ -8,7 +8,7 @@ export function leagueSection(pathname) {
 
 export function navigationItemActive(pathname, target) {
   if (target === '/standings') return ['/standings', '/matches', '/teams'].some((root) => inPath(pathname, root));
-  if (target === '/news') return ['/news', '/social', '/messages'].some((root) => inPath(pathname, root));
+  if (target === '/social') return ['/social', '/messages'].some((root) => inPath(pathname, root));
   return inPath(pathname, target);
 }
 
