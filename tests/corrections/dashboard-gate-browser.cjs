@@ -51,7 +51,7 @@ const output = __dirname + '/artifacts'; fs.mkdirSync(output, { recursive: true 
         if (v.startsWith('in.(')) return v.slice(4, -1).split(',').includes(String(row[k]));
         return true;
       }));
-      await route.fulfill({ status: 200, contentType: 'application/json', headers: { 'content-range': `0-${Math.max(0, rows.length - 1)}/${rows.length}` }, body: req.method() === 'HEAD' ? '' : JSON.stringify(rows) });
+      await route.fulfill({ status: 200, contentType: 'application/json', headers: { 'access-control-expose-headers': 'content-range', 'content-range': `0-${Math.max(0, rows.length - 1)}/${rows.length}` }, body: req.method() === 'HEAD' ? '' : JSON.stringify(rows) });
     });
     const page = await ctx.newPage(); page.on('pageerror', e => errors.push(e.message));
     return { ctx, page, state };

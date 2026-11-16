@@ -1,0 +1,21 @@
+import { communityShortcut, leagueSection, navigationItemActive } from './navigationSections';
+
+test('matches and team detail URLs belong to Standings without changing deep links', () => {
+  ['/standings', '/matches', '/matches/match-id', '/teams', '/teams/team-id'].forEach((path) => expect(navigationItemActive(path, '/standings')).toBe(true));
+  expect(leagueSection('/matches/match-id')).toBe('/matches');
+  expect(leagueSection('/teams/team-id')).toBe('/teams');
+  expect(leagueSection('/standings')).toBe('/standings');
+});
+
+test('News is the parent of Social and Messages', () => {
+  ['/news', '/news/story', '/social', '/messages', '/messages/friend'].forEach((path) => expect(navigationItemActive(path, '/news')).toBe(true));
+  expect(navigationItemActive('/admin/news', '/news')).toBe(false);
+  expect(navigationItemActive('/social-club', '/news')).toBe(false);
+});
+
+test('only News and Social get shortcuts, never an open chat', () => {
+  expect(communityShortcut('/news')).toEqual({ to: '/social', label: 'Social' });
+  expect(communityShortcut('/news/story')).toEqual({ to: '/social', label: 'Social' });
+  expect(communityShortcut('/social')).toEqual({ to: '/messages', label: 'Messages' });
+  ['/fan', '/standings', '/matches', '/messages', '/messages/friend', '/admin/news'].forEach((path) => expect(communityShortcut(path)).toBeNull());
+});

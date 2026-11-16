@@ -6,6 +6,7 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import SetupScreen from './components/SetupScreen';
 import LoadingSpinner from './components/LoadingSpinner';
 import AppLayout from './components/AppLayout';
+import LeagueSection from './components/LeagueSection';
 import ProtectedRoute, { homeForRole } from './components/ProtectedRoute';
 
 import Login from './pages/auth/Login';
@@ -76,11 +77,13 @@ export default function App() {
 
           {/* shared / fan area */}
           <Route path="/fan" element={<FanDashboard />} />
+          <Route element={<LeagueSection />}>
           <Route path="/matches" element={<Matches />} />
           <Route path="/matches/:id" element={<MatchDetail />} />
           <Route path="/standings" element={<Standings />} />
           <Route path="/teams" element={<Teams />} />
           <Route path="/teams/:id" element={<TeamDetail />} />
+          </Route>
           <Route path="/news" element={<News />} />
           <Route path="/news/:id" element={<NewsDetail />} />
           <Route path="/fan/betting" element={<Bets />} />

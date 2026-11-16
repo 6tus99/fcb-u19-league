@@ -59,3 +59,11 @@ node tests/corrections/dashboard-gate-browser.cjs
 Intercepted-backend Playwright tests cover an actual assignment-notification click, wrong/correct PINs, preserving the exact match URL, no protected page mounting/data fetch while locked, role-internal navigation, leaving and returning via browser history, refresh, legacy links, page-cache restore handling, network failures, resets during verification, first-time password creation/save failures, all five role dashboards via direct links/notifications/header button, and PIN-free fan match viewing. Existing regression fixtures now include password setup and unlock steps.
 
 The PIN gate is an application-navigation lock, using the existing dashboard password hash. It does not replace Supabase role/RLS authorisation. Verification grants live only in React memory for the current restricted-area visit; no unlock flags are persisted in browser storage.
+
+## Grouped public navigation
+
+```sh
+node tests/corrections/grouped-navigation-browser.cjs
+```
+
+Tests the three-link fan navigation (Home, Standings, News), Standings/Table/Matches/Teams grouping including team/match deep links, News -> Social -> Messages floating shortcuts, green unread-message indicators, shortcut placement above the unchanged betting chip, parent back links, no floating controls over an open chat, 320px/375px layouts without horizontal overflow, and desktop/light-theme rendering. All backend requests use fictional fixtures/members/messages and are intercepted; no live data is changed. Mock responses expose Content-Range so badge counts exercise the real SDK counting path.

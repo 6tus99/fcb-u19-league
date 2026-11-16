@@ -67,7 +67,7 @@ const fs = require('fs');
     if (table === 'notifications') rows = [...rows].sort((x, y) => Date.parse(y.created_at) - Date.parse(x.created_at));
     const offset = Number(url.searchParams.get('offset') || 0), limit = Number(url.searchParams.get('limit') || 1000);
     rows = rows.slice(offset, offset + limit);
-    await route.fulfill({ status: 200, contentType: 'application/json', headers: { 'content-range': `${offset}-${offset + Math.max(0, rows.length - 1)}/${count}`, 'access-control-allow-origin': '*' }, body: req.method() === 'HEAD' ? '' : JSON.stringify(rows) });
+    await route.fulfill({ status: 200, contentType: 'application/json', headers: { 'access-control-expose-headers': 'content-range', 'content-range': `${offset}-${offset + Math.max(0, rows.length - 1)}/${count}`, 'access-control-allow-origin': '*' }, body: req.method() === 'HEAD' ? '' : JSON.stringify(rows) });
   });
   const page = await ctx.newPage(); page.on('pageerror', error => browserErrors.push(error.message));
   const wait = async condition => { for (let i = 0; i < 100; i++) { if (await condition()) return; await page.waitForTimeout(50); } throw Error('Condition not met: ' + condition); };

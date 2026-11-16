@@ -32,6 +32,9 @@ import DarkModeRounded from '@mui/icons-material/DarkModeRounded';
 import SpaceDashboardRounded from '@mui/icons-material/SpaceDashboardRounded';
 import HourglassTopRounded from '@mui/icons-material/HourglassTopRounded';
 import PersonRounded from '@mui/icons-material/PersonRounded';
+import ForumRounded from '@mui/icons-material/ForumRounded';
+import ChatRounded from '@mui/icons-material/ChatRounded';
+import { navigationItemActive, communityShortcut } from '../utils/navigationSections';
 import AddPhotoAlternateRounded from '@mui/icons-material/AddPhotoAlternateRounded';
 import { useAuth } from '../context/AuthContext';
 import { sha256Hex } from '../utils/crypto';
@@ -49,46 +52,36 @@ const NAV = {
     { to: '/admin/requests', label: 'Requests' },
     { to: '/admin/teams', label: 'Teams' },
     { to: '/admin/matches', label: 'Matches' },
-    { to: '/admin/news', label: 'News' },
+    { to: '/admin/news', label: 'News Desk' },
     { to: '/admin/officials', label: 'Officials' },
     { to: '/admin/settings', label: 'Settings' },
-    { to: '/social', label: 'Social' },
-    { to: '/messages', label: 'Messages' },
+    { to: '/news', label: 'News' },
   ],
   commissioner: [
     { to: '/commissioner/match-center', label: 'Match Center' },
     { to: '/standings', label: 'Standings' },
-    { to: '/social', label: 'Social' },
-    { to: '/messages', label: 'Messages' },
+    { to: '/news', label: 'News' },
   ],
   manager: [
     { to: '/manager', label: 'My Team' },
     { to: '/manager/matches', label: 'Team Matches' },
     { to: '/standings', label: 'Standings' },
-    { to: '/social', label: 'Social' },
-    { to: '/messages', label: 'Messages' },
+    { to: '/news', label: 'News' },
   ],
   player: [
     { to: '/player', label: 'My Team' },
     { to: '/player/matches', label: 'Team Matches' },
     { to: '/standings', label: 'Standings' },
-    { to: '/social', label: 'Social' },
-    { to: '/messages', label: 'Messages' },
+    { to: '/news', label: 'News' },
   ],
   editor: [
     { to: '/fan', label: 'Home' },
     { to: '/editor/news', label: 'News Desk' },
-    { to: '/social', label: 'Social' },
-    { to: '/messages', label: 'Messages' },
+    { to: '/news', label: 'News' },
   ],
   fan: [
     { to: '/fan', label: 'Home' },
-    { to: '/social', label: 'Social' },
-    { to: '/messages', label: 'Messages' },
-    { to: '/fan/betting', label: 'Betting' },
-    { to: '/matches', label: 'Matches' },
     { to: '/standings', label: 'Standings' },
-    { to: '/teams', label: 'Teams' },
     { to: '/news', label: 'News' },
   ],
 };
@@ -136,6 +129,7 @@ export default function AppLayout() {
   const isPhone = useMediaQuery('(max-width: 600px)');
   const { mode, setChoice } = useThemeMode();
   const location = useLocation();
+  const shortcut = communityShortcut(location.pathname);
   const navigate = useNavigate();
   const [anchorEl, setAnchorEl] = useState(null);
   const [leagueName, setLeagueName] = useState('FCB Under 19 Football League');
@@ -563,16 +557,19 @@ export default function AppLayout() {
             )}
           </IconButton>
         </Toolbar>
-        <Toolbar sx={{ gap: 0.5, px: 2, minHeight: 48, overflowX: 'auto', color: 'inherit' }}>
+        <Toolbar component="nav" aria-label="Main navigation" sx={{ gap: 0.5, px: 2, minHeight: 44, overflowX: view === 'fan' ? 'visible' : 'auto', color: 'inherit' }}>
           {items.map((item) => {
-            const active =
-              location.pathname === item.to || location.pathname.startsWith(`${item.to}/`);
+            const active = navigationItemActive(location.pathname, item.to);
             return (
               <ButtonBase
                 key={item.to}
                 component={RouterLink}
                 to={item.to}
+                aria-current={active ? 'page' : undefined}
+                aria-label={item.to === '/news' && unreadMsgs > 0 ? `News, ${unreadMsgs} unread messages` : item.label}
                 sx={{
+                  flex: view === 'fan' ? 1 : '0 0 auto',
+                  minWidth: 0,
                   px: { xs: 1, sm: 1.5 },
                   py: 0.5,
                   borderRadius: 2,
@@ -590,7 +587,7 @@ export default function AppLayout() {
                   },
                 }}
               >
-                {item.to === '/messages' && unreadMsgs > 0 ? (
+                {item.to === '/news' && unreadMsgs > 0 ? (
                   <Badge
                     badgeContent={unreadMsgs}
                     max={99}
@@ -617,9 +614,24 @@ export default function AppLayout() {
         </Toolbar>
       </AppBar>
 
-      <Container maxWidth="lg" sx={{ py: 3, flexGrow: 1 }}>
+      <Container maxWidth="lg" sx={{ pt: 3, pb: shortcut ? 19 : 3, flexGrow: 1 }}>
         <Outlet />
       </Container>
+
+      {/* News -> Social -> Messages: a labelled shortcut above the chip,
+          not more links squeezed into the main navigation. */}
+      {shortcut && <Fab component={RouterLink} to={shortcut.to} variant="extended"
+        aria-label={`Open ${shortcut.label}`} title={shortcut.label === 'Messages' ? 'Messages' : 'Social feed'}
+        sx={{ position: 'fixed', right: { xs: 14, sm: 24 }, bottom: { xs: 82, sm: 92 },
+          zIndex: 1200, height: 48, gap: 1, px: 2, bgcolor: 'primary.main', color: '#17276a',
+          fontWeight: 800, textTransform: 'none', '&:hover': { bgcolor: 'primary.main', filter: 'brightness(1.06)' } }}>
+        <Badge badgeContent={unreadMsgs} max={99} sx={{ '& .MuiBadge-badge': {
+          bgcolor: 'primary.main', color: '#17276a', fontWeight: 800, border: '1.5px solid #17276a',
+        } }}>
+          {shortcut.label === 'Messages' ? <ChatRounded fontSize="small" /> : <ForumRounded fontSize="small" />}
+        </Badge>
+        {shortcut.label}
+      </Fab>}
 
       {/* Floating betting button — follows you down the page.
           Hidden inside an open chat: on phones it sits exactly over the

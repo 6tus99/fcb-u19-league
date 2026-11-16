@@ -1,4 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { Link as RouterLink } from 'react-router-dom';
+import ArrowBackIosRounded from '@mui/icons-material/ArrowBackIosRounded';
 import Avatar from '@mui/material/Avatar';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
@@ -363,9 +365,10 @@ export default function SocialFeed() {
   return (
     <Box sx={{ maxWidth: 640, mx: 'auto', py: 2, px: { xs: 1.5, sm: 2 } }}>
       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
-        <Typography variant="h5" sx={{ fontWeight: 900 }}>
-          Social
-        </Typography>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+          <IconButton component={RouterLink} to="/news" aria-label="Back to News" size="small" sx={{ color: 'primary.main' }}><ArrowBackIosRounded fontSize="small" /></IconButton>
+          <Typography variant="h5" sx={{ fontWeight: 900 }}>Social</Typography>
+        </Box>
         <Chip
           icon={<CardGiftcardRounded />}
           label={`${points ?? 0} pts`}

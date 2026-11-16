@@ -39,7 +39,7 @@ const fs=require('fs');
      const order=url.searchParams.get('order');if(order){const [k,d]=order.split('.');result.sort((a,b)=>(a[k]<b[k]?-1:1)*(d==='desc'?-1:1));}
     }
    }else if(url.pathname.includes('/auth/v1/user')){result={id:actor,email:'test@example.com',role:'authenticated'};}
-   await route.fulfill({status:200,contentType:'application/json',headers:{'access-control-allow-origin':'*','content-range':`0-${Math.max(0,result?.length-1)}/${result?.length||0}`},body:JSON.stringify(result)});
+   await route.fulfill({status:200,contentType:'application/json',headers:{'access-control-allow-origin':'*','access-control-expose-headers': 'content-range', 'content-range':`0-${Math.max(0,result?.length-1)}/${result?.length||0}`},body:JSON.stringify(result)});
   }catch(e){await route.fulfill({status:400,contentType:'application/json',body:JSON.stringify({message:e.message,code:'P0001'})});}
  };
  queue=queue.then(task);await queue;

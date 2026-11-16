@@ -16,7 +16,7 @@ import GroupRounded from '@mui/icons-material/GroupRounded';
 import PersonRemoveRounded from '@mui/icons-material/PersonRemoveRounded';
 import supabase from '../../lib/supabase';
 import { useAuth } from '../../context/AuthContext';
-import { useNavigate, useParams } from 'react-router-dom';
+import { Link as RouterLink, useNavigate, useParams } from 'react-router-dom';
 import timeAgo from '../../utils/timeAgo';
 import { useMemberInfo, memberName, memberAvatar } from '../../utils/members';
 
@@ -386,9 +386,10 @@ export default function Messages() {
       }}
     >
       <Box sx={{ p: 1.5, pb: 1 }}>
-        <Typography variant="h6" sx={{ fontWeight: 900 }}>
-          Messages
-        </Typography>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+          <IconButton component={RouterLink} to="/social" aria-label="Back to Social" size="small"><ArrowBackIosRounded fontSize="small" /></IconButton>
+          <Typography variant="h6" sx={{ fontWeight: 900 }}>Messages</Typography>
+        </Box>
         {/* three equal-width tabs: each word always has its own third of the row */}
         <Box sx={{ display: 'flex', gap: 0.5, mt: 1 }}>
           <Button
