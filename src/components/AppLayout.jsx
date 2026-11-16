@@ -34,6 +34,7 @@ import HourglassTopRounded from '@mui/icons-material/HourglassTopRounded';
 import PersonRounded from '@mui/icons-material/PersonRounded';
 import ForumRounded from '@mui/icons-material/ForumRounded';
 import ChatRounded from '@mui/icons-material/ChatRounded';
+import useAutoHideShortcut from '../hooks/useAutoHideShortcut';
 import { navigationItemActive, communityShortcut } from '../utils/navigationSections';
 import AddPhotoAlternateRounded from '@mui/icons-material/AddPhotoAlternateRounded';
 import { useAuth } from '../context/AuthContext';
@@ -55,38 +56,38 @@ const NAV = {
     { to: '/admin/news', label: 'News Desk' },
     { to: '/admin/officials', label: 'Officials' },
     { to: '/admin/settings', label: 'Settings' },
-    { to: '/social', label: 'Social' },
+    { to: '/social', label: 'kuma-stand' },
     { to: '/news', label: 'News' },
   ],
   commissioner: [
     { to: '/commissioner/match-center', label: 'Match Center' },
     { to: '/standings', label: 'Standings' },
-    { to: '/social', label: 'Social' },
+    { to: '/social', label: 'kuma-stand' },
     { to: '/news', label: 'News' },
   ],
   manager: [
     { to: '/manager', label: 'My Team' },
     { to: '/manager/matches', label: 'Team Matches' },
     { to: '/standings', label: 'Standings' },
-    { to: '/social', label: 'Social' },
+    { to: '/social', label: 'kuma-stand' },
     { to: '/news', label: 'News' },
   ],
   player: [
     { to: '/player', label: 'My Team' },
     { to: '/player/matches', label: 'Team Matches' },
     { to: '/standings', label: 'Standings' },
-    { to: '/social', label: 'Social' },
+    { to: '/social', label: 'kuma-stand' },
     { to: '/news', label: 'News' },
   ],
   editor: [
     { to: '/fan', label: 'Home' },
     { to: '/editor/news', label: 'News Desk' },
-    { to: '/social', label: 'Social' },
+    { to: '/social', label: 'kuma-stand' },
     { to: '/news', label: 'News' },
   ],
   fan: [
     { to: '/fan', label: 'Home' },
-    { to: '/social', label: 'Social' },
+    { to: '/social', label: 'kuma-stand' },
     { to: '/standings', label: 'Standings' },
     { to: '/news', label: 'News' },
   ],
@@ -136,6 +137,7 @@ export default function AppLayout() {
   const { mode, setChoice } = useThemeMode();
   const location = useLocation();
   const shortcut = communityShortcut(location.pathname);
+  const shortcutVisible = useAutoHideShortcut(Boolean(shortcut), location.key);
   const navigate = useNavigate();
   const [anchorEl, setAnchorEl] = useState(null);
   const [leagueName, setLeagueName] = useState('FCB Under 19 Football League');
@@ -572,7 +574,7 @@ export default function AppLayout() {
                 component={RouterLink}
                 to={item.to}
                 aria-current={active ? 'page' : undefined}
-                aria-label={item.to === '/social' && unreadMsgs > 0 ? `Social, ${unreadMsgs} unread messages` : item.label}
+                aria-label={item.to === '/social' && unreadMsgs > 0 ? `kuma-stand, ${unreadMsgs} unread messages` : item.label}
                 sx={{
                   flex: view === 'fan' ? 1 : '0 0 auto',
                   minWidth: 0,
@@ -624,19 +626,29 @@ export default function AppLayout() {
         <Outlet />
       </Container>
 
-      {/* News -> Social -> Messages: a labelled shortcut above the chip,
-          not more links squeezed into the main navigation. */}
-      {shortcut && <Fab component={RouterLink} to={shortcut.to} variant="extended"
-        aria-label={`Open ${shortcut.label}`} title={shortcut.label === 'Messages' ? 'Messages' : 'Social feed'}
+      {/* News -> kuma-stand -> Messages. These contextual shortcuts use
+          icons only and reveal for four seconds on entry/activity. */}
+      {shortcut && <Fab component={RouterLink} to={shortcut.to}
+        aria-label={`Open ${shortcut.label}`} title={shortcut.label}
+        aria-hidden={!shortcutVisible} tabIndex={shortcutVisible ? 0 : -1}
+        data-community-shortcut="true"
         sx={{ position: 'fixed', right: { xs: 14, sm: 24 }, bottom: { xs: 82, sm: 92 },
-          zIndex: 1200, height: 48, gap: 1, px: 2, bgcolor: 'primary.main', color: '#17276a',
-          fontWeight: 800, textTransform: 'none', '&:hover': { bgcolor: 'primary.main', filter: 'brightness(1.06)' } }}>
+          zIndex: 1200, height: 48, width: 48, minHeight: 48,
+          bgcolor: 'primary.main', color: '#17276a',
+          opacity: shortcutVisible ? 1 : 0,
+          visibility: shortcutVisible ? 'visible' : 'hidden',
+          pointerEvents: shortcutVisible ? 'auto' : 'none',
+          transform: shortcutVisible ? 'translateY(0)' : 'translateY(8px)',
+          transition: shortcutVisible
+            ? 'opacity 160ms ease, transform 160ms ease, visibility 0s'
+            : 'opacity 160ms ease, transform 160ms ease, visibility 0s linear 160ms',
+          '@media (prefers-reduced-motion: reduce)': { transition: 'none' },
+          '&:hover': { bgcolor: 'primary.main', filter: 'brightness(1.06)' } }}>
         <Badge badgeContent={unreadMsgs} max={99} sx={{ '& .MuiBadge-badge': {
           bgcolor: 'primary.main', color: '#17276a', fontWeight: 800, border: '1.5px solid #17276a',
         } }}>
-          {shortcut.label === 'Messages' ? <ChatRounded fontSize="small" /> : <ForumRounded fontSize="small" />}
+          {shortcut.to === '/messages' ? <ChatRounded fontSize="small" /> : <ForumRounded fontSize="small" />}
         </Badge>
-        {shortcut.label}
       </Fab>}
 
       {/* Floating betting button — follows you down the page.

@@ -367,7 +367,7 @@ export default function SocialFeed() {
       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
           <IconButton component={RouterLink} to="/news" aria-label="Back to News" size="small" sx={{ color: 'primary.main' }}><ArrowBackIosRounded fontSize="small" /></IconButton>
-          <Typography variant="h5" sx={{ fontWeight: 900 }}>Social</Typography>
+          <Typography variant="h5" sx={{ fontWeight: 900 }}>kuma-stand</Typography>
         </Box>
         <Chip
           icon={<CardGiftcardRounded />}

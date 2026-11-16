@@ -387,7 +387,7 @@ export default function Messages() {
     >
       <Box sx={{ p: 1.5, pb: 1 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-          <IconButton component={RouterLink} to="/social" aria-label="Back to Social" size="small"><ArrowBackIosRounded fontSize="small" /></IconButton>
+          <IconButton component={RouterLink} to="/social" aria-label="Back to kuma-stand" size="small"><ArrowBackIosRounded fontSize="small" /></IconButton>
           <Typography variant="h6" sx={{ fontWeight: 900 }}>Messages</Typography>
         </Box>
         {/* three equal-width tabs: each word always has its own third of the row */}

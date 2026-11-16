@@ -21,8 +21,8 @@ test('Social is the parent of Messages; News stays a separate top-level section'
 });
 
 test('only News and Social get shortcuts, never an open chat', () => {
-  expect(communityShortcut('/news')).toEqual({ to: '/social', label: 'Social' });
-  expect(communityShortcut('/news/story')).toEqual({ to: '/social', label: 'Social' });
+  expect(communityShortcut('/news')).toEqual({ to: '/social', label: 'kuma-stand' });
+  expect(communityShortcut('/news/story')).toEqual({ to: '/social', label: 'kuma-stand' });
   expect(communityShortcut('/social')).toEqual({ to: '/messages', label: 'Messages' });
   ['/fan', '/standings', '/matches', '/messages', '/messages/friend', '/admin/news'].forEach((path) => expect(communityShortcut(path)).toBeNull());
 });
