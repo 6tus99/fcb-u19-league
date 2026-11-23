@@ -32,12 +32,12 @@ import DarkModeRounded from '@mui/icons-material/DarkModeRounded';
 import SpaceDashboardRounded from '@mui/icons-material/SpaceDashboardRounded';
 import HourglassTopRounded from '@mui/icons-material/HourglassTopRounded';
 import PersonRounded from '@mui/icons-material/PersonRounded';
-import ForumRounded from '@mui/icons-material/ForumRounded';
 import ChatRounded from '@mui/icons-material/ChatRounded';
+import StadiumRounded from '@mui/icons-material/StadiumRounded';
 import LeaderboardRounded from '@mui/icons-material/LeaderboardRounded';
 import NewspaperRounded from '@mui/icons-material/NewspaperRounded';
 import useAutoHideShortcut from '../hooks/useAutoHideShortcut';
-import { navigationItemActive, communityShortcut } from '../utils/navigationSections';
+import { navigationItemActive, communityShortcut, shouldShowFanNavigationIcon } from '../utils/navigationSections';
 import AddPhotoAlternateRounded from '@mui/icons-material/AddPhotoAlternateRounded';
 import { useAuth } from '../context/AuthContext';
 import { sha256Hex } from '../utils/crypto';
@@ -96,7 +96,7 @@ const NAV = {
   ],
 };
 
-const NAV_ICONS = { '/fan': HomeRounded, '/social': ForumRounded, '/standings': LeaderboardRounded, '/news': NewspaperRounded };
+const NAV_ICONS = { '/fan': HomeRounded, '/social': StadiumRounded, '/standings': LeaderboardRounded, '/news': NewspaperRounded };
 
 // Identical size, colour and idle animation for all floating shortcuts.
 const shortcutStyle = (visible, bottom) => ({
@@ -602,7 +602,7 @@ export default function AppLayout() {
           {items.map((item) => {
             const active = navigationItemActive(location.pathname, item.to);
             const Icon = NAV_ICONS[item.to];
-            const compact = view === 'fan' && !navigationExpanded && Boolean(Icon);
+            const compact = view === 'fan' && Boolean(Icon) && shouldShowFanNavigationIcon(active, navigationExpanded);
             const content = compact
               ? <Icon data-navigation-icon={item.to} aria-hidden="true" sx={{ fontSize: 22 }} />
               : <Box component="span" data-navigation-label sx={{ display: 'inline-flex', alignItems: 'center', minHeight: 22 }}>{item.label}</Box>;
@@ -674,7 +674,7 @@ export default function AppLayout() {
         <Badge badgeContent={unreadMsgs} max={99} sx={{ '& .MuiBadge-badge': {
           bgcolor: 'primary.main', color: '#17276a', fontWeight: 800, border: '1.5px solid #17276a',
         } }}>
-          {shortcut.to === '/messages' ? <ChatRounded fontSize="small" /> : <ForumRounded fontSize="small" />}
+          {shortcut.to === '/messages' ? <ChatRounded fontSize="small" /> : <StadiumRounded fontSize="small" />}
         </Badge>
       </Fab>}
 

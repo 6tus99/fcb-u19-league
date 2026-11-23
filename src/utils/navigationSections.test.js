@@ -1,4 +1,4 @@
-import { communityShortcut, leagueSection, navigationItemActive } from './navigationSections';
+import { communityShortcut, leagueSection, navigationItemActive, shouldShowFanNavigationIcon } from './navigationSections';
 
 test('matches and team detail URLs belong to Standings without changing deep links', () => {
   ['/standings', '/matches', '/matches/match-id', '/teams', '/teams/team-id'].forEach((path) => expect(navigationItemActive(path, '/standings')).toBe(true));
@@ -25,4 +25,11 @@ test('only News and Social get shortcuts, never an open chat', () => {
   expect(communityShortcut('/news/story')).toEqual({ to: '/social', label: 'kuma-stand' });
   expect(communityShortcut('/social')).toEqual({ to: '/messages', label: 'Messages' });
   ['/fan', '/standings', '/matches', '/messages', '/messages/friend', '/admin/news'].forEach((path) => expect(communityShortcut(path)).toBeNull());
+});
+
+test('active fan navigation always shows its icon; inactive items follow the activity state', () => {
+  expect(shouldShowFanNavigationIcon(true, true)).toBe(true);
+  expect(shouldShowFanNavigationIcon(true, false)).toBe(true);
+  expect(shouldShowFanNavigationIcon(false, true)).toBe(false);
+  expect(shouldShowFanNavigationIcon(false, false)).toBe(true);
 });

@@ -75,3 +75,13 @@ test('three-second shortcuts and five-second navigation run independently', () =
   trigger('pointerdown');
   expect([...container.children].map((el) => el.dataset.visible)).toEqual(['true', 'true']);
 });
+
+test('five-second navigation visibility resets after tapping and scrolling', () => {
+  act(() => root.render(<Probe delay={5000} />));
+  advance(5000); expect(visible()).toBe(false);
+  trigger('pointerdown'); expect(visible()).toBe(true);
+  advance(4999); expect(visible()).toBe(true);
+  trigger('scroll');
+  advance(4999); expect(visible()).toBe(true);
+  advance(1); expect(visible()).toBe(false);
+});

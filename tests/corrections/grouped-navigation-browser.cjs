@@ -56,7 +56,7 @@ const fs = require('fs');
   try {
     await page.goto(base + '/fan'); await page.getByText("Today's matches", { exact: true }).waitFor();
     await nav().getByRole('link', { name: 'kuma-stand, 2 unread messages', exact: true }).waitFor();
-    assert.deepEqual(await nav().getByRole('link').allTextContents(), ['Home', 'kuma-stand2', 'Standings', 'News']);
+    assert.deepEqual(await nav().getByRole('link').allTextContents(), ['', 'kuma-stand2', 'Standings', 'News']);
     await checkFit(); await page.screenshot({ path: output + '/compact-home-navigation-phone.png', fullPage: false });
     console.log('PASS phone home: Home / kuma-stand / Standings / News, green unread-message badge, no horizontal navigation scroll');
     await nav().getByRole('link', { name: 'Standings', exact: true }).click();

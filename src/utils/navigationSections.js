@@ -12,6 +12,10 @@ export function navigationItemActive(pathname, target) {
   return inPath(pathname, target);
 }
 
+export function shouldShowFanNavigationIcon(active, expanded) {
+  return active || !expanded;
+}
+
 export function communityShortcut(pathname) {
   if (inPath(pathname, '/news')) return { to: '/social', label: 'kuma-stand' };
   if (inPath(pathname, '/social')) return { to: '/messages', label: 'Messages' };
