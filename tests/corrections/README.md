@@ -71,3 +71,11 @@ Tests the four-link fan navigation (Home, kuma-stand, Standings, News), Standing
 Contextual community icons remain on their original pages, hide after three seconds, and reveal again on tap/pointerdown, captured scrolling (including nested panels), keyboard activity, window focus, page restore, visible-tab changes and route changes. The matching betting chip also hides after three seconds, including on pages without a community shortcut. After five idle seconds, the four public navigation labels become icons; link targets, active states, unread badges, and tap-target sizes stay unchanged. The same activity restores labels and both floating shortcuts. Unit fake-timer tests cover exact timing and listener cleanup; the grouped-navigation browser test checks real CSS hiding, non-focusability while hidden, activity/route reset behaviour and betting-only pages and three-/five-second independent timers.
 
 The supplied stadium photograph is scoped to `/social` (kuma-stand), with theme-aware contrast overlays. News, Messages, Standings and other routes retain their aquatic backgrounds. Browser assertions and phone/desktop screenshots cover this isolation in both themes.
+
+## Social post actions
+
+```sh
+node tests/corrections/social-post-actions-browser.cjs
+```
+
+Uses fictional posts and intercepts all backend traffic. Verifies populated liked and unliked post action layouts at 320px, 375px and 390px, two-digit counts, 44px tap targets, action-content spacing, no overflow, a single wider-screen row, and the existing like, react, comment and gift handlers.

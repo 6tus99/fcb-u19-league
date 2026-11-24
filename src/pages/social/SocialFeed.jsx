@@ -807,6 +807,7 @@ function PostCard({
 
   return (
     <Box
+      data-post-card={post.id}
       sx={{
         border: 1,
         borderColor: 'divider',
@@ -853,25 +854,40 @@ function PostCard({
 
       <Divider sx={{ my: 1 }} />
 
-      <Box sx={{ display: 'flex', gap: 0.5, alignItems: 'center' }}>
+      <Box
+        data-post-actions
+        sx={{
+          display: 'grid',
+          gridTemplateColumns: { xs: 'repeat(2, minmax(0, 1fr))', sm: 'repeat(4, minmax(0, 1fr))' },
+          gap: 0.5,
+          alignItems: 'center',
+        }}
+      >
         <Button
           size="small"
           color={liked ? 'error' : 'inherit'}
           startIcon={liked ? <FavoriteRounded /> : <FavoriteBorderRounded />}
           onClick={onLike}
-          sx={{ textTransform: 'none', fontWeight: 700 }}
+          aria-label={likeCount > 0 ? `Like, ${likeCount}` : 'Like'}
+          sx={{ minWidth: 0, minHeight: 44, width: '100%', px: 0.75, textTransform: 'none', fontWeight: 700 }}
         >
-          {likeCount > 0 ? likeCount : 'Like'}
+          <Box component="span" sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.5, whiteSpace: 'nowrap' }}>
+            <Box component="span" data-action-label>Like</Box>
+            {likeCount > 0 && <Box component="span" data-action-count sx={{ fontVariantNumeric: 'tabular-nums' }}>({likeCount})</Box>}
+          </Box>
         </Button>
         <Button
           size="small"
           color={myReaction ? 'primary' : 'inherit'}
           startIcon={<InsertEmoticonRounded />}
           onClick={(e) => setRxAnchor(e.currentTarget)}
-          sx={{ textTransform: 'none', fontWeight: 700 }}
-          aria-label="React"
+          sx={{ minWidth: 0, minHeight: 44, width: '100%', px: 0.75, textTransform: 'none', fontWeight: 700 }}
+          aria-label={reactions.length > 0 ? `React, ${reactions.length}` : 'React'}
         >
-          {reactions.length > 0 ? reactions.length : 'React'}
+          <Box component="span" sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.5, whiteSpace: 'nowrap' }}>
+            <Box component="span" data-action-label>React</Box>
+            {reactions.length > 0 && <Box component="span" data-action-count sx={{ fontVariantNumeric: 'tabular-nums' }}>({reactions.length})</Box>}
+          </Box>
         </Button>
         <Menu anchorEl={rxAnchor} open={Boolean(rxAnchor)} onClose={() => setRxAnchor(null)}>
           {RX_KINDS.map((k) => (
@@ -895,13 +911,16 @@ function PostCard({
           size="small"
           startIcon={<CommentRounded />}
           onClick={onToggleComments}
-          sx={{ textTransform: 'none', fontWeight: 700 }}
+          sx={{ minWidth: 0, minHeight: 44, width: '100%', px: 0.75, textTransform: 'none', fontWeight: 700 }}
+          aria-label={comments.length > 0 ? `Comment, ${comments.length}` : 'Comment'}
         >
-          {comments.length > 0 ? comments.length : 'Comment'}
+          <Box component="span" sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.5, whiteSpace: 'nowrap' }}>
+            <Box component="span" data-action-label>Comment</Box>
+            {comments.length > 0 && <Box component="span" data-action-count sx={{ fontVariantNumeric: 'tabular-nums' }}>({comments.length})</Box>}
+          </Box>
         </Button>
-        <Box sx={{ flex: 1 }} />
-        <Button size="small" startIcon={<CardGiftcardRounded />} onClick={onGift} sx={{ textTransform: 'none', fontWeight: 700 }}>
-          Gift
+        <Button size="small" startIcon={<CardGiftcardRounded />} onClick={onGift} sx={{ minWidth: 0, minHeight: 44, width: '100%', px: 0.75, textTransform: 'none', fontWeight: 700 }}>
+          <Box component="span" data-action-label>Gift</Box>
         </Button>
       </Box>
 
